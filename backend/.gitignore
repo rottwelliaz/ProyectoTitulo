@@ -1,0 +1,24 @@
+# Backend .gitignore
+node_modules/
+dist/
+build/
+.env
+.env.local
+.env.*.local
+.DS_Store
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.env.production
+
+# TypeORM
+ormconfig.json
+ormconfig.*.json
+src/migration/*.js
+src/subscriber/*.js

@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: barberia_postgres
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-barberia_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-barberia_password}
+      POSTGRES_DB: ${DB_NAME:-barberia_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    networks:
+      - barberia_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-barberia_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend Service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: barberia_backend
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=${DB_USERNAME:-barberia_user}
+      - DB_PASSWORD=${DB_PASSWORD:-barberia_password}
+      - DB_NAME=${DB_NAME:-barberia_db}
+      - DB_SYNCHRONIZE=${DB_SYNCHRONIZE:-true}
+      - JWT_SECRET=${JWT_SECRET:-your_secret_key}
+      - JWT_EXPIRE=${JWT_EXPIRE:-7d}
+      - PORT=3001
+      - CORS_ORIGIN=http://localhost:3000
+      - SOCKET_IO_CORS=http://localhost:3000
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - barberia_network
+    volumes:
+      - ./backend/src:/app/src
+    command: npm run dev
+
+  # Frontend Service
+  frontend:
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+    container_name: barberia_frontend
+    environment:
+      - VITE_API_URL=http://backend:3001/api
+      - VITE_SOCKET_URL=http://backend:3001
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - barberia_network
+    volumes:
+      - ./Frontend/src:/app/src
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  barberia_network:
+    driver: bridge

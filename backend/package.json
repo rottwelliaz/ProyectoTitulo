@@ -1,0 +1,38 @@
+{
+  "name": "barberia-backend",
+  "version": "1.0.0",
+  "description": "Backend para Sistema de Gestión de Barberías",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "ts-node-dev --respawn src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "typeorm": "typeorm-cli"
+  },
+  "keywords": ["barberia", "citas", "reservas"],
+  "author": "Tu Nombre",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "typeorm": "^0.3.17",
+    "pg": "^8.11.1",
+    "socket.io": "^4.7.2",
+    "dotenv": "^16.3.1",
+    "jsonwebtoken": "~9.0.2",
+    "bcryptjs": "^2.4.3",
+    "class-validator": "^0.14.0",
+    "class-transformer": "^0.5.1",
+    "cors": "^2.8.5",
+    "express-async-errors": "^3.1.1"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.20",
+    "@types/node": "^20.9.0",
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/bcryptjs": "~2.4.2",
+    "@types/cors": "^2.8.17",
+    "typescript": "^5.2.2",
+    "ts-node": "^10.9.1",
+    "ts-node-dev": "^2.0.0"
+  }
+}

@@ -1,0 +1,10 @@
+/* Estilos globales */
+/* TODO: Implementar estilos globales */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  /* TODO: Agregar estilos globales */
+}
