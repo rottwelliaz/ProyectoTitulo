@@ -1,33 +1,61 @@
-## 🚀 INICIO RÁPIDO (5 MINUTOS)
+## 🚀 INICIO RÁPIDO - DOCKER COMPOSE
 
-### 1. Preparar Ambiente
+### Requisitos previos
+- Docker y Docker Compose instalados
+- Git
+
+### 1. Clonar el repositorio
 ```bash
-cd c:\Users\RottWelliaZ\Desktop\ProyectoTitulo
-
-# Copiar archivos .env
-copy .env.example .env
-copy backend\.env.example backend\.env
-copy Frontend\.env.example Frontend\.env
+git clone https://github.com/tu-usuario/ProyectoTitulo.git
+cd ProyectoTitulo
 ```
 
-### 2. Iniciar con Docker
+### 2. Configurar variables de entorno
 ```bash
-docker-compose up -d
+cp .env.example .env
 ```
 
-**URLs:**
-- Frontend: http://localhost:3000
-- Backend: http://localhost:3001
-- Health Check: http://localhost:3001/health
+Edita el `.env` si necesitas cambiar valores por defecto:
+- `DB_PASSWORD`: contraseña de PostgreSQL
+- `JWT_SECRET`: clave secreta para JWT tokens
 
-### 3. Desarrollo Local (Sin Docker)
+### 3. Levantar el proyecto
 ```bash
-# Terminal 1 - Backend
+docker compose up --build
+```
+
+Alternativa (sin rebuild):
+```bash
+docker compose up
+```
+
+### 4. Acceder a la aplicación
+
+**URLs disponibles:**
+- **Frontend**: http://localhost:3000
+
+### Detener los servicios
+```bash
+docker compose down
+```
+
+Para limpiar volúmenes de datos:
+```bash
+docker compose down -v
+```
+
+### Desarrollo Local (Sin Docker)
+Si prefieres ejecutar localmente:
+
+**Terminal 1 - Backend**
+```bash
 cd backend
 npm install
 npm run dev
+```
 
-# Terminal 2 - Frontend
+**Terminal 2 - Frontend**
+```bash
 cd Frontend
 npm install
 npm run dev

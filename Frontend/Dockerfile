@@ -1,22 +1,22 @@
-# Frontend Dockerfile
+# Frontend Dockerfile - Development mode
 FROM node:18-alpine
 
 WORKDIR /app
 
-# Copiar archivos de dependencias
+# Copy dependencies
 COPY package*.json ./
 
-# Instalar dependencias
+# Install
 RUN npm install
 
-# Copiar código fuente
+# Copy source
 COPY . .
 
-# Compilar proyecto Astro
-RUN npm run build
-
-# Exponer puerto
+# Expose port
 EXPOSE 3000
 
+# Run dev server (Docker Compose will override with npm run dev)
+CMD ["npm", "run", "dev"]
+
 # Comando para iniciar
-CMD ["npm", "run", "preview"]
+CMD ["npm", "run", "dev"]

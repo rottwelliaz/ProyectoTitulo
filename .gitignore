@@ -11,6 +11,5 @@ build/
 postgres_data/
 .astro/
 
-# Ignore root package files (kept locally but not in repo)
 /package.json
 /package-lock.json

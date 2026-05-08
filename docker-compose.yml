@@ -1,14 +1,12 @@
-version: '3.8'
-
 services:
   # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
     container_name: barberia_postgres
     environment:
-      POSTGRES_USER: ${DB_USERNAME:-barberia_user}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-barberia_password}
-      POSTGRES_DB: ${DB_NAME:-barberia_db}
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-barcelona}
+      POSTGRES_DB: ${DB_NAME:-taller}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -37,11 +35,11 @@ services:
       - DB_SYNCHRONIZE=${DB_SYNCHRONIZE:-true}
       - JWT_SECRET=${JWT_SECRET:-your_secret_key}
       - JWT_EXPIRE=${JWT_EXPIRE:-7d}
-      - PORT=3001
-      - CORS_ORIGIN=http://localhost:3000
-      - SOCKET_IO_CORS=http://localhost:3000
+      - PORT=${BACKEND_PORT:-3001}
+      - CORS_ORIGIN=${FRONTEND_ORIGIN:-http://localhost:3000}
+      - SOCKET_IO_CORS=${FRONTEND_ORIGIN:-http://localhost:3000}
     ports:
-      - "3001:3001"
+      - "${BACKEND_PORT:-3001}:3001"
     depends_on:
       postgres:
         condition: service_healthy
@@ -58,16 +56,17 @@ services:
       dockerfile: Dockerfile
     container_name: barberia_frontend
     environment:
-      - VITE_API_URL=http://backend:3001/api
-      - VITE_SOCKET_URL=http://backend:3001
+      - VITE_API_URL=${VITE_API_URL:-http://localhost:3001/api}
+      - VITE_SOCKET_URL=${VITE_SOCKET_URL:-http://localhost:3001}
     ports:
-      - "3000:3000"
+      - "${FRONTEND_PORT:-3000}:3000"
     depends_on:
       - backend
     networks:
       - barberia_network
     volumes:
       - ./Frontend/src:/app/src
+    command: npm run dev
 
 volumes:
   postgres_data:

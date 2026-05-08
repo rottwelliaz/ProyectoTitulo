@@ -4,7 +4,7 @@
   "description": "Frontend Astro para Sistema de Gestión de Barberías",
   "type": "module",
   "scripts": {
-    "dev": "astro dev",
+    "dev": "astro dev --host 0.0.0.0 --port 3000",
     "build": "astro build",
     "preview": "astro preview --host 0.0.0.0 --port 3000",
     "astro": "astro"
