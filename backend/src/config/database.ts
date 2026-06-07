@@ -1,6 +1,5 @@
-// Configuración de base de datos
-// TODO: Implementar configuración de conexión a PostgreSQL
+// Re-export del cliente Prisma para usar en toda la aplicación
+import prisma from './prisma';
 
-export const dbConfig = {
-  // Configuración de la base de datos
-};
+export default prisma;
+

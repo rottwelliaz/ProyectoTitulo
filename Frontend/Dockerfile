@@ -17,6 +17,3 @@ EXPOSE 3000
 
 # Run dev server (Docker Compose will override with npm run dev)
 CMD ["npm", "run", "dev"]
-
-# Comando para iniciar
-CMD ["npm", "run", "dev"]

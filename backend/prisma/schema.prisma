@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  cliente
+  barbero
+  admin
+}
+
+enum CitaEstado {
+  pendiente
+  confirmada
+  cancelada
+  finalizada
+}
+
+model User {
+  id                 Int              @id @default(autoincrement())
+  nombre             String
+  email              String           @unique
+  password           String
+  telefono           String?
+  rol                UserRole         @default(cliente)
+  fecha_creacion     DateTime         @default(now())
+
+  perfilBarbero      BarberProfile?
+  citas              Cita[]           @relation("ClienteCitas")
+  mensajesEnviados   Message[]        @relation("emisorMessages")
+  mensajesRecibidos  Message[]        @relation("receptorMessages")
+}
+
+model BarberProfile {
+  id               Int       @id @default(autoincrement())
+  usuarioId        Int       @unique
+  usuario          User      @relation(fields: [usuarioId], references: [id])
+  nombre_barberia  String?
+  biografia        String?
+  direccion        String?
+  foto_perfil      String?
+
+  servicios        Service[]
+  citas            Cita[]    @relation("BarberoCitas")
+}
+
+model Service {
+  id                String         @id @default(uuid())
+  perfilBarberoId   Int
+  perfilBarbero     BarberProfile  @relation(fields: [perfilBarberoId], references: [id])
+  nombre_servicio   String
+  descripcion       String?
+  precio            Int
+  duracion_minutos  Int
+  citas             Cita[]
+}
+
+model Cita {
+  id             String       @id @default(uuid())
+  clienteId      Int
+  cliente        User         @relation("ClienteCitas", fields: [clienteId], references: [id])
+  barberoId      Int
+  barbero        BarberProfile @relation("BarberoCitas", fields: [barberoId], references: [id])
+  servicioId     String
+  servicio       Service      @relation(fields: [servicioId], references: [id])
+  fecha_hora     DateTime
+  estado         CitaEstado   @default(pendiente)
+  fecha_creacion DateTime     @default(now())
+}
+
+model Message {
+  id          String   @id @default(uuid())
+  emisorId    Int
+  emisor      User     @relation("emisorMessages", fields: [emisorId], references: [id])
+  receptorId  Int
+  receptor    User     @relation("receptorMessages", fields: [receptorId], references: [id])
+  contenido   String
+  leido       Boolean  @default(false)
+  fecha_envio DateTime @default(now())
+}

@@ -1,10 +1,8 @@
-// Citas Routes
-// TODO: Implementar rutas de citas (CRUD)
-
 import { Router } from 'express';
+import { login } from '../controllers/auth';
 
 const router = Router();
 
-// TODO: Definir rutas
+router.post('/login', login);
 
 export default router;

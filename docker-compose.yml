@@ -14,7 +14,7 @@ services:
     networks:
       - barberia_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-barberia_user}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -29,15 +29,16 @@ services:
       - NODE_ENV=${NODE_ENV:-development}
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_USERNAME=${DB_USERNAME:-barberia_user}
-      - DB_PASSWORD=${DB_PASSWORD:-barberia_password}
-      - DB_NAME=${DB_NAME:-barberia_db}
+      - DB_USERNAME=${DB_USERNAME:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-barcelona}
+      - DB_NAME=${DB_NAME:-taller}
       - DB_SYNCHRONIZE=${DB_SYNCHRONIZE:-true}
       - JWT_SECRET=${JWT_SECRET:-your_secret_key}
       - JWT_EXPIRE=${JWT_EXPIRE:-7d}
       - PORT=${BACKEND_PORT:-3001}
       - CORS_ORIGIN=${FRONTEND_ORIGIN:-http://localhost:3000}
       - SOCKET_IO_CORS=${FRONTEND_ORIGIN:-http://localhost:3000}
+      - DATABASE_URL=postgresql://${DB_USERNAME:-postgres}:${DB_PASSWORD:-barcelona}@postgres:5432/${DB_NAME:-taller}
     ports:
       - "${BACKEND_PORT:-3001}:3001"
     depends_on:
@@ -47,7 +48,8 @@ services:
       - barberia_network
     volumes:
       - ./backend/src:/app/src
-    command: npm run dev
+      - ./backend/prisma:/app/prisma
+    command: sh -c "npm run db:setup && npm run dev"
 
   # Frontend Service
   frontend:

@@ -24,6 +24,11 @@ Edita el `.env` si necesitas cambiar valores por defecto:
 docker compose up --build
 ```
 
+O, si prefieres un atajo desde el root del proyecto:
+```bash
+npm run setup:docker
+```
+
 Alternativa (sin rebuild):
 ```bash
 docker compose up
@@ -33,6 +38,7 @@ docker compose up
 
 **URLs disponibles:**
 - **Frontend**: http://localhost:3000
+- **Backend**: http://localhost:3001
 
 ### Detener los servicios
 ```bash

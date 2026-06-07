@@ -3,6 +3,9 @@ import express from 'express';
 import cors from 'cors';
 import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
+import usuariosRoutes from './routes/usuarios';
+import authRoutes from './routes/auth';
+import serviciosRoutes from './routes/servicios';
 
 // Inicializar Express
 const app = express();
@@ -19,10 +22,10 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// TODO: Registrar rutas
-// app.use('/api/usuarios', usuariosRoutes);
-// app.use('/api/citas', citasRoutes);
-// app.use('/api/servicios', serviciosRoutes);
+// Registrar rutas
+app.use('/api/usuarios', usuariosRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/servicios', serviciosRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
