@@ -6,6 +6,7 @@ import { Server as SocketIOServer } from 'socket.io';
 import usuariosRoutes from './routes/usuarios';
 import authRoutes from './routes/auth';
 import serviciosRoutes from './routes/servicios';
+import citaRoutes from './routes/citas';
 
 // Inicializar Express
 const app = express();
@@ -26,6 +27,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/usuarios', usuariosRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/servicios', serviciosRoutes);
+app.use('/api/citas', citaRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

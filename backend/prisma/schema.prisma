@@ -14,6 +14,7 @@ enum UserRole {
 }
 
 enum CitaEstado {
+  disponible
   pendiente
   confirmada
   cancelada
@@ -61,14 +62,14 @@ model Service {
 
 model Cita {
   id             String       @id @default(uuid())
-  clienteId      Int
-  cliente        User         @relation("ClienteCitas", fields: [clienteId], references: [id])
+  clienteId      Int?
+  cliente        User?         @relation("ClienteCitas", fields: [clienteId], references: [id])
   barberoId      Int
   barbero        BarberProfile @relation("BarberoCitas", fields: [barberoId], references: [id])
-  servicioId     String
-  servicio       Service      @relation(fields: [servicioId], references: [id])
+  servicioId     String?
+  servicio       Service?      @relation(fields: [servicioId], references: [id])
   fecha_hora     DateTime
-  estado         CitaEstado   @default(pendiente)
+  estado         CitaEstado   @default(disponible)
   fecha_creacion DateTime     @default(now())
 }
 
