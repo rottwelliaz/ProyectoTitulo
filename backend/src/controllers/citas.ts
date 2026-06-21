@@ -152,6 +152,83 @@ export const deleteCita = async (req: AuthRequest, res: Response) => {
 
 // ─── Fase 2: Interacción del Cliente ────────────────────────────────────────
 
+export const saveWeekAvailability = async (req: AuthRequest, res: Response) => {
+  try {
+    const { fechaInicio, bloques } = req.body;
+    if (!fechaInicio || !Array.isArray(bloques)) {
+      return res.status(400).json({ message: 'fechaInicio y bloques son requeridos' });
+    }
+
+    if (bloques.length > 77) {
+      return res.status(400).json({ message: 'Una semana no puede superar 77 bloques' });
+    }
+
+    const weekStart = new Date(`${fechaInicio}T00:00:00.000Z`);
+    if (Number.isNaN(weekStart.getTime())) {
+      return res.status(400).json({ message: 'fechaInicio debe usar formato YYYY-MM-DD' });
+    }
+    const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    const uniqueDates = [...new Set(bloques.map((value: unknown) => String(value)))].map((value) => new Date(value));
+    const invalidBlock = uniqueDates.some((date) =>
+      Number.isNaN(date.getTime()) || !isExactHourBlock(date) || date < weekStart || date >= weekEnd,
+    );
+    if (invalidBlock) {
+      return res.status(400).json({ message: 'Los bloques deben pertenecer a la semana y usar horas exactas' });
+    }
+
+    const barberProfile = await getOwnBarberProfile(req.user!.id);
+    if (!barberProfile) {
+      return res.status(404).json({ message: 'No tienes perfil de barbero creado' });
+    }
+
+    const occupied = await prisma.cita.findMany({
+      where: {
+        barberoId: barberProfile.id,
+        estado: { in: [CitaEstado.pendiente, CitaEstado.confirmada, CitaEstado.finalizada] },
+        fecha_hora: { gte: weekStart, lt: weekEnd },
+      },
+      select: { fecha_hora: true },
+    });
+    const occupiedTimes = new Set(occupied.map((cita) => cita.fecha_hora.getTime()));
+    const availableDates = uniqueDates.filter((date) => !occupiedTimes.has(date.getTime()));
+
+    await prisma.$transaction([
+      prisma.cita.deleteMany({
+        where: {
+          barberoId: barberProfile.id,
+          estado: CitaEstado.disponible,
+          fecha_hora: { gte: weekStart, lt: weekEnd },
+        },
+      }),
+      prisma.cita.createMany({
+        data: availableDates.map((fecha_hora) => ({
+          barberoId: barberProfile.id,
+          fecha_hora,
+          estado: CitaEstado.disponible,
+        })),
+      }),
+    ]);
+
+    const citas = await prisma.cita.findMany({
+      where: {
+        barberoId: barberProfile.id,
+        estado: CitaEstado.disponible,
+        fecha_hora: { gte: weekStart, lt: weekEnd },
+      },
+      orderBy: { fecha_hora: 'asc' },
+    });
+
+    return res.json({
+      citas,
+      omittedOccupiedBlocks: uniqueDates.length - availableDates.length,
+    });
+  } catch (error) {
+    console.error('saveWeekAvailability error', error);
+    return res.status(500).json({ message: 'Error al guardar la disponibilidad semanal' });
+  }
+};
+
 export const getDisponibilidad = async (req: AuthRequest, res: Response) => {
   try {
     const barberoProfileId = parseInt(req.params.barberoId, 10);
@@ -207,14 +284,243 @@ export const getDisponibilidad = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const getBarberosParaReserva = async (_req: AuthRequest, res: Response) => {
+  try {
+    const barberos = await prisma.barberProfile.findMany({
+      where: {
+        usuario: { rol: 'barbero' },
+        lugarTrabajoId: { not: null },
+      },
+      select: {
+        id: true,
+        biografia: true,
+        foto_perfil: true,
+        usuario: {
+          select: {
+            id: true,
+            nombre: true,
+          },
+        },
+        lugarTrabajo: {
+          select: {
+            id: true,
+            nombre_barberia: true,
+            direccion: true,
+          },
+        },
+        servicios: {
+          select: {
+            id: true,
+            nombre_servicio: true,
+            descripcion: true,
+            precio: true,
+            duracion_minutos: true,
+          },
+          orderBy: { nombre_servicio: 'asc' },
+        },
+      },
+      orderBy: {
+        usuario: { nombre: 'asc' },
+      },
+    });
+
+    return res.json(barberos);
+  } catch (error) {
+    console.error('getBarberosParaReserva error', error);
+    return res.status(500).json({ message: 'Error al obtener barberos para reservar' });
+  }
+};
+
+export const getReservationCalendar = async (req: AuthRequest, res: Response) => {
+  try {
+    const { fechaInicio } = req.query;
+    if (!fechaInicio || typeof fechaInicio !== 'string') {
+      return res.status(400).json({ message: 'fechaInicio es requerido (YYYY-MM-DD)' });
+    }
+
+    const weekStart = new Date(`${fechaInicio}T00:00:00.000Z`);
+    if (Number.isNaN(weekStart.getTime())) {
+      return res.status(400).json({ message: 'fechaInicio debe usar formato YYYY-MM-DD' });
+    }
+    const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    const barberProfile = await getOwnBarberProfile(req.user!.id);
+    if (!barberProfile) {
+      return res.status(404).json({ message: 'No tienes perfil de barbero creado' });
+    }
+
+    const citas = await prisma.cita.findMany({
+      where: {
+        barberoId: barberProfile.id,
+        estado: { in: [CitaEstado.disponible, CitaEstado.confirmada] },
+        fecha_hora: { gte: weekStart, lt: weekEnd },
+      },
+      include: {
+        cliente: {
+          select: { id: true, nombre: true, telefono: true },
+        },
+        servicio: {
+          select: { id: true, nombre_servicio: true, duracion_minutos: true },
+        },
+      },
+      orderBy: { fecha_hora: 'asc' },
+    });
+
+    return res.json(citas);
+  } catch (error) {
+    console.error('getReservationCalendar error', error);
+    return res.status(500).json({ message: 'Error al obtener el calendario de reservas' });
+  }
+};
+
+export const getClientAppointments = async (req: AuthRequest, res: Response) => {
+  try {
+    const citas = await prisma.cita.findMany({
+      where: {
+        clienteId: req.user!.id,
+        estado: {
+          in: [CitaEstado.pendiente, CitaEstado.confirmada, CitaEstado.cancelada, CitaEstado.finalizada],
+        },
+      },
+      include: {
+        barbero: {
+          select: {
+            id: true,
+            usuario: { select: { id: true, nombre: true } },
+            lugarTrabajo: {
+              select: { id: true, nombre_barberia: true, direccion: true },
+            },
+          },
+        },
+        servicio: {
+          select: {
+            id: true,
+            nombre_servicio: true,
+            duracion_minutos: true,
+            precio: true,
+          },
+        },
+      },
+      orderBy: { fecha_hora: 'asc' },
+    });
+
+    return res.json(citas);
+  } catch (error) {
+    console.error('getClientAppointments error', error);
+    return res.status(500).json({ message: 'Error al obtener tus citas' });
+  }
+};
+
+export const getMyAppointments = async (req: AuthRequest, res: Response) => {
+  try {
+    const barberProfile = await getOwnBarberProfile(req.user!.id);
+    if (!barberProfile) {
+      return res.status(404).json({ message: 'No tienes perfil de barbero creado' });
+    }
+
+    const citas = await prisma.cita.findMany({
+      where: {
+        barberoId: barberProfile.id,
+        estado: { in: [CitaEstado.confirmada, CitaEstado.cancelada, CitaEstado.finalizada] },
+      },
+      include: {
+        cliente: {
+          select: {
+            id: true,
+            nombre: true,
+            telefono: true,
+          },
+        },
+        servicio: {
+          select: {
+            id: true,
+            nombre_servicio: true,
+            duracion_minutos: true,
+          },
+        },
+      },
+      orderBy: { fecha_hora: 'asc' },
+    });
+
+    return res.json(citas);
+  } catch (error) {
+    console.error('getMyAppointments error', error);
+    return res.status(500).json({ message: 'Error al obtener tus citas' });
+  }
+};
+
+export const updateAppointmentStatus = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { estado } = req.body;
+    if (![CitaEstado.cancelada, CitaEstado.finalizada].includes(estado)) {
+      return res.status(400).json({ message: 'Solo puedes cancelar o finalizar una cita' });
+    }
+
+    const barberProfile = await getOwnBarberProfile(req.user!.id);
+    if (!barberProfile) {
+      return res.status(404).json({ message: 'No tienes perfil de barbero creado' });
+    }
+
+    const cita = await prisma.cita.findUnique({ where: { id } });
+    if (!cita) {
+      return res.status(404).json({ message: 'Cita no encontrada' });
+    }
+    if (cita.barberoId !== barberProfile.id) {
+      return res.status(403).json({ message: 'No autorizado para gestionar esta cita' });
+    }
+    if (cita.estado !== CitaEstado.confirmada) {
+      return res.status(409).json({ message: 'Solo las citas confirmadas pueden cambiar de estado' });
+    }
+
+    const updated = await prisma.$transaction(async (tx) => {
+      const appointment = await tx.cita.update({
+        where: { id },
+        data: { estado },
+        include: {
+          cliente: { select: { id: true, nombre: true, telefono: true } },
+          servicio: { select: { id: true, nombre_servicio: true, duracion_minutos: true } },
+        },
+      });
+
+      if (estado === CitaEstado.cancelada && cita.fecha_hora > new Date()) {
+        const available = await tx.cita.findFirst({
+          where: {
+            barberoId: barberProfile.id,
+            fecha_hora: cita.fecha_hora,
+            estado: CitaEstado.disponible,
+          },
+        });
+        if (!available) {
+          await tx.cita.create({
+            data: {
+              barberoId: barberProfile.id,
+              fecha_hora: cita.fecha_hora,
+              estado: CitaEstado.disponible,
+            },
+          });
+        }
+      }
+
+      return appointment;
+    });
+
+    return res.json(updated);
+  } catch (error) {
+    console.error('updateAppointmentStatus error', error);
+    return res.status(500).json({ message: 'Error al actualizar el estado de la cita' });
+  }
+};
+
 export const agendarCita = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { servicioId } = req.body;
+    let { servicioId } = req.body;
 
-    if (!servicioId) {
+    if (typeof servicioId !== 'string' || !servicioId.trim()) {
       return res.status(400).json({ message: 'servicioId es requerido' });
     }
+    servicioId = servicioId.trim();
 
     const cita = await prisma.cita.findUnique({ where: { id } });
     if (!cita) {
@@ -226,7 +532,7 @@ export const agendarCita = async (req: AuthRequest, res: Response) => {
     }
 
     const servicio = await prisma.service.findUnique({
-      where: { id: servicioId },
+      where: { id: servicioId.trim() },
     });
 
     if (!servicio) {
@@ -240,14 +546,23 @@ export const agendarCita = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const updated = await prisma.cita.update({
-      where: { id },
+    const result = await prisma.cita.updateMany({
+      where: {
+        id,
+        estado: CitaEstado.disponible,
+      },
       data: {
         clienteId: req.user!.id,  // Int, viene del token ✓
         servicioId,               // String uuid ✓
-        estado: CitaEstado.pendiente,
+        estado: CitaEstado.confirmada,
       },
     });
+
+    if (result.count === 0) {
+      return res.status(409).json({ message: 'Esta cita ya no esta disponible' });
+    }
+
+    const updated = await prisma.cita.findUnique({ where: { id } });
 
     return res.json(updated);
   } catch (error) {

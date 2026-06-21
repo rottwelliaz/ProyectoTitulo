@@ -1,0 +1,519 @@
+---
+import logoConce from '../assets/logotesis.png';
+---
+
+<main class="profile-root">
+  <aside class="profile-sidebar">
+    <a class="profile-brand" href="/home" aria-label="Conce Barber Club">
+      <img
+        class="profile-brand-logo"
+        src={logoConce.src}
+        alt="Conce Barber Club"
+      />
+    </a>
+
+    <nav class="profile-nav" aria-label="Navegacion de perfil">
+      <a class="profile-sidebar-link is-active" href="/perfil">
+        <span class="profile-link-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/></svg>
+        </span>
+        Perfil
+      </a>
+      <a class="profile-sidebar-link" href="/configuracion">
+        <span class="profile-link-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.05.05a2 2 0 1 1-2.83 2.83l-.05-.05A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.05.05a2 2 0 1 1-2.83-2.83l.05-.05A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3a2 2 0 1 1 0-4h-.1A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.05-.05a2 2 0 1 1 2.83-2.83l.05.05A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3a2 2 0 1 1 4 0v.1A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.88-.34l.05-.05a2 2 0 1 1 2.83 2.83l-.05.05A1.7 1.7 0 0 0 19.4 9c.2.38.56.65 1 .6h.6a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1.4Z"/></svg>
+        </span>
+        Configuracion
+      </a>
+    </nav>
+
+    <section class="profile-booking">
+      <div class="profile-booking-title">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4M16 2v4M3 10h18"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="m9 16 2 2 4-5"/></svg>
+        <strong>Listo para tu proximo corte?</strong>
+      </div>
+      <p>Reserva ahora y vive la experiencia Conce Barber Club.</p>
+      <a href="/booking">Reservar ahora</a>
+    </section>
+  </aside>
+
+  <section class="profile-main">
+    <header class="profile-topbar">
+      <button class="profile-icon-button" type="button" aria-label="Notificaciones">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 7-3 7h18s-3 0-3-7"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      </button>
+
+      <div id="profile-menu" class="profile-user-menu">
+        <button
+          id="profile-menu-button"
+          class="profile-user-chip"
+          type="button"
+          aria-label="Abrir menu de usuario"
+          aria-expanded="false"
+          aria-controls="profile-dropdown"
+        >
+          <span class="profile-mini-avatar" aria-hidden="true"></span>
+          <span class="profile-chip-text">
+            <strong id="profile-header-name">Cargando...</strong>
+            <span id="profile-header-role">-</span>
+          </span>
+          <svg class="profile-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+
+        <div id="profile-dropdown" class="profile-dropdown" aria-hidden="true">
+          <a href="/perfil" class="profile-dropdown-item">Mi perfil</a>
+          <a id="professional-profile-link" href="/perfil-profesional" class="profile-dropdown-item is-hidden">
+            Perfil Profesional
+          </a>
+          <a href="/configuracion" class="profile-dropdown-item">Configuracion</a>
+          <button id="logout-button" class="profile-dropdown-item" type="button">
+            Cerrar sesion
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div class="profile-content">
+      <article class="profile-card profile-identity">
+        <div class="profile-photo-wrap">
+          <div class="profile-photo" aria-hidden="true"></div>
+          <input id="profile-photo-input" class="profile-photo-input" type="file" accept="image/*" />
+          <button id="profile-camera-button" class="profile-camera-button" type="button" aria-label="Cambiar foto">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4h-5L8 6H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3l-1.5-2Z"/><circle cx="12" cy="13" r="3"/></svg>
+          </button>
+        </div>
+
+        <div class="profile-summary">
+          <p class="profile-card-title">Tu identidad</p>
+          <h1 id="profile-name">Cargando...</h1>
+          <div class="profile-pill">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/></svg>
+            Perfil: <span id="profile-role">-</span>
+          </div>
+          <div class="profile-date">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4M16 2v4M3 10h18"/><rect x="3" y="4" width="18" height="18" rx="2"/></svg>
+            Desde: <span id="profile-created-at">-</span>
+          </div>
+        </div>
+
+        <button id="edit-profile-button" class="profile-primary-button" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="m16.5 3.5 4 4L7 21H3v-4L16.5 3.5Z"/></svg>
+          Editar perfil
+        </button>
+      </article>
+
+      <article class="profile-card profile-data-card">
+        <p class="profile-card-title">Tus datos personales</p>
+
+        <form id="profile-form" class="profile-form">
+          <label class="profile-field">
+            <span class="profile-field-icon is-purple" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/></svg>
+            </span>
+            <span class="profile-field-label">Nombre completo</span>
+            <input id="profile-input-nombre" name="nombre" type="text" disabled />
+            <button class="profile-edit-button" type="button" data-edit-field="profile-input-nombre">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="m16.5 3.5 4 4L7 21H3v-4L16.5 3.5Z"/></svg>
+              Editar
+            </button>
+          </label>
+
+          <label class="profile-field">
+            <span class="profile-field-icon is-green" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="m4 7 8 6 8-6"/></svg>
+            </span>
+            <span class="profile-field-label">Email</span>
+            <input id="profile-input-email" name="email" type="email" disabled />
+            <button class="profile-edit-button" type="button" data-edit-field="profile-input-email">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="m16.5 3.5 4 4L7 21H3v-4L16.5 3.5Z"/></svg>
+              Editar
+            </button>
+          </label>
+
+          <label class="profile-field">
+            <span class="profile-field-icon is-yellow" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.8 19.8 0 0 1 3 5.18 2 2 0 0 1 5 3h3a2 2 0 0 1 2 1.72c.12.9.33 1.77.62 2.6a2 2 0 0 1-.45 2.11L9 10.6a16 16 0 0 0 4.4 4.4l1.17-1.17a2 2 0 0 1 2.11-.45c.83.29 1.7.5 2.6.62A2 2 0 0 1 22 16.92Z"/></svg>
+            </span>
+            <span class="profile-field-label">Telefono</span>
+            <input id="profile-input-telefono" name="telefono" type="tel" disabled />
+            <button class="profile-edit-button" type="button" data-edit-field="profile-input-telefono">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="m16.5 3.5 4 4L7 21H3v-4L16.5 3.5Z"/></svg>
+              Editar
+            </button>
+          </label>
+
+          <div id="profile-actions" class="profile-actions">
+            <button class="profile-save-button" type="submit">Guardar cambios</button>
+            <button id="cancel-profile-button" class="profile-cancel-button" type="button">
+              Cancelar
+            </button>
+          </div>
+        </form>
+
+        <p id="profile-message" class="profile-message" aria-live="polite"></p>
+      </article>
+
+      <article id="client-appointments-card" class="profile-card profile-appointments-card is-hidden">
+        <div class="profile-appointments-header">
+          <div>
+            <p class="profile-card-title">Mis citas</p>
+            <p>Revisa tus horas confirmadas y el historial de tus reservas.</p>
+          </div>
+          <a href="/booking">Reservar otra hora</a>
+        </div>
+
+        <div id="client-appointments-list" class="client-appointments-list" aria-live="polite">
+          <p class="client-appointments-empty">Cargando tus citas...</p>
+        </div>
+      </article>
+
+      <aside class="profile-security">
+        <div class="profile-shield" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m8.5 12 2.25 2.25L16 9"/></svg>
+        </div>
+        <div>
+          <strong>Tu informacion esta segura</strong>
+          <p>En Conce Barber Club protegemos tus datos y nunca los compartimos con terceros.</p>
+        </div>
+      </aside>
+    </div>
+  </section>
+</main>
+
+<script>
+  const API_URL = 'http://localhost:3001/api';
+  const token = localStorage.getItem('token');
+
+  const form = document.querySelector<HTMLFormElement>('#profile-form');
+  const message = document.querySelector<HTMLParagraphElement>('#profile-message');
+  const actions = document.querySelector<HTMLDivElement>('#profile-actions');
+  const editProfileButton = document.querySelector<HTMLButtonElement>('#edit-profile-button');
+  const cancelProfileButton = document.querySelector<HTMLButtonElement>('#cancel-profile-button');
+  const photoButton = document.querySelector<HTMLButtonElement>('#profile-camera-button');
+  const photoInput = document.querySelector<HTMLInputElement>('#profile-photo-input');
+  const profilePhoto = document.querySelector<HTMLDivElement>('.profile-photo');
+  const miniAvatar = document.querySelector<HTMLSpanElement>('.profile-mini-avatar');
+  const profileMenu = document.querySelector<HTMLDivElement>('#profile-menu');
+  const profileMenuButton = document.querySelector<HTMLButtonElement>('#profile-menu-button');
+  const profileDropdown = document.querySelector<HTMLDivElement>('#profile-dropdown');
+  const professionalProfileLink = document.querySelector<HTMLAnchorElement>('#professional-profile-link');
+  const logoutButton = document.querySelector<HTMLButtonElement>('#logout-button');
+  const clientAppointmentsCard = document.querySelector<HTMLElement>('#client-appointments-card');
+  const clientAppointmentsList = document.querySelector<HTMLElement>('#client-appointments-list');
+
+  const nameTitle = document.querySelector<HTMLHeadingElement>('#profile-name');
+  const headerName = document.querySelector<HTMLElement>('#profile-header-name');
+  const headerRole = document.querySelector<HTMLElement>('#profile-header-role');
+  const roleText = document.querySelector<HTMLSpanElement>('#profile-role');
+  const createdAtText = document.querySelector<HTMLSpanElement>('#profile-created-at');
+
+  const nombreInput = document.querySelector<HTMLInputElement>('#profile-input-nombre');
+  const emailInput = document.querySelector<HTMLInputElement>('#profile-input-email');
+  const telefonoInput = document.querySelector<HTMLInputElement>('#profile-input-telefono');
+  const inputs = [nombreInput, emailInput, telefonoInput].filter(Boolean) as HTMLInputElement[];
+
+  let currentUser: {
+    id: number;
+    nombre: string;
+    email: string;
+    telefono: string | null;
+    rol: string;
+    fecha_creacion: string;
+  } | null = null;
+
+  const showMessage = (text: string, type: 'success' | 'error' | 'info' = 'info') => {
+    if (!message) return;
+    message.textContent = text;
+    message.className = `profile-message is-${type}`;
+  };
+
+  const getPhotoStorageKey = () => {
+    const userId = currentUser?.id ?? 'default';
+    return `profile-photo-${userId}`;
+  };
+
+  const setProfilePhoto = (imageData: string | null) => {
+    [profilePhoto, miniAvatar].forEach((element) => {
+      if (!element) return;
+      if (imageData) {
+        element.style.backgroundImage = `url("${imageData}")`;
+        element.classList.add('has-photo');
+      } else {
+        element.style.backgroundImage = '';
+        element.classList.remove('has-photo');
+      }
+    });
+  };
+
+  const loadSavedPhoto = () => {
+    setProfilePhoto(localStorage.getItem(getPhotoStorageKey()));
+  };
+
+  const closeProfileMenu = () => {
+    profileMenu?.classList.remove('is-open');
+    profileMenuButton?.setAttribute('aria-expanded', 'false');
+    profileDropdown?.setAttribute('aria-hidden', 'true');
+  };
+
+  const setEditing = (enabled: boolean, focusInput?: HTMLInputElement | null) => {
+    inputs.forEach((input) => {
+      input.disabled = !enabled;
+    });
+
+    actions?.classList.toggle('is-visible', enabled);
+
+    if (enabled) {
+      window.setTimeout(() => focusInput?.focus(), 0);
+    }
+  };
+
+  const formatDate = (value: string) => {
+    return new Intl.DateTimeFormat('es-CL', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    }).format(new Date(value));
+  };
+
+  const escapeHtml = (value: string) =>
+    value.replace(/[&<>"']/g, (character) => {
+      const entities: Record<string, string> = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;',
+      };
+      return entities[character];
+    });
+
+  const renderClientAppointments = (appointments: any[]) => {
+    if (!clientAppointmentsList) return;
+    if (!appointments.length) {
+      clientAppointmentsList.innerHTML = `
+        <div class="client-appointments-empty">
+          <strong>Aun no tienes citas.</strong>
+          <span>Cuando reserves una hora aparecera en este apartado.</span>
+        </div>
+      `;
+      return;
+    }
+
+    const statusLabels: Record<string, string> = {
+      pendiente: 'Pendiente',
+      confirmada: 'Confirmada',
+      cancelada: 'Cancelada',
+      finalizada: 'Finalizada',
+    };
+
+    clientAppointmentsList.innerHTML = appointments.map((appointment) => {
+      const date = new Date(appointment.fecha_hora);
+      const dateLabel = new Intl.DateTimeFormat('es-CL', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      }).format(date);
+      const timeLabel = new Intl.DateTimeFormat('es-CL', {
+        hour: '2-digit',
+        minute: '2-digit',
+      }).format(date);
+      const barber = escapeHtml(appointment.barbero?.usuario?.nombre || 'Barbero');
+      const service = escapeHtml(appointment.servicio?.nombre_servicio || 'Servicio');
+      const workplace = escapeHtml(appointment.barbero?.lugarTrabajo?.nombre_barberia || 'Barberia');
+      const status = String(appointment.estado || 'confirmada');
+
+      return `
+        <section class="client-appointment-item">
+          <div class="client-appointment-date">
+            <strong>${escapeHtml(timeLabel)}</strong>
+            <span>${escapeHtml(dateLabel)}</span>
+          </div>
+          <div class="client-appointment-detail">
+            <strong>${service}</strong>
+            <span>Con ${barber}</span>
+            <small>${workplace}</small>
+          </div>
+          <span class="client-appointment-status is-${escapeHtml(status)}">
+            ${escapeHtml(statusLabels[status] || status)}
+          </span>
+        </section>
+      `;
+    }).join('');
+  };
+
+  const loadClientAppointments = async () => {
+    if (!token || !clientAppointmentsList) return;
+    try {
+      const response = await fetch(`${API_URL}/citas/cliente/mias`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json().catch(() => []);
+      if (!response.ok) throw new Error(data.message || 'No se pudieron cargar tus citas.');
+      renderClientAppointments(Array.isArray(data) ? data : []);
+    } catch (error) {
+      clientAppointmentsList.innerHTML = `
+        <p class="client-appointments-error">
+          ${escapeHtml(error instanceof Error ? error.message : 'No se pudieron cargar tus citas.')}
+        </p>
+      `;
+    }
+  };
+
+  const renderUser = (user: typeof currentUser) => {
+    if (!user) return;
+
+    if (nameTitle) nameTitle.textContent = user.nombre;
+    if (headerName) headerName.textContent = user.nombre;
+    if (headerRole) headerRole.textContent = user.rol;
+    if (roleText) roleText.textContent = user.rol;
+    if (createdAtText) createdAtText.textContent = formatDate(user.fecha_creacion);
+    if (nombreInput) nombreInput.value = user.nombre;
+    if (emailInput) emailInput.value = user.email;
+    if (telefonoInput) telefonoInput.value = user.telefono || '';
+    professionalProfileLink?.classList.toggle('is-hidden', user.rol !== 'barbero');
+    clientAppointmentsCard?.classList.toggle('is-hidden', user.rol !== 'cliente');
+  };
+
+  const loadProfile = async () => {
+    if (!token) {
+      window.location.href = '/login';
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/auth/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.message || data.error || 'No se pudo cargar el perfil.');
+      }
+
+      currentUser = data;
+      localStorage.setItem('user', JSON.stringify(data));
+      renderUser(currentUser);
+      loadSavedPhoto();
+      if (data.rol === 'cliente') await loadClientAppointments();
+      showMessage('', 'info');
+    } catch (error) {
+      const text = error instanceof Error ? error.message : 'Error al cargar el perfil.';
+      showMessage(text, 'error');
+    }
+  };
+
+  editProfileButton?.addEventListener('click', () => {
+    setEditing(true, nombreInput);
+  });
+
+  photoButton?.addEventListener('click', () => {
+    photoInput?.click();
+  });
+
+  photoInput?.addEventListener('change', () => {
+    const file = photoInput.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      showMessage('Selecciona una imagen valida.', 'error');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.addEventListener('load', () => {
+      const imageData = String(reader.result || '');
+      localStorage.setItem(getPhotoStorageKey(), imageData);
+      setProfilePhoto(imageData);
+      showMessage('Foto actualizada correctamente.', 'success');
+    });
+    reader.readAsDataURL(file);
+  });
+
+  profileMenuButton?.addEventListener('click', (event) => {
+    event.stopPropagation();
+    const isOpen = profileMenu?.classList.toggle('is-open') ?? false;
+    profileMenuButton.setAttribute('aria-expanded', String(isOpen));
+    profileDropdown?.setAttribute('aria-hidden', String(!isOpen));
+  });
+
+  document.addEventListener('click', (event) => {
+    if (!profileMenu?.contains(event.target as Node)) {
+      closeProfileMenu();
+    }
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      closeProfileMenu();
+    }
+  });
+
+  logoutButton?.addEventListener('click', () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = '/login';
+  });
+
+  document.querySelectorAll<HTMLButtonElement>('[data-edit-field]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const input = document.querySelector<HTMLInputElement>(`#${button.dataset.editField}`);
+      setEditing(true, input);
+    });
+  });
+
+  cancelProfileButton?.addEventListener('click', () => {
+    renderUser(currentUser);
+    setEditing(false);
+    showMessage('', 'info');
+  });
+
+  form?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    if (!token) {
+      window.location.href = '/login';
+      return;
+    }
+
+    const formData = new FormData(form);
+    const payload: Record<string, string> = {};
+    const nombre = String(formData.get('nombre') || '').trim();
+    const email = String(formData.get('email') || '').trim();
+    const telefono = String(formData.get('telefono') || '').trim();
+    if (nombre) payload.nombre = nombre;
+    if (email) payload.email = email;
+    if (telefono) payload.telefono = telefono;
+
+    try {
+      const response = await fetch(`${API_URL}/auth/me`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.message || data.error || 'No se pudo actualizar el perfil.');
+      }
+
+      currentUser = data;
+      localStorage.setItem('user', JSON.stringify(data));
+      renderUser(currentUser);
+      setEditing(false);
+      showMessage('Perfil actualizado correctamente.', 'success');
+    } catch (error) {
+      const text = error instanceof Error ? error.message : 'Error al actualizar el perfil.';
+      showMessage(text, 'error');
+    }
+  });
+
+  loadProfile();
+</script>

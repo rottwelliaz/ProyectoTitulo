@@ -1,12 +1,9 @@
 ---
-// TODO: Página de booking
 import Layout from '../layouts/Layout.astro';
-import { FormularioCita } from '../components/FormularioCita';
+import BookingFlow from '../components/BookingFlow';
+import '../styles/booking.css';
 ---
 
-<Layout title="Agendar - BarberShop">
-  <main>
-    {/* TODO: Implementar página de booking */}
-    <FormularioCita client:load />
-  </main>
+<Layout title="Reservar hora - Conce Barber Club">
+  <BookingFlow client:only="react" />
 </Layout>

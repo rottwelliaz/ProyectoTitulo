@@ -1,5 +1,5 @@
 // TODO: Context de autenticación global
-import { createContext, useContext, ReactNode } from 'react';
+import { createContext, useContext, type ReactNode } from 'react';
 
 interface AuthContextType {
   // Definir propiedades del contexto

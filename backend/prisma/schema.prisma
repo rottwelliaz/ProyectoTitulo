@@ -40,13 +40,21 @@ model BarberProfile {
   id               Int       @id @default(autoincrement())
   usuarioId        Int       @unique
   usuario          User      @relation(fields: [usuarioId], references: [id])
-  nombre_barberia  String?
   biografia        String?
-  direccion        String?
   foto_perfil      String?
+  lugarTrabajoId   Int?
+  lugarTrabajo     LugarTrabajo? @relation(fields: [lugarTrabajoId], references: [id])
 
   servicios        Service[]
   citas            Cita[]    @relation("BarberoCitas")
+}
+
+model LugarTrabajo {
+  id               Int             @id @default(autoincrement())
+  nombre_barberia  String?
+  direccion        String?
+
+  barberos         BarberProfile[]
 }
 
 model Service {

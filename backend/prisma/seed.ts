@@ -40,20 +40,32 @@ async function main() {
     },
   });
 
+  const lugarTrabajo =
+    (await prisma.lugarTrabajo.findFirst({
+      where: {
+        nombre_barberia: 'Barberia Demo',
+        direccion: 'Calle Principal 123',
+      },
+    })) ??
+    (await prisma.lugarTrabajo.create({
+      data: {
+        nombre_barberia: 'Barberia Demo',
+        direccion: 'Calle Principal 123',
+      },
+    }));
+
   await prisma.barberProfile.upsert({
     where: { usuarioId: barbero.id },
     update: {
-      nombre_barberia: 'Barberia Demo',
       biografia: 'Perfil creado por seed',
-      direccion: 'Calle Principal 123',
       foto_perfil: null,
+      lugarTrabajoId: lugarTrabajo.id,
     },
     create: {
       usuarioId: barbero.id,
-      nombre_barberia: 'Barberia Demo',
       biografia: 'Perfil creado por seed',
-      direccion: 'Calle Principal 123',
       foto_perfil: null,
+      lugarTrabajoId: lugarTrabajo.id,
     },
   });
 

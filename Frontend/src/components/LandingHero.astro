@@ -1,0 +1,54 @@
+---
+import logoConce from '../assets/logotesis.png';
+import paginaInicio from '../assets/paginainicio.png';
+---
+
+<main
+  class="min-h-screen bg-white bg-cover bg-center bg-no-repeat text-white"
+  style={`background-image: url(${paginaInicio.src});`}
+>
+  <section class="flex min-h-screen items-center justify-center px-6 py-12">
+    <div class="mx-auto w-full max-w-3xl text-center">
+      <img
+        src={logoConce.src}
+        alt="Conce Barber Club"
+        class="mx-auto mb-6 h-auto w-36"
+      />
+
+      <p class="mb-4 text-sm font-semibold uppercase tracking-[0.22em] text-[#ffc928]">
+        Barberias en Concepcion
+      </p>
+
+      <h1 class="text-4xl font-black leading-tight tracking-normal text-white sm:text-5xl">
+        Gestiona tus citas y encuentra <span class="text-[#ffc928]">barberos</span> <span class="text-[#39b54a]">cerca de ti</span>
+      </h1>
+
+      <p class="mx-auto mt-5 max-w-2xl text-base leading-7 text-white sm:text-lg">
+        Reserva horas, revisa disponibilidad y conecta con profesionales de barberia en Concepcion de forma simple y rapida.
+      </p>
+
+      <div class="mx-auto mt-10 grid w-full max-w-md gap-4">
+        <a
+          href="/login"
+          class="rounded-lg border border-zinc-300 bg-white px-6 py-4 text-base font-bold text-zinc-900 shadow-sm transition hover:-translate-y-0.5 hover:border-violet-500 hover:text-violet-700 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2"
+        >
+          Iniciar sesion
+        </a>
+
+        <a
+          href="/registro"
+          class="rounded-lg bg-violet-700 px-6 py-4 text-base font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-violet-800 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2"
+        >
+          Registrarse
+        </a>
+
+        <a
+          href="/home"
+          class="rounded-lg bg-zinc-950 px-6 py-4 text-base font-bold text-white shadow-lg shadow-zinc-300/60 transition hover:-translate-y-0.5 hover:bg-zinc-800 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:ring-offset-2"
+        >
+          Continuar como invitado
+        </a>
+      </div>
+    </div>
+  </section>
+</main>

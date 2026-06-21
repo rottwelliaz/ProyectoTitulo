@@ -24,5 +24,4 @@ src/migration/*.js
 src/subscriber/*.js
 
 # Prisma
-prisma/migrations/
 node_modules/.prisma

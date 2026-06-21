@@ -1,0 +1,104 @@
+<section class="barbers-section" id="barberos">
+  <div class="section-heading section-heading-row">
+    <h2>Barberos Disponibles</h2>
+    <a href="/barberos">Ver todos <span aria-hidden="true">›</span></a>
+  </div>
+
+  <div id="barber-grid" class="barber-grid" aria-live="polite">
+    <p class="barbers-message">Cargando barberos disponibles...</p>
+  </div>
+</section>
+
+<script>
+  const API_URL = 'http://localhost:3001/api';
+  const barberGrid = document.querySelector<HTMLDivElement>('#barber-grid');
+
+  interface BarberUser {
+    id: number;
+    nombre: string;
+    email?: string;
+    telefono?: string | null;
+    rol: string;
+    perfilBarbero?: {
+      id?: number;
+      biografia?: string | null;
+      lugarTrabajo?: {
+        nombre_barberia?: string | null;
+      } | null;
+    } | null;
+  }
+
+  const getInitials = (name: string) =>
+    name
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part.charAt(0).toUpperCase())
+      .join('') || 'B';
+
+  const getTone = (index: number) => ['azul', 'verde', 'amarillo'][index % 3];
+
+  const escapeHtml = (value: string) =>
+    value.replace(/[&<>"']/g, (char) => {
+      const entities: Record<string, string> = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;',
+      };
+
+      return entities[char];
+    });
+
+  const renderBarbers = (barbers: BarberUser[]) => {
+    if (!barberGrid) return;
+
+    const onlyBarbers = barbers.filter((barber) => barber.rol === 'barbero');
+
+    if (onlyBarbers.length === 0) {
+      barberGrid.innerHTML = '<p class="barbers-message">No hay barberos disponibles registrados.</p>';
+      return;
+    }
+
+    barberGrid.innerHTML = onlyBarbers
+      .map((barber, index) => {
+        const tone = getTone(index);
+        const initials = getInitials(barber.nombre);
+        const workplace = barber.perfilBarbero?.lugarTrabajo?.nombre_barberia || 'Barbero disponible';
+        const detail = barber.perfilBarbero?.biografia || barber.telefono || barber.email || 'Agenda tu hora con este barbero.';
+        const bookingUrl = barber.perfilBarbero?.id ? `/booking?barbero=${barber.perfilBarbero.id}` : '/booking';
+
+        return `
+          <article class="barber-card tone-${tone}">
+            <div class="barber-avatar">
+              <span>${escapeHtml(initials)}</span>
+            </div>
+            <h3>${escapeHtml(barber.nombre)}</h3>
+            <p class="barber-specialty">${escapeHtml(workplace)}</p>
+            <p class="barber-detail">${escapeHtml(detail)}</p>
+            <a href="${bookingUrl}">Reservar</a>
+          </article>
+        `;
+      })
+      .join('');
+  };
+
+  const loadBarbers = async () => {
+    try {
+      const response = await fetch(`${API_URL}/usuarios?rol=barbero`);
+      const data = await response.json().catch(() => []);
+
+      if (!response.ok) {
+        throw new Error(data.message || 'No se pudieron cargar los barberos.');
+      }
+
+      renderBarbers(Array.isArray(data) ? data : []);
+    } catch (error) {
+      if (!barberGrid) return;
+      barberGrid.innerHTML = '<p class="barbers-message">No se pudieron cargar los barberos disponibles.</p>';
+    }
+  };
+
+  loadBarbers();
+</script>

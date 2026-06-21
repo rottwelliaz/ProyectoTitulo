@@ -1,0 +1,60 @@
+---
+import Layout from '../layouts/Layout.astro';
+import FeaturedBarbers from '../components/FeaturedBarbers.astro';
+import HomeHeader from '../components/HomeHeader.astro';
+import HomeHero from '../components/HomeHero.astro';
+import homeFoto from '../assets/homefoto.png';
+import logoConce from '../assets/logotesis.png';
+import '../styles/home.css';
+
+const categorias = [
+  { nombre: 'Fade', detalle: 'Los mas pedidos', icono: 'clipper', slug: 'fade', tono: 'azul' },
+  { nombre: 'Barba', detalle: 'Perfilado y cuidado', icono: 'beard', slug: 'barba', tono: 'verde' },
+  { nombre: 'Premium', detalle: 'Experiencia completa', icono: 'crown', slug: 'premium', tono: 'amarillo' },
+  { nombre: 'Clasico', detalle: 'Tradicion y estilo', icono: 'pole', slug: 'clasico', tono: 'azul' },
+  { nombre: 'Corte + Barba', detalle: 'El combo perfecto', icono: 'scissors', slug: 'corte-barba', tono: 'verde' },
+  { nombre: 'Infantil', detalle: 'Para los mas chicos', icono: 'kid', slug: 'infantil', tono: 'amarillo' },
+];
+
+---
+
+<Layout title="Inicio - Barberias Concepcion">
+  <div class="home-root">
+    <section class="home-hero-shell" style={`--hero-image: url(${homeFoto.src});`}>
+      <HomeHeader logoSrc={logoConce.src} />
+      <HomeHero />
+    </section>
+
+    <main class="home-main">
+      <section class="category-section" id="categorias">
+        <div class="section-heading">
+          <h2>Categorias</h2>
+        </div>
+
+        <div class="category-grid">
+          {categorias.map((categoria) => (
+            <a class={`category-card tone-${categoria.tono}`} href={`/categorias/${categoria.slug}`}>
+              <span class={`category-icon icon-${categoria.icono}`} aria-hidden="true"></span>
+              <strong>{categoria.nombre}</strong>
+              <span>{categoria.detalle}</span>
+            </a>
+          ))}
+        </div>
+      </section>
+
+      <FeaturedBarbers />
+
+      <section class="home-cta" style={`--hero-image: url(${homeFoto.src});`}>
+        <div class="cta-icon" aria-hidden="true"></div>
+        <div>
+          <h2>Listo para tu proximo corte?</h2>
+          <p>Reserva ahora y vive la experiencia Conce Barber Club.</p>
+        </div>
+        <a class="btn btn-primary" href="/booking">
+          <span class="btn-calendar" aria-hidden="true"></span>
+          Reservar ahora
+        </a>
+      </section>
+    </main>
+  </div>
+</Layout>

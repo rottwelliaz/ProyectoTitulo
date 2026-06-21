@@ -7,6 +7,7 @@ import usuariosRoutes from './routes/usuarios';
 import authRoutes from './routes/auth';
 import serviciosRoutes from './routes/servicios';
 import citaRoutes from './routes/citas';
+import lugarTrabajoRoutes from './routes/lugartrabajo';
 
 // Inicializar Express
 const app = express();
@@ -28,6 +29,7 @@ app.use('/api/usuarios', usuariosRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/servicios', serviciosRoutes);
 app.use('/api/citas', citaRoutes);
+app.use('/api/lugartrabajo', lugarTrabajoRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

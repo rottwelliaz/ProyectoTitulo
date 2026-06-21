@@ -1,0 +1,602 @@
+---
+import logoConce from '../assets/logotesis.png';
+import homeFoto from '../assets/homefoto.png';
+import BarberCalendar from './calendar/BarberCalendar';
+import ReservationsCalendar from './calendar/ReservationsCalendar';
+import BarberAppointments from './BarberAppointments';
+---
+
+<main class="pro-root">
+  <aside class="pro-sidebar">
+    <a class="pro-brand" href="/home" aria-label="Conce Barber Club">
+      <img src={logoConce.src} alt="Conce Barber Club" />
+    </a>
+
+    <nav class="pro-nav" aria-label="Menu profesional">
+      <a class="pro-nav-link is-active" href="/perfil-profesional">
+        <span class="pro-nav-icon icon-home" aria-hidden="true"></span>
+        Resumen
+      </a>
+      <a class="pro-nav-link" href="/perfil-profesional">
+        <span class="pro-nav-icon icon-calendar" aria-hidden="true"></span>
+        Mi agenda
+      </a>
+      <a class="pro-nav-link" href="/perfil-profesional">
+        <span class="pro-nav-icon icon-scissors" aria-hidden="true"></span>
+        Servicios
+      </a>
+      <a class="pro-nav-link" href="/perfil-profesional">
+        <span class="pro-nav-icon icon-users" aria-hidden="true"></span>
+        Clientes
+      </a>
+      <a class="pro-nav-link" href="/perfil-profesional">
+        <span class="pro-nav-icon icon-star" aria-hidden="true"></span>
+        Resenas
+      </a>
+      <a class="pro-nav-link" href="/perfil-profesional">
+        <span class="pro-nav-icon icon-gallery" aria-hidden="true"></span>
+        Galeria
+      </a>
+      <a class="pro-nav-link" href="/configuracion">
+        <span class="pro-nav-icon icon-gear" aria-hidden="true"></span>
+        Configuracion
+      </a>
+    </nav>
+
+    <div class="pro-sidebar-user">
+      <div class="pro-mini-avatar" aria-hidden="true"></div>
+      <div>
+        <strong id="sidebar-name">Barbero</strong>
+        <span id="sidebar-specialty">Perfil profesional</span>
+      </div>
+      <span class="pro-user-caret" aria-hidden="true"></span>
+    </div>
+  </aside>
+
+  <section class="pro-main">
+    <header class="pro-topbar">
+      <div>
+        <h1>Perfil Profesional</h1>
+        <p>Gestiona tu negocio y agenda</p>
+      </div>
+
+      <div class="pro-top-actions">
+        <button class="pro-bell" type="button" aria-label="Notificaciones">
+          <span>3</span>
+        </button>
+        <a class="pro-edit-button" href="/perfil">
+          <span class="icon-pencil" aria-hidden="true"></span>
+          Editar perfil
+        </a>
+      </div>
+    </header>
+
+    <section class="pro-hero-card is-minimal">
+      <div class="pro-avatar-wrap">
+        <div class="pro-avatar" aria-hidden="true"></div>
+        <button class="pro-camera" type="button" aria-label="Cambiar foto"></button>
+      </div>
+
+      <div class="pro-identity">
+        <div class="pro-name-row">
+          <h2 id="professional-name">Cargando...</h2>
+          <span class="pro-verified" aria-label="Verificado"></span>
+        </div>
+        <p id="professional-specialty" class="pro-specialty">Fade Master</p>
+        <p id="professional-shop" class="pro-meta">Barberia El Puente</p>
+        <p id="professional-location" class="pro-meta">Concepcion, Chile</p>
+        <p class="pro-rating"><span>★</span> 4.9 <small>(156 resenas)</small></p>
+      </div>
+
+      <div class="pro-about">
+        <h3>Sobre mi</h3>
+        <p id="professional-bio">
+          Apasionado por los detalles y la transformacion. Mas de 6 anos de experiencia entregando estilos unicos y personalizados.
+        </p>
+        <div class="pro-socials" aria-label="Redes sociales">
+          <a href="/perfil-profesional" aria-label="Instagram">ig</a>
+          <a href="/perfil-profesional" aria-label="WhatsApp">wa</a>
+          <a href="/perfil-profesional" aria-label="TikTok">tk</a>
+        </div>
+      </div>
+
+      <div class="pro-shop-photo" style={`background-image: url(${homeFoto.src});`}>
+        <span>Conce Barber Club</span>
+      </div>
+    </section>
+
+    <section class="pro-stats" aria-label="Estadisticas profesionales" hidden>
+      <article class="pro-stat-card">
+        <span class="pro-stat-icon icon-calendar" aria-hidden="true"></span>
+        <div>
+          <p>Citas este mes</p>
+          <strong>128</strong>
+          <small>↑ 18% vs mes anterior</small>
+        </div>
+      </article>
+
+      <article class="pro-stat-card">
+        <span class="pro-stat-icon icon-users" aria-hidden="true"></span>
+        <div>
+          <p>Clientes</p>
+          <strong>87</strong>
+          <small>↑ 12% vs mes anterior</small>
+        </div>
+      </article>
+
+      <article class="pro-stat-card">
+        <span class="pro-stat-icon icon-star" aria-hidden="true"></span>
+        <div>
+          <p>Calificacion</p>
+          <strong>4.9 ★★★★★</strong>
+          <small>Basado en 156 resenas</small>
+        </div>
+      </article>
+    </section>
+
+    <section class="pro-grid">
+      <BarberCalendar client:only="react" />
+
+      <article class="pro-panel pro-services">
+        <div class="pro-panel-header">
+          <h2>Mis servicios</h2>
+          <button id="open-service-modal" type="button">+ Agregar servicio</button>
+        </div>
+
+        <div id="professional-services" class="pro-service-list">
+          <p class="pro-empty">Cargando servicios...</p>
+        </div>
+
+        <a class="pro-panel-link" href="/perfil-profesional">Ver todos mis servicios</a>
+      </article>
+
+      <ReservationsCalendar client:only="react" />
+
+      <article class="pro-panel pro-gallery" hidden>
+        <div class="pro-panel-header">
+          <h2>Mi galeria de trabajos</h2>
+          <button type="button">+ Agregar fotos</button>
+        </div>
+        <div class="gallery-grid">
+          <span></span>
+          <span></span>
+          <span></span>
+          <span></span>
+          <span></span>
+          <span class="gallery-more">+12<br />Ver mas</span>
+        </div>
+      </article>
+
+      <article class="pro-panel pro-reviews" hidden>
+        <div class="pro-panel-header">
+          <h2>Resenas recientes</h2>
+          <button type="button">Ver todas</button>
+        </div>
+        <div class="review-grid">
+          <article>
+            <strong>Juan Soto</strong>
+            <span>24 Mayo, 2024</span>
+            <p>★★★★★</p>
+            <small>Excelente atencion y el mejor fade de Concepcion.</small>
+          </article>
+          <article>
+            <strong>Matias Rojas</strong>
+            <span>22 Mayo, 2024</span>
+            <p>★★★★★</p>
+            <small>Muy profesional y buen ambiente. Volvere sin duda.</small>
+          </article>
+        </div>
+      </article>
+
+      <article class="pro-panel pro-workplace">
+        <div class="pro-panel-header">
+          <div>
+            <h2>Mi lugar de trabajo</h2>
+            <p id="workplace-helper" class="workplace-helper">Todo barbero debe registrar un lugar de trabajo.</p>
+          </div>
+          <span id="workplace-status" class="workplace-status">Cargando...</span>
+        </div>
+
+        <form id="workplace-form" class="workplace-form">
+          <label>
+            Nombre de la barberia
+            <input name="nombre_barberia" type="text" maxlength="100" required placeholder="Ej: Conce Barber Club" />
+          </label>
+          <label>
+            Direccion
+            <input name="direccion" type="text" maxlength="180" required placeholder="Ej: Avenida Central 123, Concepcion" />
+          </label>
+
+          <p id="workplace-message" class="workplace-message" role="status"></p>
+
+          <div class="workplace-actions">
+            <button id="save-workplace" class="workplace-primary" type="submit">Crear lugar de trabajo</button>
+            <button id="edit-workplace" class="workplace-primary" type="button" hidden>Editar lugar</button>
+            <button id="cancel-workplace-edit" type="button" hidden>Cancelar cambios</button>
+            <button id="delete-workplace" class="workplace-danger" type="button" hidden>Eliminar lugar</button>
+          </div>
+        </form>
+      </article>
+
+      <BarberAppointments client:only="react" />
+    </section>
+  </section>
+
+  <dialog id="service-modal" class="service-modal">
+    <form id="service-form" class="service-form">
+      <div class="service-form-header">
+        <div>
+          <h2>Agregar servicio</h2>
+          <p>Completa los datos que veran tus clientes.</p>
+        </div>
+        <button id="close-service-modal" class="service-modal-close" type="button" aria-label="Cerrar">×</button>
+      </div>
+
+      <label>
+        Nombre del servicio
+        <input name="nombre_servicio" type="text" maxlength="80" required placeholder="Ej: Corte de cabello" />
+      </label>
+
+      <label>
+        Descripcion
+        <textarea name="descripcion" maxlength="300" rows="3" placeholder="Describe brevemente el servicio"></textarea>
+      </label>
+
+      <div class="service-form-row">
+        <label>
+          Precio (CLP)
+          <input name="precio" type="number" min="0" step="1" required placeholder="12000" />
+        </label>
+        <label>
+          Duracion (minutos)
+          <input name="duracion_minutos" type="number" min="1" step="1" required placeholder="60" />
+        </label>
+      </div>
+
+      <p id="service-form-message" class="service-form-message" role="status"></p>
+
+      <div class="service-form-actions">
+        <button id="cancel-service" type="button">Cancelar</button>
+        <button id="save-service" class="service-save-button" type="submit">Guardar servicio</button>
+      </div>
+    </form>
+  </dialog>
+</main>
+
+<script>
+  const API_URL = 'http://localhost:3001/api';
+  const token = localStorage.getItem('token');
+
+  const professionalName = document.querySelector<HTMLElement>('#professional-name');
+  const professionalSpecialty = document.querySelector<HTMLElement>('#professional-specialty');
+  const professionalShop = document.querySelector<HTMLElement>('#professional-shop');
+  const professionalBio = document.querySelector<HTMLElement>('#professional-bio');
+  const sidebarName = document.querySelector<HTMLElement>('#sidebar-name');
+  const sidebarSpecialty = document.querySelector<HTMLElement>('#sidebar-specialty');
+  const serviceList = document.querySelector<HTMLElement>('#professional-services');
+  const serviceModal = document.querySelector<HTMLDialogElement>('#service-modal');
+  const serviceForm = document.querySelector<HTMLFormElement>('#service-form');
+  const serviceFormMessage = document.querySelector<HTMLElement>('#service-form-message');
+  const saveServiceButton = document.querySelector<HTMLButtonElement>('#save-service');
+  const openServiceModalButton = document.querySelector<HTMLButtonElement>('#open-service-modal');
+  const closeServiceModalButton = document.querySelector<HTMLButtonElement>('#close-service-modal');
+  const cancelServiceButton = document.querySelector<HTMLButtonElement>('#cancel-service');
+  const workplaceForm = document.querySelector<HTMLFormElement>('#workplace-form');
+  const workplaceStatus = document.querySelector<HTMLElement>('#workplace-status');
+  const workplaceHelper = document.querySelector<HTMLElement>('#workplace-helper');
+  const workplaceMessage = document.querySelector<HTMLElement>('#workplace-message');
+  const saveWorkplaceButton = document.querySelector<HTMLButtonElement>('#save-workplace');
+  const editWorkplaceButton = document.querySelector<HTMLButtonElement>('#edit-workplace');
+  const cancelWorkplaceButton = document.querySelector<HTMLButtonElement>('#cancel-workplace-edit');
+  const deleteWorkplaceButton = document.querySelector<HTMLButtonElement>('#delete-workplace');
+  const workplaceNameInput = workplaceForm?.elements.namedItem('nombre_barberia') as HTMLInputElement | null;
+  const workplaceAddressInput = workplaceForm?.elements.namedItem('direccion') as HTMLInputElement | null;
+  let currentWorkplace: { id: number; nombre_barberia?: string | null; direccion?: string | null } | null = null;
+  let isEditingWorkplace = false;
+
+  const formatPrice = (value: number) =>
+    new Intl.NumberFormat('es-CL', {
+      style: 'currency',
+      currency: 'CLP',
+      maximumFractionDigits: 0,
+    }).format(value);
+
+  const renderUser = (user: any) => {
+    const name = user?.nombre || 'Barbero';
+    const profile = user?.perfilBarbero;
+    const shop = profile?.lugarTrabajo?.nombre_barberia || 'Conce Barber Club';
+    const specialty = profile?.biografia ? 'Barbero profesional' : 'Fade Master';
+
+    if (professionalName) professionalName.textContent = name;
+    if (professionalSpecialty) professionalSpecialty.textContent = specialty;
+    if (professionalShop) professionalShop.textContent = shop;
+    if (professionalBio && profile?.biografia) professionalBio.textContent = profile.biografia;
+    if (sidebarName) sidebarName.textContent = name;
+    if (sidebarSpecialty) sidebarSpecialty.textContent = specialty;
+  };
+
+  const renderServices = (services: any[]) => {
+    if (!serviceList) return;
+
+    if (!services.length) {
+      serviceList.innerHTML = '<p class="pro-empty">Aun no tienes servicios registrados.</p>';
+      return;
+    }
+
+    serviceList.innerHTML = services
+      .slice(0, 5)
+      .map((service) => `
+        <article class="pro-service-item">
+          <span class="icon-scissors" aria-hidden="true"></span>
+          <div>
+            <strong>${service.nombre_servicio}</strong>
+            <small>${service.descripcion || 'Servicio profesional'}</small>
+          </div>
+          <b>${formatPrice(Number(service.precio || 0))}</b>
+          <em>${service.duracion_minutos} min</em>
+        </article>
+      `)
+      .join('');
+  };
+
+  const loadProfessionalProfile = async () => {
+    if (!token) {
+      window.location.href = '/login';
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const user = await response.json().catch(() => ({}));
+
+      if (!response.ok) throw new Error(user.message || 'No se pudo cargar el perfil.');
+      if (user.rol !== 'barbero') {
+        window.location.href = '/home';
+        return;
+      }
+
+      localStorage.setItem('user', JSON.stringify(user));
+      renderUser(user);
+    } catch {
+      window.location.href = '/login';
+    }
+  };
+
+  const loadServices = async () => {
+    if (!token) return;
+
+    try {
+      const response = await fetch(`${API_URL}/servicios`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const services = await response.json().catch(() => []);
+
+      if (!response.ok) throw new Error('No se pudieron cargar los servicios.');
+      renderServices(Array.isArray(services) ? services : []);
+    } catch {
+      if (serviceList) {
+        serviceList.innerHTML = '<p class="pro-empty">No se pudieron cargar tus servicios.</p>';
+      }
+    }
+  };
+
+  const setWorkplaceMessage = (message = '', isError = false) => {
+    if (!workplaceMessage) return;
+    workplaceMessage.textContent = message;
+    workplaceMessage.classList.toggle('is-error', isError);
+  };
+
+  const renderWorkplace = (workplace: typeof currentWorkplace) => {
+    currentWorkplace = workplace;
+    if (!workplaceNameInput || !workplaceAddressInput || !saveWorkplaceButton) return;
+
+    isEditingWorkplace = false;
+    workplaceNameInput.value = workplace?.nombre_barberia || '';
+    workplaceAddressInput.value = workplace?.direccion || '';
+    workplaceNameInput.readOnly = Boolean(workplace);
+    workplaceAddressInput.readOnly = Boolean(workplace);
+    saveWorkplaceButton.textContent = 'Crear lugar de trabajo';
+    saveWorkplaceButton.hidden = Boolean(workplace);
+
+    if (workplaceStatus) {
+      workplaceStatus.textContent = workplace ? 'Registrado' : 'Pendiente';
+      workplaceStatus.classList.toggle('is-complete', Boolean(workplace));
+    }
+    if (workplaceHelper) {
+      workplaceHelper.textContent = workplace
+        ? 'Puedes editar este lugar o eliminarlo para registrar uno nuevo.'
+        : 'Debes registrar un lugar de trabajo para completar tu perfil profesional.';
+    }
+    if (editWorkplaceButton) editWorkplaceButton.hidden = !workplace;
+    if (cancelWorkplaceButton) cancelWorkplaceButton.hidden = true;
+    if (deleteWorkplaceButton) deleteWorkplaceButton.hidden = !workplace;
+  };
+
+  const loadWorkplace = async () => {
+    if (!token) return;
+
+    try {
+      const response = await fetch(`${API_URL}/lugartrabajo`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json().catch(() => []);
+      if (!response.ok) throw new Error(data.message || 'No se pudo cargar el lugar de trabajo.');
+      renderWorkplace(Array.isArray(data) && data.length ? data[0] : null);
+    } catch (error) {
+      if (workplaceStatus) workplaceStatus.textContent = 'Error';
+      setWorkplaceMessage(
+        error instanceof Error ? error.message : 'No se pudo cargar el lugar de trabajo.',
+        true,
+      );
+    }
+  };
+
+  const closeServiceModal = () => {
+    serviceModal?.close();
+    serviceForm?.reset();
+    if (serviceFormMessage) {
+      serviceFormMessage.textContent = '';
+      serviceFormMessage.classList.remove('is-error');
+    }
+  };
+
+  openServiceModalButton?.addEventListener('click', () => serviceModal?.showModal());
+  closeServiceModalButton?.addEventListener('click', closeServiceModal);
+  cancelServiceButton?.addEventListener('click', closeServiceModal);
+
+  serviceModal?.addEventListener('click', (event) => {
+    if (event.target === serviceModal) closeServiceModal();
+  });
+
+  serviceForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!token || !serviceForm || !saveServiceButton) return;
+
+    const formData = new FormData(serviceForm);
+    const payload = {
+      nombre_servicio: String(formData.get('nombre_servicio') || '').trim(),
+      descripcion: String(formData.get('descripcion') || '').trim(),
+      precio: Number(formData.get('precio')),
+      duracion_minutos: Number(formData.get('duracion_minutos')),
+    };
+
+    saveServiceButton.disabled = true;
+    saveServiceButton.textContent = 'Guardando...';
+    if (serviceFormMessage) {
+      serviceFormMessage.textContent = '';
+      serviceFormMessage.classList.remove('is-error');
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/servicios`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.message || 'No se pudo crear el servicio.');
+      }
+
+      closeServiceModal();
+      await loadServices();
+    } catch (error) {
+      if (serviceFormMessage) {
+        serviceFormMessage.textContent = error instanceof Error ? error.message : 'No se pudo crear el servicio.';
+        serviceFormMessage.classList.add('is-error');
+      }
+    } finally {
+      saveServiceButton.disabled = false;
+      saveServiceButton.textContent = 'Guardar servicio';
+    }
+  });
+
+  editWorkplaceButton?.addEventListener('click', () => {
+    if (!currentWorkplace || !workplaceNameInput || !workplaceAddressInput || !saveWorkplaceButton) return;
+    isEditingWorkplace = true;
+    workplaceNameInput.readOnly = false;
+    workplaceAddressInput.readOnly = false;
+    saveWorkplaceButton.hidden = false;
+    saveWorkplaceButton.textContent = 'Guardar cambios';
+    editWorkplaceButton.hidden = true;
+    if (cancelWorkplaceButton) cancelWorkplaceButton.hidden = false;
+    if (deleteWorkplaceButton) deleteWorkplaceButton.hidden = true;
+    workplaceNameInput.focus();
+    setWorkplaceMessage();
+  });
+
+  cancelWorkplaceButton?.addEventListener('click', () => {
+    renderWorkplace(currentWorkplace);
+    setWorkplaceMessage();
+  });
+
+  workplaceForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!token || !workplaceForm || !saveWorkplaceButton) return;
+
+    const formData = new FormData(workplaceForm);
+    const payload = {
+      nombre_barberia: String(formData.get('nombre_barberia') || '').trim(),
+      direccion: String(formData.get('direccion') || '').trim(),
+    };
+    const isEditing = Boolean(currentWorkplace) && isEditingWorkplace;
+    if (currentWorkplace && !isEditing) return;
+    const endpoint = isEditing
+      ? `${API_URL}/lugartrabajo/${currentWorkplace!.id}`
+      : `${API_URL}/lugartrabajo`;
+
+    saveWorkplaceButton.disabled = true;
+    saveWorkplaceButton.textContent = 'Guardando...';
+    setWorkplaceMessage();
+
+    try {
+      const response = await fetch(endpoint, {
+        method: isEditing ? 'PUT' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.message || 'No se pudo guardar el lugar de trabajo.');
+
+      renderWorkplace(data);
+      setWorkplaceMessage(isEditing ? 'Lugar de trabajo actualizado.' : 'Lugar de trabajo creado.');
+      await loadProfessionalProfile();
+    } catch (error) {
+      setWorkplaceMessage(
+        error instanceof Error ? error.message : 'No se pudo guardar el lugar de trabajo.',
+        true,
+      );
+    } finally {
+      saveWorkplaceButton.disabled = false;
+      if (!saveWorkplaceButton.hidden) {
+        saveWorkplaceButton.textContent = currentWorkplace ? 'Guardar cambios' : 'Crear lugar de trabajo';
+      }
+    }
+  });
+
+  deleteWorkplaceButton?.addEventListener('click', async () => {
+    if (!token || !currentWorkplace || !deleteWorkplaceButton) return;
+    const confirmed = window.confirm(
+      '¿Eliminar este lugar de trabajo? Tendras que crear otro para completar tu perfil.',
+    );
+    if (!confirmed) return;
+
+    deleteWorkplaceButton.disabled = true;
+    setWorkplaceMessage();
+
+    try {
+      const response = await fetch(`${API_URL}/lugartrabajo/${currentWorkplace.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.message || 'No se pudo eliminar el lugar de trabajo.');
+      }
+
+      renderWorkplace(null);
+      setWorkplaceMessage('Lugar eliminado. Debes registrar uno nuevo.');
+      await loadProfessionalProfile();
+    } catch (error) {
+      setWorkplaceMessage(
+        error instanceof Error ? error.message : 'No se pudo eliminar el lugar de trabajo.',
+        true,
+      );
+    } finally {
+      deleteWorkplaceButton.disabled = false;
+    }
+  });
+
+  loadProfessionalProfile();
+  loadServices();
+  loadWorkplace();
+</script>

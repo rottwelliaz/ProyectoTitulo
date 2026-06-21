@@ -1,0 +1,140 @@
+---
+interface Props {
+  logoSrc: string;
+}
+
+const { logoSrc } = Astro.props;
+---
+
+<header class="home-header">
+  <a class="brand-link" href="/home" aria-label="Conce Barber Club">
+    <img src={logoSrc} alt="Conce Barber Club" />
+  </a>
+
+  <label class="search-pill">
+    <span class="search-icon" aria-hidden="true"></span>
+    <input type="search" placeholder="Buscar barberias o barberos..." />
+  </label>
+
+  <nav class="home-nav" aria-label="Navegacion principal">
+    <a class="nav-link active" href="/home">Inicio</a>
+    <a class="nav-link" href="/home">Categorias</a>
+    <a class="nav-link" href="/home">Barberos</a>
+    <a class="nav-link" href="/sobre-nosotros">Sobre nosotros</a>
+
+    <a id="login-link" href="/login" class="home-nav-cta">Ingresar</a>
+    <div id="profile-menu" class="profile-menu">
+      <button
+        id="profile-button"
+        class="profile-circle"
+        type="button"
+        aria-label="Abrir menu de usuario"
+        aria-expanded="false"
+        aria-controls="profile-dropdown"
+      >
+        <span>F</span>
+      </button>
+      <button
+        id="profile-name-button"
+        class="profile-name"
+        type="button"
+        aria-label="Abrir menu de usuario"
+        aria-expanded="false"
+        aria-controls="profile-dropdown"
+      >
+        Usuario
+      </button>
+
+      <div id="profile-dropdown" class="profile-dropdown" aria-hidden="true">
+        <a href="/perfil" class="profile-dropdown-item">Mi perfil</a>
+        <a id="professional-profile-link" href="/perfil-profesional" class="profile-dropdown-item hidden">
+          Perfil Profesional
+        </a>
+        <a href="/configuracion" class="profile-dropdown-item">Configuracion</a>
+        <button id="logout-button" class="profile-dropdown-item" type="button">
+          Cerrar sesion
+        </button>
+      </div>
+    </div>
+  </nav>
+</header>
+
+<script>
+  const loginLink = document.querySelector<HTMLAnchorElement>('#login-link');
+  const profileMenu = document.querySelector<HTMLDivElement>('#profile-menu');
+  const profileButton = document.querySelector<HTMLButtonElement>('#profile-button');
+  const profileNameButton = document.querySelector<HTMLButtonElement>('#profile-name-button');
+  const profileDropdown = document.querySelector<HTMLDivElement>('#profile-dropdown');
+  const professionalProfileLink = document.querySelector<HTMLAnchorElement>('#professional-profile-link');
+  const logoutButton = document.querySelector<HTMLButtonElement>('#logout-button');
+  const token = localStorage.getItem('token');
+
+  const getStoredUser = () => {
+    const storedUser = localStorage.getItem('user');
+    if (!storedUser) return null;
+
+    try {
+      return JSON.parse(storedUser);
+    } catch {
+      return null;
+    }
+  };
+
+  const setProfileIdentity = () => {
+    const user = getStoredUser();
+    const rawName = String(user?.nombre || user?.name || user?.email || 'Usuario').trim();
+    const displayName = rawName.includes('@') ? rawName.split('@')[0] : rawName;
+    const initial = displayName.charAt(0).toUpperCase() || 'U';
+
+    if (profileNameButton) profileNameButton.textContent = displayName;
+    profileButton?.querySelector('span')?.replaceChildren(initial);
+
+    if (user?.rol === 'barbero') {
+      professionalProfileLink?.classList.remove('hidden');
+    } else {
+      professionalProfileLink?.classList.add('hidden');
+    }
+  };
+
+  const closeProfileMenu = () => {
+    profileMenu?.classList.remove('is-open');
+    profileButton?.setAttribute('aria-expanded', 'false');
+    profileNameButton?.setAttribute('aria-expanded', 'false');
+    profileDropdown?.setAttribute('aria-hidden', 'true');
+  };
+
+  const toggleProfileMenu = () => {
+    const isOpen = profileMenu?.classList.toggle('is-open') ?? false;
+
+    profileButton?.setAttribute('aria-expanded', String(isOpen));
+    profileNameButton?.setAttribute('aria-expanded', String(isOpen));
+    profileDropdown?.setAttribute('aria-hidden', String(!isOpen));
+  };
+
+  if (token) {
+    loginLink?.classList.add('hidden');
+    profileMenu?.classList.add('is-visible');
+    setProfileIdentity();
+  }
+
+  profileButton?.addEventListener('click', toggleProfileMenu);
+  profileNameButton?.addEventListener('click', toggleProfileMenu);
+
+  document.addEventListener('click', (event) => {
+    if (!profileMenu?.contains(event.target as Node)) {
+      closeProfileMenu();
+    }
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      closeProfileMenu();
+    }
+  });
+
+  logoutButton?.addEventListener('click', () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = '/login';
+  });
+</script>
