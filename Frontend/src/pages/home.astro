@@ -5,6 +5,7 @@ import HomeHeader from '../components/HomeHeader.astro';
 import HomeHero from '../components/HomeHero.astro';
 import homeFoto from '../assets/homefoto.png';
 import logoConce from '../assets/logotesis.png';
+import { CalendarDays } from 'lucide-astro';
 import '../styles/home.css';
 
 const categorias = [
@@ -18,7 +19,7 @@ const categorias = [
 
 ---
 
-<Layout title="Inicio - Barberias Concepcion">
+<Layout title="Inicio - Barberias Concepción">
   <div class="home-root">
     <section class="home-hero-shell" style={`--hero-image: url(${homeFoto.src});`}>
       <HomeHeader logoSrc={logoConce.src} />
@@ -45,13 +46,13 @@ const categorias = [
       <FeaturedBarbers />
 
       <section class="home-cta" style={`--hero-image: url(${homeFoto.src});`}>
-        <div class="cta-icon" aria-hidden="true"></div>
+        <CalendarDays class="cta-lucide-icon" size={34} aria-hidden="true" />
         <div>
           <h2>Listo para tu proximo corte?</h2>
           <p>Reserva ahora y vive la experiencia Conce Barber Club.</p>
         </div>
         <a class="btn btn-primary" href="/booking">
-          <span class="btn-calendar" aria-hidden="true"></span>
+          <CalendarDays class="button-icon" size={21} aria-hidden="true" />
           Reservar ahora
         </a>
       </section>

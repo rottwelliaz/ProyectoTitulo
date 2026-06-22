@@ -99,6 +99,12 @@
   color: rgba(255, 255, 255, 0.82);
 }
 
+.search-lucide-icon {
+  color: #3389ff;
+  flex: 0 0 auto;
+  stroke-width: 2.1;
+}
+
 .search-icon,
 .btn-search {
   border: 2px solid #3389ff;
@@ -329,6 +335,21 @@
   color: #ffffff;
 }
 
+.button-icon {
+  flex: 0 0 auto;
+  stroke-width: 2.2;
+}
+
+.button-icon.is-blue {
+  color: #3389ff;
+}
+
+.cta-lucide-icon {
+  color: var(--yellow);
+  flex: 0 0 auto;
+  stroke-width: 1.9;
+}
+
 .btn-calendar,
 .benefit-icon.icon-calendar,
 .cta-icon {
@@ -394,6 +415,10 @@
   height: 58px;
   justify-content: center;
   width: 58px;
+}
+
+.benefit-icon svg {
+  stroke-width: 1.9;
 }
 
 .benefit-icon.icon-check::before {

@@ -1,4 +1,6 @@
 ---
+import { Search } from 'lucide-astro';
+
 interface Props {
   logoSrc: string;
 }
@@ -12,7 +14,7 @@ const { logoSrc } = Astro.props;
   </a>
 
   <label class="search-pill">
-    <span class="search-icon" aria-hidden="true"></span>
+    <Search class="search-lucide-icon" size={20} aria-hidden="true" />
     <input type="search" placeholder="Buscar barberias o barberos..." />
   </label>
 

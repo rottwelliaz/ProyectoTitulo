@@ -4,6 +4,18 @@ import homeFoto from '../assets/homefoto.png';
 import BarberCalendar from './calendar/BarberCalendar';
 import ReservationsCalendar from './calendar/ReservationsCalendar';
 import BarberAppointments from './BarberAppointments';
+import {
+  ArrowRight,
+  CalendarDays,
+  Images,
+  LayoutDashboard,
+  Pencil,
+  Plus,
+  Scissors,
+  Settings,
+  Star,
+  Users,
+} from 'lucide-astro';
 ---
 
 <main class="pro-root">
@@ -14,31 +26,31 @@ import BarberAppointments from './BarberAppointments';
 
     <nav class="pro-nav" aria-label="Menu profesional">
       <a class="pro-nav-link is-active" href="/perfil-profesional">
-        <span class="pro-nav-icon icon-home" aria-hidden="true"></span>
+        <LayoutDashboard class="pro-nav-lucide" size={23} aria-hidden="true" />
         Resumen
       </a>
       <a class="pro-nav-link" href="/perfil-profesional">
-        <span class="pro-nav-icon icon-calendar" aria-hidden="true"></span>
+        <CalendarDays class="pro-nav-lucide" size={23} aria-hidden="true" />
         Mi agenda
       </a>
       <a class="pro-nav-link" href="/perfil-profesional">
-        <span class="pro-nav-icon icon-scissors" aria-hidden="true"></span>
+        <Scissors class="pro-nav-lucide" size={23} aria-hidden="true" />
         Servicios
       </a>
       <a class="pro-nav-link" href="/perfil-profesional">
-        <span class="pro-nav-icon icon-users" aria-hidden="true"></span>
+        <Users class="pro-nav-lucide" size={23} aria-hidden="true" />
         Clientes
       </a>
       <a class="pro-nav-link" href="/perfil-profesional">
-        <span class="pro-nav-icon icon-star" aria-hidden="true"></span>
-        Resenas
+        <Star class="pro-nav-lucide" size={23} aria-hidden="true" />
+        Reseñas
       </a>
       <a class="pro-nav-link" href="/perfil-profesional">
-        <span class="pro-nav-icon icon-gallery" aria-hidden="true"></span>
+        <Images class="pro-nav-lucide" size={23} aria-hidden="true" />
         Galeria
       </a>
       <a class="pro-nav-link" href="/configuracion">
-        <span class="pro-nav-icon icon-gear" aria-hidden="true"></span>
+        <Settings class="pro-nav-lucide" size={23} aria-hidden="true" />
         Configuracion
       </a>
     </nav>
@@ -61,11 +73,8 @@ import BarberAppointments from './BarberAppointments';
       </div>
 
       <div class="pro-top-actions">
-        <button class="pro-bell" type="button" aria-label="Notificaciones">
-          <span>3</span>
-        </button>
         <a class="pro-edit-button" href="/perfil">
-          <span class="icon-pencil" aria-hidden="true"></span>
+          <Pencil size={18} aria-hidden="true" />
           Editar perfil
         </a>
       </div>
@@ -84,7 +93,7 @@ import BarberAppointments from './BarberAppointments';
         </div>
         <p id="professional-specialty" class="pro-specialty">Fade Master</p>
         <p id="professional-shop" class="pro-meta">Barberia El Puente</p>
-        <p id="professional-location" class="pro-meta">Concepcion, Chile</p>
+        <p id="professional-location" class="pro-meta">Concepción, Chile</p>
         <p class="pro-rating"><span>★</span> 4.9 <small>(156 resenas)</small></p>
       </div>
 
@@ -140,14 +149,24 @@ import BarberAppointments from './BarberAppointments';
       <article class="pro-panel pro-services">
         <div class="pro-panel-header">
           <h2>Mis servicios</h2>
-          <button id="open-service-modal" type="button">+ Agregar servicio</button>
+          <button id="open-service-modal" type="button">
+            <Plus size={18} aria-hidden="true" />
+            Agregar servicio
+          </button>
         </div>
 
         <div id="professional-services" class="pro-service-list">
           <p class="pro-empty">Cargando servicios...</p>
         </div>
 
-        <a class="pro-panel-link" href="/perfil-profesional">Ver todos mis servicios</a>
+        <template id="service-icon-template">
+          <Scissors size={21} aria-hidden="true" />
+        </template>
+
+        <a class="pro-panel-link" href="/perfil-profesional">
+          Ver todos mis servicios
+          <ArrowRight size={18} aria-hidden="true" />
+        </a>
       </article>
 
       <ReservationsCalendar client:only="react" />
@@ -177,7 +196,7 @@ import BarberAppointments from './BarberAppointments';
             <strong>Juan Soto</strong>
             <span>24 Mayo, 2024</span>
             <p>★★★★★</p>
-            <small>Excelente atencion y el mejor fade de Concepcion.</small>
+            <small>Excelente atencion y el mejor fade de Concepción.</small>
           </article>
           <article>
             <strong>Matias Rojas</strong>
@@ -204,7 +223,7 @@ import BarberAppointments from './BarberAppointments';
           </label>
           <label>
             Direccion
-            <input name="direccion" type="text" maxlength="180" required placeholder="Ej: Avenida Central 123, Concepcion" />
+            <input name="direccion" type="text" maxlength="180" required placeholder="Ej: Avenida Central 123, Concepción" />
           </label>
 
           <p id="workplace-message" class="workplace-message" role="status"></p>
@@ -274,6 +293,7 @@ import BarberAppointments from './BarberAppointments';
   const sidebarName = document.querySelector<HTMLElement>('#sidebar-name');
   const sidebarSpecialty = document.querySelector<HTMLElement>('#sidebar-specialty');
   const serviceList = document.querySelector<HTMLElement>('#professional-services');
+  const serviceIconTemplate = document.querySelector<HTMLTemplateElement>('#service-icon-template');
   const serviceModal = document.querySelector<HTMLDialogElement>('#service-modal');
   const serviceForm = document.querySelector<HTMLFormElement>('#service-form');
   const serviceFormMessage = document.querySelector<HTMLElement>('#service-form-message');
@@ -327,7 +347,7 @@ import BarberAppointments from './BarberAppointments';
       .slice(0, 5)
       .map((service) => `
         <article class="pro-service-item">
-          <span class="icon-scissors" aria-hidden="true"></span>
+          <span class="pro-service-icon" aria-hidden="true">${serviceIconTemplate?.innerHTML || ''}</span>
           <div>
             <strong>${service.nombre_servicio}</strong>
             <small>${service.descripcion || 'Servicio profesional'}</small>

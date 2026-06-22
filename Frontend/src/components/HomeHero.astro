@@ -1,40 +1,50 @@
+---
+import { CalendarCheck, CalendarDays, CircleCheck, Search, ShieldCheck } from 'lucide-astro';
+---
+
 <section class="home-hero">
   <h1 class="hero-title">
     Tu proximo <em>corte</em><br />
     comienza aqui.
   </h1>
   <p class="hero-sub">
-    Reserva con los mejores barberos de Concepcion en <strong>menos de 1 minuto.</strong>
+    Reserva con los mejores barberos de Concepción en <strong>menos de 1 minuto.</strong>
   </p>
 
   <div class="hero-actions">
     <a class="btn btn-primary" href="/booking">
-      <span class="btn-calendar" aria-hidden="true"></span>
+      <CalendarDays class="button-icon" size={21} aria-hidden="true" />
       Reservar ahora
     </a>
     <a class="btn btn-secondary" href="/home">
-      <span class="btn-search" aria-hidden="true"></span>
+      <Search class="button-icon is-blue" size={21} aria-hidden="true" />
       Explorar barberos
     </a>
   </div>
 
   <div class="benefit-strip" aria-label="Beneficios">
     <article>
-      <span class="benefit-icon icon-check" aria-hidden="true"></span>
+      <span class="benefit-icon" aria-hidden="true">
+        <CircleCheck size={32} />
+      </span>
       <div>
         <h2>Barberos verificados</h2>
         <p>Todos nuestros barberos estan certificados.</p>
       </div>
     </article>
     <article>
-      <span class="benefit-icon icon-calendar" aria-hidden="true"></span>
+      <span class="benefit-icon" aria-hidden="true">
+        <CalendarCheck size={31} />
+      </span>
       <div>
         <h2>Reserva facil y rapida</h2>
         <p>Agenda tu hora sin llamadas ni complicaciones.</p>
       </div>
     </article>
     <article>
-      <span class="benefit-icon icon-shield" aria-hidden="true"></span>
+      <span class="benefit-icon" aria-hidden="true">
+        <ShieldCheck size={32} />
+      </span>
       <div>
         <h2>Cancelacion flexible</h2>
         <p>Cambia o cancela tu reserva cuando lo necesites.</p>
