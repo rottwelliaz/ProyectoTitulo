@@ -1,11 +1,13 @@
 import { Request, Response } from 'express';
 import prisma from '../config/prisma';
 import bcrypt from 'bcryptjs';
+import { AuthRequest } from '../middleware/auth';
 
 // Crear usuario
 export const createUser = async (req: Request, res: Response) => {
   try {
     const { nombre, email, password, telefono, rol } = req.body;
+    const selectedRole = rol === 'barbero' ? 'barbero' : 'cliente';
 
     if (!nombre || !email || !password) {
       return res.status(400).json({ message: 'nombre, email y password son requeridos' });
@@ -24,7 +26,8 @@ export const createUser = async (req: Request, res: Response) => {
         email,
         password: hashed,
         telefono: telefono || null,
-        rol: rol || undefined,
+        rol: selectedRole,
+        aprobado: selectedRole === 'cliente',
       },
     });
 
@@ -49,8 +52,15 @@ export const getUsers = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Rol invalido' });
     }
 
+    const where =
+      rol === 'barbero'
+        ? { rol: rol as any, aprobado: true }
+        : rol
+          ? { rol: rol as any }
+          : undefined;
+
     const users = await prisma.user.findMany({
-      where: rol ? { rol: rol as any } : undefined,
+      where,
       include: {
         perfilBarbero: {
           include: {
@@ -72,6 +82,163 @@ export const getUsers = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('getUsers error', error);
     return res.status(500).json({ message: 'Error al obtener usuarios' });
+  }
+};
+
+export const getPendingBarbers = async (_req: AuthRequest, res: Response) => {
+  try {
+    const users = await prisma.user.findMany({
+      where: {
+        rol: 'barbero',
+        aprobado: false,
+      },
+      select: {
+        id: true,
+        nombre: true,
+        email: true,
+        telefono: true,
+        rol: true,
+        aprobado: true,
+        fecha_creacion: true,
+      },
+      orderBy: {
+        fecha_creacion: 'asc',
+      },
+    });
+
+    return res.json(users);
+  } catch (error) {
+    console.error('getPendingBarbers error', error);
+    return res.status(500).json({ message: 'Error al obtener barberos pendientes' });
+  }
+};
+
+export const approveBarber = async (req: AuthRequest, res: Response) => {
+  try {
+    const id = Number(req.params.id);
+
+    if (Number.isNaN(id)) {
+      return res.status(400).json({ message: 'ID invalido' });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id },
+      include: { perfilBarbero: true },
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+
+    if (user.rol !== 'barbero') {
+      return res.status(400).json({ message: 'Solo se pueden aprobar usuarios con rol barbero' });
+    }
+
+    const updated = await prisma.user.update({
+      where: { id },
+      data: {
+        aprobado: true,
+        perfilBarbero: user.perfilBarbero
+          ? undefined
+          : {
+              create: {
+                biografia: 'Perfil creado al aprobar cuenta de barbero',
+              },
+            },
+      },
+      select: {
+        id: true,
+        nombre: true,
+        email: true,
+        telefono: true,
+        rol: true,
+        aprobado: true,
+        fecha_creacion: true,
+        perfilBarbero: true,
+      },
+    });
+
+    return res.json(updated);
+  } catch (error) {
+    console.error('approveBarber error', error);
+    return res.status(500).json({ message: 'Error al aprobar barbero' });
+  }
+};
+
+export const getAdminDashboard = async (_req: AuthRequest, res: Response) => {
+  try {
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        nombre: true,
+        email: true,
+        telefono: true,
+        rol: true,
+        aprobado: true,
+        fecha_creacion: true,
+        perfilBarbero: {
+          select: {
+            id: true,
+            biografia: true,
+            foto_perfil: true,
+            lugarTrabajo: {
+              select: {
+                id: true,
+                nombre_barberia: true,
+                direccion: true,
+              },
+            },
+            servicios: {
+              select: {
+                id: true,
+                nombre_servicio: true,
+                precio: true,
+                duracion_minutos: true,
+              },
+              orderBy: { nombre_servicio: 'asc' },
+            },
+            _count: {
+              select: {
+                citas: true,
+                servicios: true,
+              },
+            },
+          },
+        },
+        _count: {
+          select: {
+            citas: true,
+          },
+        },
+      },
+      orderBy: [
+        { rol: 'asc' },
+        { nombre: 'asc' },
+      ],
+    });
+
+    const clientes = users.filter((user) => user.rol === 'cliente');
+    const barberos = users.filter((user) => user.rol === 'barbero');
+    const admins = users.filter((user) => user.rol === 'admin');
+    const barberosPendientes = barberos.filter((user) => !user.aprobado);
+
+    return res.json({
+      stats: {
+        totalUsuarios: users.length,
+        clientes: clientes.length,
+        barberos: barberos.length,
+        barberosAprobados: barberos.filter((user) => user.aprobado).length,
+        barberosPendientes: barberosPendientes.length,
+        admins: admins.length,
+      },
+      clientes,
+      barberos,
+      admins,
+      barberosPendientes,
+    });
+  } catch (error) {
+    console.error('getAdminDashboard error', error);
+    return res.status(500).json({ message: 'Error al obtener dashboard admin' });
   }
 };
 
@@ -107,7 +274,8 @@ export const updateUser = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
-    const { nombre, email, password, telefono } = req.body;
+    const { nombre, email, password, telefono, rol, aprobado } = req.body;
+    const rolesPermitidos = ['cliente', 'barbero', 'admin'];
 
     // Si viene nuevo email, verificar que no esté en uso por otro usuario
     if (email && email !== user.email) {
@@ -117,10 +285,22 @@ export const updateUser = async (req: Request, res: Response) => {
       }
     }
 
+    if (rol && !rolesPermitidos.includes(rol)) {
+      return res.status(400).json({ message: 'Rol invalido' });
+    }
+
     // Si viene nueva password, hashearla
     const hashedPassword = password
       ? await bcrypt.hash(password, 10)
       : undefined;
+
+    const nextRole = rol || user.rol;
+    const nextApproved =
+      typeof aprobado === 'boolean'
+        ? aprobado
+        : nextRole === 'barbero'
+          ? user.aprobado
+          : true;
 
     const updated = await prisma.user.update({
       where: { id },
@@ -128,7 +308,27 @@ export const updateUser = async (req: Request, res: Response) => {
         nombre:   nombre   ?? undefined,
         email:    email    ?? undefined,
         password: hashedPassword,
-        telefono: telefono ?? undefined
+        telefono: telefono ?? undefined,
+        rol:      rol      ?? undefined,
+        aprobado: nextApproved,
+        perfilBarbero:
+          nextRole === 'barbero'
+            ? {
+                upsert: {
+                  update: {},
+                  create: {
+                    biografia: 'Perfil creado por administrador',
+                  },
+                },
+              }
+            : undefined,
+      },
+      include: {
+        perfilBarbero: {
+          include: {
+            lugarTrabajo: true,
+          },
+        },
       },
     });
 
@@ -140,4 +340,12 @@ export const updateUser = async (req: Request, res: Response) => {
   }
 };
 
-export default { createUser, getUsers, deleteUser, updateUser };
+export default {
+  createUser,
+  getUsers,
+  getPendingBarbers,
+  approveBarber,
+  getAdminDashboard,
+  deleteUser,
+  updateUser,
+};

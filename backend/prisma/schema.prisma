@@ -28,6 +28,7 @@ model User {
   password           String
   telefono           String?
   rol                UserRole         @default(cliente)
+  aprobado           Boolean          @default(true)
   fecha_creacion     DateTime         @default(now())
 
   perfilBarbero      BarberProfile?

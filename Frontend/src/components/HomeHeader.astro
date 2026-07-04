@@ -52,6 +52,9 @@ const { logoSrc } = Astro.props;
         <a id="professional-profile-link" href="/perfil-profesional" class="profile-dropdown-item hidden">
           Perfil Profesional
         </a>
+        <a id="admin-barbers-link" href="/admin" class="profile-dropdown-item hidden">
+          Panel admin
+        </a>
         <a href="/configuracion" class="profile-dropdown-item">Configuracion</a>
         <button id="logout-button" class="profile-dropdown-item" type="button">
           Cerrar sesion
@@ -68,6 +71,7 @@ const { logoSrc } = Astro.props;
   const profileNameButton = document.querySelector<HTMLButtonElement>('#profile-name-button');
   const profileDropdown = document.querySelector<HTMLDivElement>('#profile-dropdown');
   const professionalProfileLink = document.querySelector<HTMLAnchorElement>('#professional-profile-link');
+  const adminBarbersLink = document.querySelector<HTMLAnchorElement>('#admin-barbers-link');
   const logoutButton = document.querySelector<HTMLButtonElement>('#logout-button');
   const token = localStorage.getItem('token');
 
@@ -95,6 +99,12 @@ const { logoSrc } = Astro.props;
       professionalProfileLink?.classList.remove('hidden');
     } else {
       professionalProfileLink?.classList.add('hidden');
+    }
+
+    if (user?.rol === 'admin') {
+      adminBarbersLink?.classList.remove('hidden');
+    } else {
+      adminBarbersLink?.classList.add('hidden');
     }
   };
 

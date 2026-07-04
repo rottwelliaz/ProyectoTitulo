@@ -22,5 +22,25 @@ const { title } = Astro.props;
     <slot />
 
     {/* TODO: Footer */}
+    <script>
+      document.addEventListener('click', (event) => {
+        const link = (event.target as HTMLElement).closest<HTMLAnchorElement>('a[href^="#"]');
+        if (!link) return;
+
+        const hash = link.getAttribute('href');
+        if (!hash || hash === '#') return;
+
+        const target = document.querySelector<HTMLElement>(hash);
+        if (!target) return;
+
+        event.preventDefault();
+        target.scrollIntoView({
+          behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+          block: 'start',
+        });
+
+        history.pushState(null, '', hash);
+      });
+    </script>
   </body>
 </html>

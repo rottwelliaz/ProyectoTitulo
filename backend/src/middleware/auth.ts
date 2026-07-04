@@ -18,6 +18,9 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
     const userId = typeof payload.id === 'string' ? Number(payload.id) : payload.id;
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) return res.status(401).json({ message: 'Usuario no encontrado' });
+    if (user.rol === 'barbero' && !user.aprobado) {
+      return res.status(403).json({ message: 'Cuenta de barbero pendiente de aprobacion' });
+    }
     req.user = { id: user.id, rol: user.rol };
     next();
   } catch (error) {

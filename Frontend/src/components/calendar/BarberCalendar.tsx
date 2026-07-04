@@ -16,7 +16,24 @@ interface CopiedWeek {
   slots: Record<string, SlotStatus>;
 }
 
+interface AppointmentSlot {
+  id: string;
+  fecha_hora: string;
+  estado: 'confirmada' | 'cancelada' | 'finalizada' | 'pendiente' | 'disponible';
+  cliente: {
+    id: number;
+    nombre: string;
+    telefono: string | null;
+  } | null;
+  servicio: {
+    id: string;
+    nombre_servicio: string;
+    duracion_minutos: number;
+  } | null;
+}
+
 type StoredSlots = Record<string, SlotStatus>;
+type ReservedSlots = Record<string, AppointmentSlot>;
 
 const HOURS = Array.from({ length: 11 }, (_, index) => index + 9);
 const STORAGE_KEY = 'barber-calendar-slots';
@@ -42,6 +59,8 @@ export default function BarberCalendar() {
   const [copiedWeek, setCopiedWeek] = useState<CopiedWeek | null>(null);
   const [copyFeedback, setCopyFeedback] = useState('');
   const [savingWeek, setSavingWeek] = useState(false);
+  const [reservedSlots, setReservedSlots] = useState<ReservedSlots>({});
+  const [loadingReservations, setLoadingReservations] = useState(false);
 
   const weekDays = useMemo(
     () => Array.from({ length: 7 }, (_, index) => addDays(weekStart, index)),
@@ -65,8 +84,55 @@ export default function BarberCalendar() {
 
   const getSlotKey = (date: Date, hour: number) => `${format(date, 'yyyy-MM-dd')}-${hour}`;
 
+  const loadReservations = useCallback(async () => {
+    const token = window.localStorage.getItem('token');
+    if (!token) return;
+
+    setLoadingReservations(true);
+    try {
+      const response = await fetch(`${API_URL}/citas/mias`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await response.json().catch(() => []);
+      if (!response.ok) throw new Error(data.message || 'No se pudieron cargar las reservas.');
+
+      const weekEndLimit = addDays(weekStart, 7);
+      const nextReservedSlots: ReservedSlots = {};
+
+      (Array.isArray(data) ? data as AppointmentSlot[] : [])
+        .filter((slot) => {
+          const date = new Date(slot.fecha_hora);
+          return slot.estado === 'confirmada' && date >= weekStart && date < weekEndLimit;
+        })
+        .forEach((slot) => {
+          const date = new Date(slot.fecha_hora);
+          nextReservedSlots[getSlotKey(date, date.getHours())] = slot;
+        });
+
+      setReservedSlots(nextReservedSlots);
+    } catch (error) {
+      setCopyFeedback(error instanceof Error ? error.message : 'No se pudieron cargar las reservas.');
+      setReservedSlots({});
+    } finally {
+      setLoadingReservations(false);
+    }
+  }, [weekStart]);
+
+  useEffect(() => {
+    void loadReservations();
+  }, [loadReservations]);
+
   const openSlot = (date: Date, hour: number) => {
     const key = getSlotKey(date, hour);
+    const reservedSlot = reservedSlots[key];
+    if (reservedSlot) {
+      const client = reservedSlot.cliente?.nombre || 'Cliente';
+      const service = reservedSlot.servicio?.nombre_servicio || 'Servicio';
+      setCopyFeedback(`La hora ${String(hour).padStart(2, '0')}:00 ya esta reservada por ${client} (${service}).`);
+      return;
+    }
     setSelectedSlot({ date, hour, key, status: slots[key] ?? getDefaultStatus(hour) });
   };
 
@@ -113,6 +179,7 @@ export default function BarberCalendar() {
           ? `Agenda guardada. ${omitted} bloque(s) ocupado(s) se conservaron sin cambios.`
           : 'Agenda guardada y disponible para las reservas de clientes.',
       );
+      await loadReservations();
     } catch (error) {
       setCopyFeedback(error instanceof Error ? error.message : 'No se pudo guardar la agenda.');
     } finally {
@@ -179,6 +246,9 @@ export default function BarberCalendar() {
             {capitalize(format(weekStart, "d 'de' MMMM", { locale: es }))} –{' '}
             {format(weekEnd, "d 'de' MMMM 'de' yyyy", { locale: es })}
           </p>
+          <small className="calendar-toolbar-hint">
+            Organiza tu semana y revisa aqui mismo las reservas confirmadas.
+          </small>
         </div>
 
         <div className="calendar-actions" aria-label="Navegacion de la agenda">
@@ -228,6 +298,7 @@ export default function BarberCalendar() {
       </div>
 
       {copyFeedback && <p className="calendar-copy-feedback" role="status">{copyFeedback}</p>}
+      {loadingReservations && <p className="calendar-copy-feedback is-loading" role="status">Actualizando reservas...</p>}
 
       <div className="calendar-scroll">
         <div className="calendar-grid">
@@ -250,12 +321,18 @@ export default function BarberCalendar() {
                 </div>
                 {HOURS.map((hour) => {
                   const key = getSlotKey(date, hour);
+                  const reservedSlot = reservedSlots[key];
+                  const detail = reservedSlot
+                    ? `${reservedSlot.cliente?.nombre || 'Cliente'} · ${reservedSlot.servicio?.nombre_servicio || 'Servicio'}`
+                    : undefined;
                   return (
                     <CalendarSlot
                       key={key}
                       dateLabel={dateLabel}
                       hour={hour}
-                      status={slots[key] ?? getDefaultStatus(hour)}
+                      status={reservedSlot ? 'reserved' : slots[key] ?? getDefaultStatus(hour)}
+                      disabled={Boolean(reservedSlot)}
+                      detail={detail}
                       onClick={() => openSlot(date, hour)}
                     />
                   );

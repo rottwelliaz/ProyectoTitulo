@@ -18,6 +18,12 @@ export const login = async (req: Request, res: Response) => {
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(401).json({ message: 'Credenciales inválidas' });
 
+    if (user.rol === 'barbero' && !user.aprobado) {
+      return res.status(403).json({
+        message: 'Tu cuenta de barbero esta pendiente de aprobacion por un administrador.',
+      });
+    }
+
     const token = jwt.sign({ id: user.id, rol: user.rol } as any, JWT_SECRET as any, { expiresIn: JWT_EXPIRE } as any);
 
     // @ts-ignore
@@ -40,6 +46,7 @@ export const getMe = async (req: AuthRequest, res: Response) => {
         email:          true,
         telefono:       true,
         rol:            true,
+        aprobado:       true,
         fecha_creacion: true,
         perfilBarbero: {
           select: {
@@ -101,6 +108,7 @@ export const updateMe = async (req: AuthRequest, res: Response) => {
         email:          true,
         telefono:       true,
         rol:            true,
+        aprobado:       true,
         fecha_creacion: true,
       },
     });

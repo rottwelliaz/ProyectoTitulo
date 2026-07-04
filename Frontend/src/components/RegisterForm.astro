@@ -66,7 +66,36 @@
             />
           </label>
 
-          <input type="hidden" name="rol" value="cliente" />
+          <fieldset class="grid gap-3 text-left">
+            <legend class="text-sm font-semibold text-zinc-800">Tipo de cuenta</legend>
+            <div class="grid gap-3 sm:grid-cols-2">
+              <label class="cursor-pointer rounded-lg border border-zinc-300 bg-white p-4 transition hover:border-violet-500 has-[:checked]:border-violet-700 has-[:checked]:bg-violet-50 has-[:checked]:ring-2 has-[:checked]:ring-violet-100">
+                <input
+                  class="sr-only"
+                  type="radio"
+                  name="rol"
+                  value="cliente"
+                  checked
+                />
+                <span class="block text-sm font-black text-zinc-950">Cliente</span>
+                <span class="mt-1 block text-xs font-semibold leading-5 text-zinc-500">Reservar horas</span>
+              </label>
+
+              <label class="cursor-pointer rounded-lg border border-zinc-300 bg-white p-4 transition hover:border-violet-500 has-[:checked]:border-violet-700 has-[:checked]:bg-violet-50 has-[:checked]:ring-2 has-[:checked]:ring-violet-100">
+                <input
+                  class="sr-only"
+                  type="radio"
+                  name="rol"
+                  value="barbero"
+                />
+                <span class="block text-sm font-black text-zinc-950">Barbero</span>
+                <span class="mt-1 block text-xs font-semibold leading-5 text-zinc-500">Requiere aprobacion admin</span>
+              </label>
+            </div>
+            <p id="barber-approval-note" class="hidden rounded-lg bg-amber-50 px-4 py-3 text-xs font-semibold leading-5 text-amber-700">
+              Las cuentas de barbero quedan pendientes hasta que un administrador las apruebe.
+            </p>
+          </fieldset>
 
           <button
             id="register-button"
@@ -96,6 +125,8 @@
   const message = document.querySelector<HTMLParagraphElement>('#register-message');
   const button = document.querySelector<HTMLButtonElement>('#register-button');
   const buttonText = document.querySelector<HTMLSpanElement>('#register-button-text');
+  const barberApprovalNote = document.querySelector<HTMLParagraphElement>('#barber-approval-note');
+  const roleInputs = document.querySelectorAll<HTMLInputElement>('input[name="rol"]');
 
   const showMessage = (text: string, type: 'success' | 'error') => {
     if (!message) return;
@@ -106,6 +137,14 @@
         ? 'mt-4 rounded-lg bg-green-50 px-4 py-3 text-sm font-semibold text-green-700'
         : 'mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm font-semibold text-red-700';
   };
+
+  const updateApprovalNote = () => {
+    const selectedRole = form?.querySelector<HTMLInputElement>('input[name="rol"]:checked')?.value;
+    barberApprovalNote?.classList.toggle('hidden', selectedRole !== 'barbero');
+  };
+
+  roleInputs.forEach((input) => input.addEventListener('change', updateApprovalNote));
+  updateApprovalNote();
 
   form?.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -137,12 +176,18 @@
         throw new Error(data.message || data.error || 'No se pudo crear la cuenta.');
       }
 
-      showMessage('Cuenta creada correctamente. Ahora puedes iniciar sesion.', 'success');
+      const successMessage =
+        payload.rol === 'barbero'
+          ? 'Solicitud enviada correctamente. Un administrador debe aprobar tu cuenta antes de iniciar sesion.'
+          : 'Cuenta creada correctamente. Ahora puedes iniciar sesion.';
+
+      showMessage(successMessage, 'success');
       form.reset();
+      updateApprovalNote();
 
       window.setTimeout(() => {
         window.location.href = '/login';
-      }, 1000);
+      }, payload.rol === 'barbero' ? 2200 : 1000);
     } catch (error) {
       const text = error instanceof Error ? error.message : 'Error al crear la cuenta.';
       showMessage(text, 'error');

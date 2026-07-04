@@ -1,0 +1,2 @@
+ALTER TABLE "User" ADD COLUMN "aprobado" BOOLEAN NOT NULL DEFAULT true;
+

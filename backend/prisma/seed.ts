@@ -13,6 +13,7 @@ async function main() {
       password: passwordHash,
       telefono: '555111111',
       rol: UserRole.cliente,
+      aprobado: true,
     },
     create: {
       nombre: 'Cliente Demo',
@@ -20,6 +21,7 @@ async function main() {
       password: passwordHash,
       telefono: '555111111',
       rol: UserRole.cliente,
+      aprobado: true,
     },
   });
 
@@ -30,6 +32,7 @@ async function main() {
       password: passwordHash,
       telefono: '555222222',
       rol: UserRole.barbero,
+      aprobado: true,
     },
     create: {
       nombre: 'Barbero Demo',
@@ -37,6 +40,7 @@ async function main() {
       password: passwordHash,
       telefono: '555222222',
       rol: UserRole.barbero,
+      aprobado: true,
     },
   });
 
@@ -76,6 +80,7 @@ async function main() {
       password: passwordHash,
       telefono: '555333333',
       rol: UserRole.admin,
+      aprobado: true,
     },
     create: {
       nombre: 'Admin Demo',
@@ -83,6 +88,7 @@ async function main() {
       password: passwordHash,
       telefono: '555333333',
       rol: UserRole.admin,
+      aprobado: true,
     },
   });
 

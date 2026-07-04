@@ -5,6 +5,22 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  scroll-behavior: smooth;
+}
+
+section[id],
+[data-scroll-target],
+[id] {
+  scroll-margin-top: 96px;
+}
+
 body {
   /* TODO: Agregar estilos globales */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }

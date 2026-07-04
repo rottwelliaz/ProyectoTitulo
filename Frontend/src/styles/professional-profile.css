@@ -582,6 +582,15 @@
   margin: 0.4rem 0 0;
 }
 
+.calendar-toolbar-hint {
+  color: rgba(199, 210, 225, 0.78);
+  display: block;
+  font-size: 0.76rem;
+  line-height: 1.4;
+  margin-top: 0.35rem;
+  max-width: 28rem;
+}
+
 .calendar-actions {
   display: flex;
   flex-wrap: wrap;
@@ -633,6 +642,11 @@
   font-size: 0.8rem;
   margin: -0.35rem 0 1rem;
   padding: 0.55rem 0.7rem;
+}
+
+.calendar-copy-feedback.is-loading {
+  background: rgba(22, 128, 58, 0.12);
+  border-left-color: #16803a;
 }
 
 .calendar-scroll {
@@ -705,6 +719,7 @@
   color: #ffffff;
   cursor: pointer;
   display: flex;
+  flex-direction: column;
   font: inherit;
   font-size: 0.69rem;
   font-weight: 850;
@@ -714,10 +729,31 @@
   transition: filter 150ms ease, transform 150ms ease, box-shadow 150ms ease;
 }
 
-.barber-slot:hover {
+.barber-slot span,
+.barber-slot small {
+  display: block;
+  line-height: 1.08;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.barber-slot small {
+  font-size: 0.58rem;
+  font-weight: 800;
+  margin-top: 0.12rem;
+  opacity: 0.92;
+}
+
+.barber-slot:hover:not(:disabled) {
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.28);
   filter: brightness(1.14);
   transform: translateY(-1px);
+}
+
+.barber-slot:disabled {
+  cursor: not-allowed;
 }
 
 .barber-slot:focus-visible {

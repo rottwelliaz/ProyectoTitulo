@@ -1,0 +1,729 @@
+---
+import logoConce from '../assets/logotesis.png';
+import {
+  BadgeCheck,
+  CalendarCheck,
+  LayoutDashboard,
+  LogOut,
+  Scissors,
+  ShieldCheck,
+  UserCheck,
+  Users,
+} from 'lucide-astro';
+---
+
+<main class="admin-root">
+  <aside class="admin-sidebar">
+    <a class="admin-brand" href="/home" aria-label="Conce Barber Club">
+      <img src={logoConce.src} alt="Conce Barber Club" />
+    </a>
+
+    <nav class="admin-nav" aria-label="Panel administrador">
+      <button class="admin-nav-link is-active" type="button" data-admin-tab="resumen">
+        <LayoutDashboard size={22} aria-hidden="true" />
+        Resumen
+      </button>
+      <button class="admin-nav-link" type="button" data-admin-tab="clientes">
+        <Users size={22} aria-hidden="true" />
+        Clientes
+      </button>
+      <button class="admin-nav-link" type="button" data-admin-tab="barberos">
+        <Scissors size={22} aria-hidden="true" />
+        Barberos
+      </button>
+      <button class="admin-nav-link" type="button" data-admin-tab="pendientes">
+        <UserCheck size={22} aria-hidden="true" />
+        Solicitudes
+      </button>
+      <button class="admin-nav-link" type="button" data-admin-tab="admins">
+        <ShieldCheck size={22} aria-hidden="true" />
+        Admins
+      </button>
+    </nav>
+
+    <div class="admin-sidebar-card">
+      <ShieldCheck size={22} aria-hidden="true" />
+      <div>
+        <strong>Modo admin</strong>
+        <span>Control general del sistema.</span>
+      </div>
+    </div>
+  </aside>
+
+  <section class="admin-main">
+    <header class="admin-topbar">
+      <div>
+        <p>Conce Barber Club</p>
+        <h1>Panel Administrador</h1>
+      </div>
+
+      <div class="admin-top-actions">
+        <a class="admin-secondary-button" href="/home">Ir al inicio</a>
+        <button id="admin-logout-button" class="admin-danger-ghost" type="button">
+          <LogOut size={18} aria-hidden="true" />
+          Salir
+        </button>
+      </div>
+    </header>
+
+    <p id="admin-dashboard-message" class="admin-message" hidden></p>
+
+    <section class="admin-hero-card">
+      <div>
+        <span class="admin-kicker">Administracion general</span>
+        <h2 id="admin-welcome-title">Gestiona usuarios, barberos y permisos</h2>
+        <p>
+          Desde aqui puedes revisar clientes registrados, barberos activos,
+          solicitudes pendientes y usuarios administradores.
+        </p>
+      </div>
+      <button id="admin-refresh-button" class="admin-primary-button" type="button">
+        Actualizar datos
+      </button>
+    </section>
+
+    <section class="admin-stats-grid" aria-label="Resumen de usuarios">
+      <article class="admin-stat-card">
+        <span><Users size={24} aria-hidden="true" /></span>
+        <small>Total usuarios</small>
+        <strong id="stat-total">0</strong>
+      </article>
+      <article class="admin-stat-card">
+        <span><Users size={24} aria-hidden="true" /></span>
+        <small>Clientes</small>
+        <strong id="stat-clientes">0</strong>
+      </article>
+      <article class="admin-stat-card">
+        <span><Scissors size={24} aria-hidden="true" /></span>
+        <small>Barberos</small>
+        <strong id="stat-barberos">0</strong>
+      </article>
+      <article class="admin-stat-card is-warning">
+        <span><CalendarCheck size={24} aria-hidden="true" /></span>
+        <small>Pendientes</small>
+        <strong id="stat-pendientes">0</strong>
+      </article>
+    </section>
+
+    <section class="admin-panel is-active" data-admin-panel="resumen">
+      <div class="admin-panel-header">
+        <div>
+          <h2>Resumen del sistema</h2>
+          <p>Vista rapida de actividad y permisos.</p>
+        </div>
+      </div>
+
+      <div class="admin-summary-grid">
+        <article>
+          <BadgeCheck size={28} aria-hidden="true" />
+          <strong id="summary-approved">0 barberos aprobados</strong>
+          <span>Profesionales disponibles para recibir reservas.</span>
+        </article>
+        <article>
+          <UserCheck size={28} aria-hidden="true" />
+          <strong id="summary-pending">0 solicitudes pendientes</strong>
+          <span>Cuentas de barbero esperando revision de admin.</span>
+        </article>
+        <article>
+          <ShieldCheck size={28} aria-hidden="true" />
+          <strong id="summary-admins">0 administradores</strong>
+          <span>Usuarios con permisos de gestion.</span>
+        </article>
+      </div>
+    </section>
+
+    <section class="admin-panel" data-admin-panel="clientes">
+      <div class="admin-panel-header">
+        <div>
+          <h2>Clientes registrados</h2>
+          <p>Lista completa de usuarios con rol cliente.</p>
+        </div>
+      </div>
+      <div id="admin-clientes-list" class="admin-table-list"></div>
+    </section>
+
+    <section class="admin-panel" data-admin-panel="barberos">
+      <div class="admin-panel-header">
+        <div>
+          <h2>Barberos registrados</h2>
+          <p>Incluye aprobados y pendientes, con sus servicios y lugar de trabajo.</p>
+        </div>
+      </div>
+      <div id="admin-barberos-list" class="admin-table-list"></div>
+    </section>
+
+    <section class="admin-panel" data-admin-panel="pendientes">
+      <div class="admin-panel-header">
+        <div>
+          <h2>Solicitudes pendientes</h2>
+          <p>Aprueba cuentas de barbero para habilitar su acceso.</p>
+        </div>
+      </div>
+      <div id="admin-pendientes-list" class="admin-table-list"></div>
+    </section>
+
+    <section class="admin-panel" data-admin-panel="admins">
+      <div class="admin-panel-header">
+        <div>
+          <h2>Administradores</h2>
+          <p>Usuarios con permisos administrativos.</p>
+        </div>
+      </div>
+      <div id="admin-admins-list" class="admin-table-list"></div>
+    </section>
+  </section>
+</main>
+
+<div id="admin-edit-modal" class="admin-modal-backdrop" hidden>
+  <section class="admin-modal" role="dialog" aria-modal="true" aria-labelledby="admin-edit-title">
+    <div class="admin-modal-header">
+      <div>
+        <span class="admin-kicker">Editar usuario</span>
+        <h2 id="admin-edit-title">Actualizar datos</h2>
+      </div>
+      <button id="admin-edit-close" class="admin-modal-close" type="button" aria-label="Cerrar modal">×</button>
+    </div>
+
+    <form id="admin-edit-form" class="admin-edit-form">
+      <input type="hidden" name="id" />
+
+      <label>
+        <span>Nombre completo</span>
+        <input name="nombre" type="text" required maxlength="100" />
+      </label>
+
+      <label>
+        <span>Email</span>
+        <input name="email" type="email" required maxlength="120" />
+      </label>
+
+      <label>
+        <span>Telefono</span>
+        <input name="telefono" type="tel" maxlength="30" />
+      </label>
+
+      <label>
+        <span>Rol</span>
+        <select name="rol" required>
+          <option value="cliente">Cliente</option>
+          <option value="barbero">Barbero</option>
+          <option value="admin">Admin</option>
+        </select>
+      </label>
+
+      <label id="admin-approved-field" class="admin-check-field">
+        <input name="aprobado" type="checkbox" />
+        <span>Cuenta aprobada</span>
+      </label>
+
+      <label>
+        <span>Nueva contraseña <small>(opcional)</small></span>
+        <input name="password" type="password" minlength="6" placeholder="Dejar vacio para mantener la actual" />
+      </label>
+
+      <p id="admin-edit-message" class="admin-edit-message" hidden></p>
+
+      <div class="admin-modal-actions">
+        <button id="admin-edit-submit" class="admin-primary-button" type="submit">Guardar cambios</button>
+        <button id="admin-edit-cancel" class="admin-secondary-button" type="button">Cancelar</button>
+      </div>
+    </form>
+  </section>
+</div>
+
+<script>
+  const API_URL = 'http://localhost:3001/api';
+  const token = localStorage.getItem('token');
+  const storedUser = localStorage.getItem('user');
+
+  type AdminRole = 'cliente' | 'barbero' | 'admin';
+
+  interface AdminUser {
+    id: number;
+    nombre: string;
+    email: string;
+    telefono?: string | null;
+    rol: AdminRole;
+    aprobado: boolean;
+    fecha_creacion: string;
+    perfilBarbero?: {
+      id: number;
+      biografia?: string | null;
+      lugarTrabajo?: {
+        nombre_barberia?: string | null;
+        direccion?: string | null;
+      } | null;
+      servicios?: Array<{
+        id: string;
+        nombre_servicio: string;
+        precio: number;
+        duracion_minutos: number;
+      }>;
+      _count?: {
+        citas: number;
+        servicios: number;
+      };
+    } | null;
+    _count?: {
+      citas: number;
+    };
+  }
+
+  interface AdminDashboardResponse {
+    stats: {
+      totalUsuarios: number;
+      clientes: number;
+      barberos: number;
+      barberosAprobados: number;
+      barberosPendientes: number;
+      admins: number;
+    };
+    clientes: AdminUser[];
+    barberos: AdminUser[];
+    admins: AdminUser[];
+    barberosPendientes: AdminUser[];
+  }
+
+  const message = document.querySelector<HTMLParagraphElement>('#admin-dashboard-message');
+  const refreshButton = document.querySelector<HTMLButtonElement>('#admin-refresh-button');
+  const logoutButton = document.querySelector<HTMLButtonElement>('#admin-logout-button');
+  const navButtons = document.querySelectorAll<HTMLButtonElement>('[data-admin-tab]');
+  const panels = document.querySelectorAll<HTMLElement>('[data-admin-panel]');
+
+  const clientesList = document.querySelector<HTMLDivElement>('#admin-clientes-list');
+  const barberosList = document.querySelector<HTMLDivElement>('#admin-barberos-list');
+  const pendientesList = document.querySelector<HTMLDivElement>('#admin-pendientes-list');
+  const adminsList = document.querySelector<HTMLDivElement>('#admin-admins-list');
+  const editModal = document.querySelector<HTMLDivElement>('#admin-edit-modal');
+  const editForm = document.querySelector<HTMLFormElement>('#admin-edit-form');
+  const editCloseButton = document.querySelector<HTMLButtonElement>('#admin-edit-close');
+  const editCancelButton = document.querySelector<HTMLButtonElement>('#admin-edit-cancel');
+  const editSubmitButton = document.querySelector<HTMLButtonElement>('#admin-edit-submit');
+  const editMessage = document.querySelector<HTMLParagraphElement>('#admin-edit-message');
+  const approvedField = document.querySelector<HTMLLabelElement>('#admin-approved-field');
+
+  let dashboardUsers: AdminUser[] = [];
+
+  const getStoredUser = () => {
+    try {
+      return storedUser ? JSON.parse(storedUser) : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const escapeHtml = (value: unknown) =>
+    String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+
+  const formatDate = (value: string) => {
+    if (!value) return '-';
+    return new Intl.DateTimeFormat('es-CL', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+    }).format(new Date(value));
+  };
+
+  const showMessage = (text: string, type: 'success' | 'error') => {
+    if (!message) return;
+    message.textContent = text;
+    message.hidden = false;
+    message.className = `admin-message is-${type}`;
+  };
+
+  const clearMessage = () => {
+    if (!message) return;
+    message.hidden = true;
+    message.textContent = '';
+  };
+
+  const showEditMessage = (text: string, type: 'success' | 'error') => {
+    if (!editMessage) return;
+    editMessage.textContent = text;
+    editMessage.hidden = false;
+    editMessage.className = `admin-edit-message is-${type}`;
+  };
+
+  const clearEditMessage = () => {
+    if (!editMessage) return;
+    editMessage.hidden = true;
+    editMessage.textContent = '';
+  };
+
+  const toggleApprovedField = () => {
+    const role = editForm?.elements.namedItem('rol') as HTMLSelectElement | null;
+    approvedField?.classList.toggle('is-hidden', role?.value !== 'barbero');
+  };
+
+  const closeEditModal = () => {
+    if (!editModal) return;
+    editModal.hidden = true;
+    document.body.classList.remove('admin-modal-open');
+    clearEditMessage();
+  };
+
+  const openEditModal = (id: string) => {
+    const user = dashboardUsers.find((item) => String(item.id) === String(id));
+    if (!user || !editForm || !editModal) return;
+
+    const idInput = editForm.elements.namedItem('id') as HTMLInputElement;
+    const nameInput = editForm.elements.namedItem('nombre') as HTMLInputElement;
+    const emailInput = editForm.elements.namedItem('email') as HTMLInputElement;
+    const phoneInput = editForm.elements.namedItem('telefono') as HTMLInputElement;
+    const roleInput = editForm.elements.namedItem('rol') as HTMLSelectElement;
+    const approvedInput = editForm.elements.namedItem('aprobado') as HTMLInputElement;
+    const passwordInput = editForm.elements.namedItem('password') as HTMLInputElement;
+
+    idInput.value = String(user.id);
+    nameInput.value = user.nombre || '';
+    emailInput.value = user.email || '';
+    phoneInput.value = user.telefono || '';
+    roleInput.value = user.rol;
+    approvedInput.checked = user.rol !== 'barbero' ? true : Boolean(user.aprobado);
+    passwordInput.value = '';
+
+    toggleApprovedField();
+    clearEditMessage();
+    editModal.hidden = false;
+    document.body.classList.add('admin-modal-open');
+    nameInput.focus();
+  };
+
+  const setText = (selector: string, value: string | number) => {
+    const element = document.querySelector<HTMLElement>(selector);
+    if (element) element.textContent = String(value);
+  };
+
+  const renderEmpty = (container: HTMLElement | null, text: string) => {
+    if (!container) return;
+    container.innerHTML = `<div class="admin-empty">${escapeHtml(text)}</div>`;
+  };
+
+  const statusPill = (user: AdminUser) => {
+    if (user.rol !== 'barbero') return '<span class="admin-pill is-ok">Activo</span>';
+    return user.aprobado
+      ? '<span class="admin-pill is-ok">Aprobado</span>'
+      : '<span class="admin-pill is-warning">Pendiente</span>';
+  };
+
+  const renderUserCard = (user: AdminUser, options: { showBarberInfo?: boolean; allowApprove?: boolean; allowDelete?: boolean; allowEdit?: boolean } = {}) => {
+    const profile = user.perfilBarbero;
+    const workplace = profile?.lugarTrabajo;
+    const services = profile?.servicios || [];
+    const citasCount = user.rol === 'barbero' ? profile?._count?.citas || 0 : user._count?.citas || 0;
+    const servicesCount = profile?._count?.servicios ?? services.length;
+
+    return `
+      <article class="admin-user-card" data-user-id="${escapeHtml(user.id)}">
+        <div class="admin-user-avatar">${escapeHtml(user.nombre?.charAt(0).toUpperCase() || 'U')}</div>
+        <div class="admin-user-body">
+          <div class="admin-user-title-row">
+            <div>
+              <h3>${escapeHtml(user.nombre)}</h3>
+              <p>${escapeHtml(user.email)}</p>
+            </div>
+            ${statusPill(user)}
+          </div>
+
+          <div class="admin-user-meta">
+            <span>Rol: ${escapeHtml(user.rol)}</span>
+            <span>Telefono: ${escapeHtml(user.telefono || 'No registrado')}</span>
+            <span>Creado: ${escapeHtml(formatDate(user.fecha_creacion))}</span>
+            <span>Citas: ${escapeHtml(citasCount)}</span>
+          </div>
+
+          ${options.showBarberInfo ? `
+            <div class="admin-barber-details">
+              <span>Barberia: ${escapeHtml(workplace?.nombre_barberia || 'Sin lugar registrado')}</span>
+              <span>Direccion: ${escapeHtml(workplace?.direccion || 'Sin direccion')}</span>
+              <span>Servicios: ${escapeHtml(servicesCount)}</span>
+            </div>
+            ${services.length > 0 ? `
+              <div class="admin-service-chips">
+                ${services.map((service) => `
+                  <span>${escapeHtml(service.nombre_servicio)} · $${escapeHtml(service.precio)} · ${escapeHtml(service.duracion_minutos)} min</span>
+                `).join('')}
+              </div>
+            ` : ''}
+          ` : ''}
+        </div>
+
+        <div class="admin-user-actions">
+          ${options.allowEdit ? `
+            <button class="admin-edit-button" type="button" data-edit-id="${escapeHtml(user.id)}">
+              <span>Editar</span>
+            </button>
+          ` : ''}
+          ${options.allowApprove && user.rol === 'barbero' && !user.aprobado ? `
+            <button class="admin-approve-button" type="button" data-approve-id="${escapeHtml(user.id)}">
+              <span>Aprobar</span>
+            </button>
+          ` : ''}
+          ${options.allowDelete ? `
+            <button class="admin-delete-button" type="button" data-delete-id="${escapeHtml(user.id)}">
+              <span>Eliminar</span>
+            </button>
+          ` : ''}
+        </div>
+      </article>
+    `;
+  };
+
+  const renderList = (container: HTMLElement | null, users: AdminUser[], emptyText: string, options = {}) => {
+    if (!container) return;
+    if (!users.length) {
+      renderEmpty(container, emptyText);
+      return;
+    }
+    container.innerHTML = users.map((user) => renderUserCard(user, options)).join('');
+  };
+
+  const renderDashboard = (data: AdminDashboardResponse) => {
+    dashboardUsers = [
+      ...data.clientes,
+      ...data.barberos,
+      ...data.admins,
+    ];
+
+    setText('#stat-total', data.stats.totalUsuarios);
+    setText('#stat-clientes', data.stats.clientes);
+    setText('#stat-barberos', data.stats.barberos);
+    setText('#stat-pendientes', data.stats.barberosPendientes);
+    setText('#summary-approved', `${data.stats.barberosAprobados} barberos aprobados`);
+    setText('#summary-pending', `${data.stats.barberosPendientes} solicitudes pendientes`);
+    setText('#summary-admins', `${data.stats.admins} administradores`);
+
+    renderList(clientesList, data.clientes, 'No hay clientes registrados.', { allowEdit: true, allowDelete: true });
+    renderList(barberosList, data.barberos, 'No hay barberos registrados.', {
+      showBarberInfo: true,
+      allowEdit: true,
+      allowApprove: true,
+      allowDelete: true,
+    });
+    renderList(pendientesList, data.barberosPendientes, 'No hay solicitudes pendientes.', {
+      showBarberInfo: true,
+      allowEdit: true,
+      allowApprove: true,
+      allowDelete: true,
+    });
+    renderList(adminsList, data.admins, 'No hay administradores registrados.', { allowEdit: true, allowDelete: false });
+  };
+
+  const loadDashboard = async () => {
+    clearMessage();
+
+    if (!token) {
+      window.location.href = '/login?redirect=/admin';
+      return;
+    }
+
+    const user = getStoredUser();
+    if (user?.rol !== 'admin') {
+      showMessage('Solo un usuario admin puede entrar a este panel.', 'error');
+      renderEmpty(clientesList, 'Sin permisos.');
+      renderEmpty(barberosList, 'Sin permisos.');
+      renderEmpty(pendientesList, 'Sin permisos.');
+      renderEmpty(adminsList, 'Sin permisos.');
+      return;
+    }
+
+    refreshButton?.setAttribute('disabled', 'true');
+    if (refreshButton) refreshButton.textContent = 'Actualizando...';
+
+    try {
+      const response = await fetch(`${API_URL}/usuarios/admin/dashboard`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.message || 'No se pudo cargar el panel admin.');
+      }
+
+      renderDashboard(data);
+    } catch (error) {
+      const text = error instanceof Error ? error.message : 'Error al cargar el panel admin.';
+      showMessage(text, 'error');
+    } finally {
+      refreshButton?.removeAttribute('disabled');
+      if (refreshButton) refreshButton.textContent = 'Actualizar datos';
+    }
+  };
+
+  const approveBarber = async (id: string) => {
+    if (!token) return;
+
+    try {
+      const response = await fetch(`${API_URL}/usuarios/${id}/aprobar-barbero`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.message || 'No se pudo aprobar el barbero.');
+      }
+
+      showMessage('Barbero aprobado correctamente.', 'success');
+      await loadDashboard();
+    } catch (error) {
+      const text = error instanceof Error ? error.message : 'Error al aprobar barbero.';
+      showMessage(text, 'error');
+    }
+  };
+
+  const deleteUser = async (id: string) => {
+    if (!token) return;
+
+    const ok = window.confirm('Seguro que quieres eliminar este usuario? Esta accion no se puede deshacer.');
+    if (!ok) return;
+
+    try {
+      const response = await fetch(`${API_URL}/usuarios/${id}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.message || 'No se pudo eliminar el usuario.');
+      }
+
+      showMessage('Usuario eliminado correctamente.', 'success');
+      await loadDashboard();
+    } catch (error) {
+      const text = error instanceof Error ? error.message : 'Error al eliminar usuario.';
+      showMessage(text, 'error');
+    }
+  };
+
+  const updateUser = async () => {
+    if (!token || !editForm) return;
+
+    const formData = new FormData(editForm);
+    const id = String(formData.get('id') || '');
+    const rol = String(formData.get('rol') || 'cliente') as AdminRole;
+    const password = String(formData.get('password') || '');
+
+    const payload: {
+      nombre: string;
+      email: string;
+      telefono: string | null;
+      rol: AdminRole;
+      aprobado: boolean;
+      password?: string;
+    } = {
+      nombre: String(formData.get('nombre') || '').trim(),
+      email: String(formData.get('email') || '').trim(),
+      telefono: String(formData.get('telefono') || '').trim() || null,
+      rol,
+      aprobado: rol === 'barbero' ? Boolean(formData.get('aprobado')) : true,
+    };
+
+    if (password.trim()) {
+      payload.password = password;
+    }
+
+    if (!payload.nombre || !payload.email) {
+      showEditMessage('Nombre y email son obligatorios.', 'error');
+      return;
+    }
+
+    editSubmitButton?.setAttribute('disabled', 'true');
+    if (editSubmitButton) editSubmitButton.textContent = 'Guardando...';
+
+    try {
+      const response = await fetch(`${API_URL}/usuarios/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.message || 'No se pudo actualizar el usuario.');
+      }
+
+      closeEditModal();
+      showMessage('Usuario actualizado correctamente.', 'success');
+      await loadDashboard();
+    } catch (error) {
+      const text = error instanceof Error ? error.message : 'Error al actualizar usuario.';
+      showEditMessage(text, 'error');
+    } finally {
+      editSubmitButton?.removeAttribute('disabled');
+      if (editSubmitButton) editSubmitButton.textContent = 'Guardar cambios';
+    }
+  };
+
+  document.addEventListener('click', (event) => {
+    const target = event.target as HTMLElement;
+    const editButton = target.closest<HTMLButtonElement>('[data-edit-id]');
+    const approveButton = target.closest<HTMLButtonElement>('[data-approve-id]');
+    const deleteButton = target.closest<HTMLButtonElement>('[data-delete-id]');
+
+    if (editButton?.dataset.editId) {
+      openEditModal(editButton.dataset.editId);
+    }
+
+    if (approveButton?.dataset.approveId) {
+      approveBarber(approveButton.dataset.approveId);
+    }
+
+    if (deleteButton?.dataset.deleteId) {
+      deleteUser(deleteButton.dataset.deleteId);
+    }
+  });
+
+  navButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      const tab = button.dataset.adminTab;
+
+      navButtons.forEach((navButton) => navButton.classList.toggle('is-active', navButton === button));
+      panels.forEach((panel) => panel.classList.toggle('is-active', panel.dataset.adminPanel === tab));
+    });
+  });
+
+  editForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    await updateUser();
+  });
+
+  editForm?.elements.namedItem('rol')?.addEventListener('change', toggleApprovedField);
+  editCloseButton?.addEventListener('click', closeEditModal);
+  editCancelButton?.addEventListener('click', closeEditModal);
+  editModal?.addEventListener('mousedown', (event) => {
+    if (event.target === editModal) {
+      closeEditModal();
+    }
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && editModal && !editModal.hidden) {
+      closeEditModal();
+    }
+  });
+
+  refreshButton?.addEventListener('click', loadDashboard);
+  logoutButton?.addEventListener('click', () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = '/login';
+  });
+
+  loadDashboard();
+</script>

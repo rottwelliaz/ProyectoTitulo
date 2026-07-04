@@ -288,7 +288,7 @@ export const getBarberosParaReserva = async (_req: AuthRequest, res: Response) =
   try {
     const barberos = await prisma.barberProfile.findMany({
       where: {
-        usuario: { rol: 'barbero' },
+        usuario: { rol: 'barbero', aprobado: true },
         lugarTrabajoId: { not: null },
       },
       select: {
