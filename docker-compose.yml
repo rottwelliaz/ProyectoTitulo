@@ -37,7 +37,6 @@ services:
       - JWT_EXPIRE=${JWT_EXPIRE:-7d}
       - PORT=${BACKEND_PORT:-3001}
       - CORS_ORIGIN=${FRONTEND_ORIGIN:-http://localhost:3000}
-      - SOCKET_IO_CORS=${FRONTEND_ORIGIN:-http://localhost:3000}
       - DATABASE_URL=postgresql://${DB_USERNAME:-postgres}:${DB_PASSWORD:-barcelona}@postgres:5432/${DB_NAME:-taller}
     ports:
       - "${BACKEND_PORT:-3001}:3001"
@@ -49,7 +48,7 @@ services:
     volumes:
       - ./backend/src:/app/src
       - ./backend/prisma:/app/prisma
-    command: sh -c "npm run db:setup && npm run dev"
+    command: sh -c "npx prisma db push --accept-data-loss && npm run db:seed && npm run dev"
 
   # Frontend Service
   frontend:
@@ -59,7 +58,6 @@ services:
     container_name: barberia_frontend
     environment:
       - VITE_API_URL=${VITE_API_URL:-http://localhost:3001/api}
-      - VITE_SOCKET_URL=${VITE_SOCKET_URL:-http://localhost:3001}
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     depends_on:

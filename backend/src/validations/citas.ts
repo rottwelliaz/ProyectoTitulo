@@ -1,6 +1,4 @@
-// Validaciones de Citas
-// TODO: Implementar esquemas de validación para citas
+import Joi from 'joi';
 
-export const citasValidation = {
-  // Esquemas de validación
-};
+// No hay reglas especificas para citas todavia.
+export const citasValidation = Joi.object({}).unknown(true);

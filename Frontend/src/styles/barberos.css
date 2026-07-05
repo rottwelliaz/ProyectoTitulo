@@ -1,0 +1,585 @@
+.barbers-page {
+  background:
+    radial-gradient(circle at 50% 15%, rgba(2, 96, 184, 0.34), transparent 32rem),
+    linear-gradient(180deg, #020b17 0%, #061b34 44%, #02101f 100%);
+  color: #ffffff;
+  font-family: 'Inter', system-ui, sans-serif;
+  min-height: 100vh;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.barbers-header,
+.barbers-main {
+  margin: 0 auto;
+  max-width: 1460px;
+  width: min(100% - 56px, 1460px);
+}
+
+.barbers-header {
+  align-items: center;
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: 108px minmax(260px, 360px) 1fr auto;
+  min-height: 94px;
+}
+
+.barbers-brand img {
+  display: block;
+  height: 82px;
+  object-fit: contain;
+  width: 92px;
+}
+
+.barbers-top-search,
+.barbers-search-field {
+  align-items: center;
+  background: rgba(4, 31, 64, 0.92);
+  border: 1px solid rgba(59, 130, 246, 0.13);
+  color: rgba(255, 255, 255, 0.8);
+  display: flex;
+  gap: 0.85rem;
+}
+
+.barbers-top-search {
+  border-radius: 999px;
+  min-height: 48px;
+  padding: 0 1.2rem;
+}
+
+.barbers-top-search input,
+.barbers-search-field input {
+  background: transparent;
+  border: 0;
+  color: #ffffff;
+  font: inherit;
+  min-width: 0;
+  outline: none;
+  width: 100%;
+}
+
+.barbers-top-search input::placeholder,
+.barbers-search-field input::placeholder {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.barbers-nav {
+  align-items: center;
+  display: flex;
+  gap: clamp(1rem, 2vw, 2.3rem);
+  justify-content: center;
+}
+
+.barbers-nav a {
+  color: rgba(255, 255, 255, 0.94);
+  font-size: 0.92rem;
+  font-weight: 760;
+  padding: 0.85rem 0;
+  position: relative;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.barbers-nav a.active,
+.barbers-nav a:hover {
+  color: #ffd226;
+}
+
+.barbers-nav a.active::after {
+  background: #ffd226;
+  bottom: 0.2rem;
+  content: '';
+  height: 3px;
+  left: 0;
+  position: absolute;
+  width: 100%;
+}
+
+.barbers-user-actions {
+  align-items: center;
+  display: flex;
+  gap: 1.2rem;
+}
+
+.barbers-profile,
+.filter-select,
+.view-switch button,
+.barber-name-row button,
+.barbers-pagination button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  display: inline-flex;
+  font: inherit;
+}
+
+.barbers-profile-menu {
+  position: relative;
+}
+
+.barbers-profile {
+  cursor: pointer;
+  gap: 0.75rem;
+  text-decoration: none;
+}
+
+.barbers-profile span {
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 999px;
+  display: flex;
+  font-weight: 950;
+  height: 48px;
+  justify-content: center;
+  width: 48px;
+}
+
+.barbers-profile strong {
+  font-size: 0.94rem;
+}
+
+.barbers-profile-dropdown {
+  background: #ffffff;
+  border: 1px solid #d4d4d8;
+  border-radius: 8px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+  display: none;
+  min-width: 190px;
+  padding: 0.5rem;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.75rem);
+  z-index: 30;
+}
+
+.barbers-profile-menu.is-open .barbers-profile-dropdown {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.barbers-profile-dropdown a,
+.barbers-profile-dropdown button {
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: #18181b;
+  cursor: pointer;
+  display: block;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 650;
+  padding: 0.75rem 0.8rem;
+  text-align: left;
+  text-decoration: none;
+  width: 100%;
+}
+
+.barbers-profile-dropdown a:hover,
+.barbers-profile-dropdown button:hover,
+.barbers-profile-dropdown a:focus-visible,
+.barbers-profile-dropdown button:focus-visible {
+  background: #edf5ff;
+  color: #0456b8;
+  outline: none;
+}
+
+.barbers-main {
+  padding: 2.2rem 0 3.5rem;
+}
+
+.barbers-hero {
+  align-items: end;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.barbers-hero h1 {
+  font-size: clamp(2rem, 3vw, 2.7rem);
+  font-weight: 950;
+  letter-spacing: 0;
+  line-height: 1;
+  margin: 0 0 0.5rem;
+  text-transform: uppercase;
+}
+
+.barbers-hero p {
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 1.05rem;
+  margin: 0;
+}
+
+.barbers-filters {
+  align-items: center;
+  border: 1px solid rgba(66, 126, 194, 0.38);
+  border-radius: 8px;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(260px, 1fr) minmax(190px, 260px);
+  margin-bottom: 1.15rem;
+  padding: 1rem;
+}
+
+.barbers-search-field,
+.filter-select {
+  border-radius: 7px;
+  min-height: 52px;
+  padding: 0 1rem;
+}
+
+.filter-select {
+  background: rgba(2, 16, 34, 0.32);
+  border: 1px solid rgba(86, 132, 190, 0.4);
+  cursor: default;
+  display: grid;
+  gap: 0.2rem 0.65rem;
+  grid-template-columns: 1fr auto;
+  justify-content: initial;
+  text-align: left;
+}
+
+.filter-select span {
+  display: block;
+  grid-column: 1 / -1;
+}
+
+.filter-select strong {
+  color: #ffffff;
+  font-size: 0.82rem;
+}
+
+.filter-select span,
+.filter-select svg {
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.filter-select select {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: rgba(255, 255, 255, 0.92);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 750;
+  grid-column: 1;
+  min-width: 0;
+  outline: 0;
+  width: 100%;
+}
+
+.filter-select svg {
+  grid-column: 2;
+  grid-row: 2;
+  justify-self: end;
+}
+
+.filter-select option {
+  background: #06152b;
+  color: #ffffff;
+}
+
+.sort-select {
+  grid-column: auto;
+}
+
+.barbers-results-row {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin: 0 0 1.2rem;
+}
+
+.barbers-results-row p {
+  color: rgba(255, 255, 255, 0.86);
+  margin: 0;
+}
+
+.barbers-results-row strong {
+  color: #ffd226;
+}
+
+.view-switch {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.view-switch button {
+  border: 1px solid rgba(83, 128, 184, 0.4);
+  border-radius: 6px;
+  cursor: pointer;
+  gap: 0.45rem;
+  min-height: 34px;
+  padding: 0 0.78rem;
+}
+
+.view-switch button.active {
+  background: #075fe4;
+  border-color: #1a77ff;
+  font-weight: 850;
+}
+
+.barbers-card-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.barbers-card-grid.is-list {
+  grid-template-columns: 1fr;
+}
+
+.barber-profile-card {
+  background: rgba(2, 18, 38, 0.78);
+  border: 1px solid rgba(53, 113, 178, 0.55);
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px rgba(0, 119, 255, 0.1), 0 14px 34px rgba(0, 0, 0, 0.22);
+  overflow: hidden;
+}
+
+.barbers-card-grid.is-list .barber-profile-card {
+  display: grid;
+  grid-template-columns: minmax(220px, 320px) 1fr;
+}
+
+.barber-profile-photo {
+  background-image:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.04), rgba(1, 13, 28, 0.45)),
+    var(--photo);
+  background-position: var(--position);
+  background-size: 170%;
+  height: 122px;
+  position: relative;
+}
+
+.barbers-card-grid.is-list .barber-profile-photo {
+  height: 100%;
+  min-height: 196px;
+}
+
+.availability {
+  background: rgba(21, 127, 45, 0.86);
+  border: 1px solid #2ee35c;
+  border-radius: 999px;
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 850;
+  padding: 0.28rem 0.7rem;
+  position: absolute;
+  right: 0.85rem;
+  top: 0.85rem;
+}
+
+.availability.busy {
+  background: rgba(46, 34, 0, 0.82);
+  border-color: #ffd226;
+  color: #ffd226;
+}
+
+.barber-profile-body {
+  padding: 0.95rem;
+}
+
+.barber-name-row {
+  align-items: center;
+  display: grid;
+  gap: 0.35rem;
+  grid-template-columns: auto auto 1fr;
+  margin-bottom: 0.65rem;
+}
+
+.barber-name-row h2 {
+  font-size: 1.17rem;
+  line-height: 1.1;
+  margin: 0;
+}
+
+.barber-name-row svg {
+  color: #1d99ff;
+  fill: none;
+  height: 17px;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+  width: 17px;
+}
+
+.barber-name-row button {
+  cursor: pointer;
+  justify-self: end;
+  padding: 0.15rem;
+}
+
+.barber-name-row button svg {
+  color: rgba(255, 255, 255, 0.86);
+  fill: none;
+  height: 22px;
+  width: 22px;
+}
+
+.barber-name-row button.is-active svg {
+  color: #ffd226;
+  fill: rgba(255, 210, 38, 0.28);
+}
+
+.barber-meta {
+  align-items: center;
+  display: flex;
+  gap: 0.55rem;
+  margin: 0 0 0.55rem;
+}
+
+.barber-meta {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.barber-meta {
+  font-size: 0.91rem;
+}
+
+.barber-meta svg {
+  color: rgba(255, 255, 255, 0.72);
+  flex: 0 0 auto;
+  fill: none;
+  height: 16px;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+  width: 16px;
+}
+
+.profile-button {
+  align-items: center;
+  background: #075fe4;
+  border-radius: 6px;
+  color: #ffffff;
+  display: flex;
+  font-weight: 900;
+  justify-content: center;
+  margin-top: 0.95rem;
+  min-height: 40px;
+  text-decoration: none;
+}
+
+.barbers-pagination {
+  align-items: center;
+  display: flex;
+  gap: 0.7rem;
+  justify-content: center;
+  margin-top: 2rem;
+}
+
+.barbers-empty {
+  border: 1px solid rgba(83, 128, 184, 0.38);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.82);
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 1.4rem;
+  text-align: center;
+}
+
+.barbers-pagination button,
+.barbers-pagination span {
+  border-radius: 6px;
+  color: #ffffff;
+  min-width: 38px;
+  padding: 0.68rem 0.55rem;
+  text-align: center;
+  text-decoration: none;
+}
+
+.barbers-pagination button {
+  border: 1px solid rgba(83, 128, 184, 0.38);
+  cursor: pointer;
+  justify-content: center;
+}
+
+.barbers-pagination button.active {
+  background: #075fe4;
+  border-color: #1a77ff;
+  font-weight: 900;
+}
+
+.barbers-pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+@media (max-width: 1180px) {
+  .barbers-header {
+    grid-template-columns: 94px 1fr auto;
+  }
+
+  .barbers-nav {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+    overflow-x: auto;
+  }
+
+  .barbers-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .barbers-card-grid.is-list {
+    grid-template-columns: 1fr;
+  }
+
+  .barbers-filters {
+    grid-template-columns: 1fr minmax(190px, 260px);
+  }
+}
+
+@media (max-width: 720px) {
+  .barbers-header,
+  .barbers-main {
+    width: min(100% - 28px, 1460px);
+  }
+
+  .barbers-header,
+  .barbers-filters,
+  .barbers-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .barbers-card-grid.is-list .barber-profile-card {
+    grid-template-columns: 1fr;
+  }
+
+  .barbers-card-grid.is-list .barber-profile-photo {
+    height: 122px;
+    min-height: 122px;
+  }
+
+  .barbers-brand img {
+    height: 76px;
+    width: 86px;
+  }
+
+  .barbers-user-actions {
+    justify-content: space-between;
+  }
+
+  .barbers-profile strong {
+    display: none;
+  }
+
+  .barbers-results-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+
+  .view-switch {
+    width: 100%;
+  }
+
+  .view-switch button {
+    flex: 1;
+    justify-content: center;
+  }
+}

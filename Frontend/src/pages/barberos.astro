@@ -1,0 +1,485 @@
+---
+import Layout from '../layouts/Layout.astro';
+import logoConce from '../assets/logotesis.png';
+import barberPhoto from '../assets/homefoto.png';
+import {
+  ChevronDown,
+  List,
+  Search,
+  SlidersHorizontal,
+  Table2,
+} from 'lucide-astro';
+import '../styles/barberos.css';
+---
+
+<Layout title="Barberos - Conce Barber Club">
+  <div class="barbers-page">
+    <header class="barbers-header">
+      <a class="barbers-brand" href="/home" aria-label="Conce Barber Club">
+        <img src={logoConce.src} alt="Conce Barber Club" />
+      </a>
+
+      <label class="barbers-top-search">
+        <Search size={21} aria-hidden="true" />
+        <input id="top-search" type="search" placeholder="Buscar barberos o barberias..." />
+      </label>
+
+      <nav class="barbers-nav" aria-label="Navegacion principal">
+        <a href="/home">Inicio</a>
+        <a href="/home#categorias">Categorias</a>
+        <a class="active" href="/barberos">Barberos</a>
+        <a href="/home">Sobre nosotros</a>
+      </nav>
+
+      <div class="barbers-user-actions">
+        <div id="barbers-profile-menu" class="barbers-profile-menu">
+          <button
+            id="barbers-profile-button"
+            class="barbers-profile"
+            type="button"
+            aria-label="Abrir menu de usuario"
+            aria-expanded="false"
+            aria-controls="barbers-profile-dropdown"
+          >
+            <span id="profile-initials">U</span>
+            <strong id="profile-name">Usuario</strong>
+            <ChevronDown size={17} aria-hidden="true" />
+          </button>
+
+          <div id="barbers-profile-dropdown" class="barbers-profile-dropdown" aria-hidden="true">
+            <a id="profile-link" class="hidden" href="/perfil">Mi perfil</a>
+            <a id="professional-profile-link" class="hidden" href="/perfil-profesional">Perfil Profesional</a>
+            <a id="admin-panel-link" class="hidden" href="/admin">Panel admin</a>
+            <a href="/configuracion">Configuracion</a>
+            <button id="logout-button" type="button">Cerrar sesion</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="barbers-main">
+      <section class="barbers-hero">
+        <div>
+          <h1>Barberos</h1>
+          <p>Encuentra a los mejores barberos de Concepcion</p>
+        </div>
+      </section>
+
+      <section class="barbers-filters" aria-label="Filtros de busqueda">
+        <label class="barbers-search-field">
+          <Search size={22} aria-hidden="true" />
+          <input id="barber-search" type="search" placeholder="Buscar barbero por nombre..." />
+        </label>
+
+        <label class="filter-select sort-select">
+          <span><strong>Ordenar por</strong></span>
+          <select id="sort-filter" aria-label="Ordenar barberos">
+            <option value="name">Nombre</option>
+            <option value="services">Mas servicios</option>
+          </select>
+          <SlidersHorizontal size={17} aria-hidden="true" />
+        </label>
+      </section>
+
+      <div class="barbers-results-row">
+        <p id="barbers-count">Cargando barberos...</p>
+        <div class="view-switch" aria-label="Cambiar vista">
+          <button id="cards-view" class="active" type="button" aria-pressed="true">
+            <Table2 size={16} aria-hidden="true" />
+            Tarjetas
+          </button>
+          <button id="list-view" type="button" aria-pressed="false">
+            <List size={17} aria-hidden="true" />
+            Lista
+          </button>
+        </div>
+      </div>
+
+      <section
+        id="barbers-grid"
+        class="barbers-card-grid"
+        data-photo-src={barberPhoto.src}
+        aria-label="Listado de barberos"
+        aria-live="polite"
+      >
+        <p class="barbers-empty">Cargando barberos desde la base de datos...</p>
+      </section>
+
+      <nav id="barbers-pagination" class="barbers-pagination" aria-label="Paginacion de barberos"></nav>
+    </main>
+  </div>
+</Layout>
+
+<script>
+  const API_URL = 'http://localhost:3001/api';
+  const PAGE_SIZE = 8;
+
+  const topSearch = document.querySelector<HTMLInputElement>('#top-search');
+  const barberSearch = document.querySelector<HTMLInputElement>('#barber-search');
+  const sortFilter = document.querySelector<HTMLSelectElement>('#sort-filter');
+  const countLabel = document.querySelector<HTMLParagraphElement>('#barbers-count');
+  const grid = document.querySelector<HTMLElement>('#barbers-grid');
+  const pagination = document.querySelector<HTMLElement>('#barbers-pagination');
+  const cardsViewButton = document.querySelector<HTMLButtonElement>('#cards-view');
+  const listViewButton = document.querySelector<HTMLButtonElement>('#list-view');
+  const barberPhotoSrc = grid?.dataset.photoSrc || '';
+  const profileMenu = document.querySelector<HTMLDivElement>('#barbers-profile-menu');
+  const profileButton = document.querySelector<HTMLButtonElement>('#barbers-profile-button');
+  const profileDropdown = document.querySelector<HTMLDivElement>('#barbers-profile-dropdown');
+  const profileInitials = document.querySelector<HTMLSpanElement>('#profile-initials');
+  const profileName = document.querySelector<HTMLElement>('#profile-name');
+  const profileLink = document.querySelector<HTMLAnchorElement>('#profile-link');
+  const professionalProfileLink = document.querySelector<HTMLAnchorElement>('#professional-profile-link');
+  const adminPanelLink = document.querySelector<HTMLAnchorElement>('#admin-panel-link');
+  const logoutButton = document.querySelector<HTMLButtonElement>('#logout-button');
+
+  interface Service {
+    id: string;
+    nombre_servicio: string;
+    descripcion?: string | null;
+    precio?: number;
+    duracion_minutos?: number;
+  }
+
+  interface BarberUser {
+    id: number;
+    nombre: string;
+    email?: string;
+    telefono?: string | null;
+    rol: string;
+    perfilBarbero?: {
+      id?: number;
+      biografia?: string | null;
+      foto_perfil?: string | null;
+      lugarTrabajo?: {
+        nombre_barberia?: string | null;
+        direccion?: string | null;
+      } | null;
+      servicios?: Service[];
+    } | null;
+  }
+
+  let barbers: BarberUser[] = [];
+  let currentPage = 1;
+  let currentView: 'cards' | 'list' = 'cards';
+
+  const normalize = (value: string) =>
+    value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+  const escapeHtml = (value: string) =>
+    value.replace(/[&<>"']/g, (char) => {
+      const entities: Record<string, string> = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;',
+      };
+      return entities[char];
+    });
+
+  const getStoredUser = () => {
+    const storedUser = localStorage.getItem('user');
+    if (!storedUser) return null;
+
+    try {
+      return JSON.parse(storedUser);
+    } catch {
+      return null;
+    }
+  };
+
+  const getInitials = (name: string) =>
+    name.split(' ').filter(Boolean).slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join('') || 'B';
+
+  const getServices = (barber: BarberUser) => barber.perfilBarbero?.servicios || [];
+
+  const getSpecialty = (barber: BarberUser) => {
+    const services = getServices(barber).map((service) => service.nombre_servicio).filter(Boolean);
+    return services.length > 0 ? services.slice(0, 2).join(', ') : 'Sin servicios registrados';
+  };
+
+  const getLocation = (barber: BarberUser) =>
+    barber.perfilBarbero?.lugarTrabajo?.direccion ||
+    barber.perfilBarbero?.lugarTrabajo?.nombre_barberia ||
+    'Ubicacion no informada';
+
+  const getBookingUrl = (barber: BarberUser) =>
+    barber.perfilBarbero?.id ? `/booking?barbero=${barber.perfilBarbero.id}` : '/booking';
+
+  const getFavorites = () => {
+    try {
+      return new Set(JSON.parse(localStorage.getItem('favoriteBarbers') || '[]') as number[]);
+    } catch {
+      return new Set<number>();
+    }
+  };
+
+  const saveFavorites = (favorites: Set<number>) => {
+    localStorage.setItem('favoriteBarbers', JSON.stringify(Array.from(favorites)));
+  };
+
+  const icon = {
+    check: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 12.5l2 2 4-5"/><circle cx="12" cy="12" r="9"/></svg>',
+    heart: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>',
+    scissors: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="7" r="3"/><circle cx="6" cy="17" r="3"/><path d="M8.6 8.6 20 20M8.6 15.4 20 4"/></svg>',
+    pin: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-5.4 7-12a7 7 0 0 0-14 0c0 6.6 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>',
+  };
+
+  const applyProfileUser = (user: any) => {
+    const rawName = String(user?.nombre || user?.name || user?.email || 'Usuario').trim();
+    const displayName = rawName.includes('@') ? rawName.split('@')[0] : rawName;
+
+    if (profileInitials) profileInitials.textContent = getInitials(displayName);
+    if (profileName) profileName.textContent = displayName;
+
+    profileLink?.classList.add('hidden');
+    professionalProfileLink?.classList.add('hidden');
+    adminPanelLink?.classList.add('hidden');
+
+    if (user?.rol === 'admin') {
+      adminPanelLink?.classList.remove('hidden');
+    } else if (user?.rol === 'barbero') {
+      professionalProfileLink?.classList.remove('hidden');
+    } else {
+      profileLink?.classList.remove('hidden');
+    }
+  };
+
+  const setupProfile = async () => {
+    const token = localStorage.getItem('token');
+    const user = getStoredUser();
+
+    if (!token) {
+      window.location.href = '/login';
+      return;
+    }
+
+    if (user) applyProfileUser(user);
+
+    try {
+      const response = await fetch(`${API_URL}/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const freshUser = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(freshUser?.message || 'Sesion invalida');
+      }
+
+      localStorage.setItem('user', JSON.stringify(freshUser));
+      applyProfileUser(freshUser);
+    } catch {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+    }
+  };
+
+  const closeProfileMenu = () => {
+    profileMenu?.classList.remove('is-open');
+    profileButton?.setAttribute('aria-expanded', 'false');
+    profileDropdown?.setAttribute('aria-hidden', 'true');
+  };
+
+  const toggleProfileMenu = () => {
+    const isOpen = profileMenu?.classList.toggle('is-open') ?? false;
+    profileButton?.setAttribute('aria-expanded', String(isOpen));
+    profileDropdown?.setAttribute('aria-hidden', String(!isOpen));
+  };
+
+  const getFilteredBarbers = () => {
+    const search = normalize(barberSearch?.value || '');
+    const sort = sortFilter?.value || 'name';
+
+    return barbers
+      .filter((barber) => {
+        const services = getServices(barber);
+        const searchable = normalize([
+          barber.nombre,
+          barber.email || '',
+          getSpecialty(barber),
+          getLocation(barber),
+          barber.perfilBarbero?.lugarTrabajo?.nombre_barberia || '',
+        ].join(' '));
+
+        if (search && !searchable.includes(search)) return false;
+        return true;
+      })
+      .sort((a, b) => {
+        if (sort === 'services') return getServices(b).length - getServices(a).length || a.nombre.localeCompare(b.nombre);
+        return a.nombre.localeCompare(b.nombre);
+      });
+  };
+
+  const renderPagination = (totalPages: number) => {
+    if (!pagination) return;
+    if (totalPages <= 1) {
+      pagination.innerHTML = '';
+      return;
+    }
+
+    const pageButtons = Array.from({ length: totalPages }, (_, index) => {
+      const page = index + 1;
+      return `<button class="${page === currentPage ? 'active' : ''}" type="button" data-page="${page}" aria-label="Ir a pagina ${page}">${page}</button>`;
+    }).join('');
+
+    pagination.innerHTML = `
+      <button type="button" data-page="${Math.max(1, currentPage - 1)}" ${currentPage === 1 ? 'disabled' : ''} aria-label="Pagina anterior">‹</button>
+      ${pageButtons}
+      <button type="button" data-page="${Math.min(totalPages, currentPage + 1)}" ${currentPage === totalPages ? 'disabled' : ''} aria-label="Pagina siguiente">›</button>
+    `;
+  };
+
+  const renderBarbers = () => {
+    if (!grid || !countLabel) return;
+
+    const favorites = getFavorites();
+    const filtered = getFilteredBarbers();
+    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    currentPage = Math.min(currentPage, totalPages);
+    const start = (currentPage - 1) * PAGE_SIZE;
+    const visible = filtered.slice(start, start + PAGE_SIZE);
+
+    countLabel.innerHTML = `Mostrando <strong>${filtered.length}</strong> barberos disponibles`;
+    grid.classList.toggle('is-list', currentView === 'list');
+
+    if (visible.length === 0) {
+      grid.innerHTML = '<p class="barbers-empty">No hay barberos que coincidan con los filtros.</p>';
+      renderPagination(totalPages);
+      return;
+    }
+
+    grid.innerHTML = visible.map((barber, index) => {
+      const services = getServices(barber);
+      const profileId = barber.perfilBarbero?.id || '';
+      const hasServices = services.length > 0;
+      const isFavorite = favorites.has(barber.id);
+      const photoPosition = ['left top', 'center top', 'right top', 'left center', 'center center', 'right center', 'center bottom', 'right bottom'][index % 8];
+
+      return `
+        <article class="barber-profile-card" data-barber-id="${barber.id}">
+          <div class="barber-profile-photo" style="--photo: url(${barberPhotoSrc}); --position: ${photoPosition};">
+            <span class="availability ${hasServices ? '' : 'busy'}">${hasServices ? 'Disponible' : 'Sin servicios'}</span>
+          </div>
+          <div class="barber-profile-body">
+            <div class="barber-name-row">
+              <h2>${escapeHtml(barber.nombre)}</h2>
+              ${icon.check}
+              <button class="favorite-button ${isFavorite ? 'is-active' : ''}" type="button" data-favorite-id="${barber.id}" aria-label="Guardar a ${escapeHtml(barber.nombre)}" aria-pressed="${isFavorite}">
+                ${icon.heart}
+              </button>
+            </div>
+            <p class="barber-meta">
+              ${icon.scissors}
+              ${escapeHtml(getSpecialty(barber))}
+            </p>
+            <p class="barber-meta">
+              ${icon.pin}
+              ${escapeHtml(getLocation(barber))}
+            </p>
+            <a class="profile-button" href="${getBookingUrl(barber)}" data-profile-id="${profileId}">Ver perfil</a>
+          </div>
+        </article>
+      `;
+    }).join('');
+
+    renderPagination(totalPages);
+  };
+
+  const loadBarbers = async () => {
+    try {
+      const response = await fetch(`${API_URL}/usuarios?rol=barbero`);
+      const data = await response.json().catch(() => []);
+
+      if (!response.ok) {
+        throw new Error(data.message || 'No se pudieron cargar los barberos.');
+      }
+
+      barbers = Array.isArray(data) ? data.filter((barber) => barber.rol === 'barbero') : [];
+      renderBarbers();
+    } catch (error) {
+      if (countLabel) countLabel.textContent = 'No se pudieron cargar los barberos';
+      if (grid) grid.innerHTML = '<p class="barbers-empty">No se pudo conectar con el backend. Revisa que el servidor este corriendo en el puerto 3001.</p>';
+      if (pagination) pagination.innerHTML = '';
+    }
+  };
+
+  const updateView = (view: 'cards' | 'list') => {
+    currentView = view;
+    cardsViewButton?.classList.toggle('active', view === 'cards');
+    listViewButton?.classList.toggle('active', view === 'list');
+    cardsViewButton?.setAttribute('aria-pressed', String(view === 'cards'));
+    listViewButton?.setAttribute('aria-pressed', String(view === 'list'));
+    renderBarbers();
+  };
+
+  topSearch?.addEventListener('input', () => {
+    if (barberSearch && topSearch) barberSearch.value = topSearch.value;
+    currentPage = 1;
+    renderBarbers();
+  });
+
+  barberSearch?.addEventListener('input', () => {
+    if (barberSearch && topSearch) topSearch.value = barberSearch.value;
+    currentPage = 1;
+    renderBarbers();
+  });
+
+  sortFilter?.addEventListener('change', () => {
+    currentPage = 1;
+    renderBarbers();
+  });
+
+  cardsViewButton?.addEventListener('click', () => updateView('cards'));
+  listViewButton?.addEventListener('click', () => updateView('list'));
+
+  pagination?.addEventListener('click', (event) => {
+    const button = (event.target as HTMLElement).closest<HTMLButtonElement>('button[data-page]');
+    if (!button || button.disabled) return;
+
+    currentPage = Number(button.dataset.page || '1');
+    renderBarbers();
+    document.querySelector('.barbers-results-row')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  grid?.addEventListener('click', (event) => {
+    const favoriteButton = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-favorite-id]');
+    if (!favoriteButton) return;
+
+    const id = Number(favoriteButton.dataset.favoriteId);
+    const favorites = getFavorites();
+
+    if (favorites.has(id)) {
+      favorites.delete(id);
+    } else {
+      favorites.add(id);
+    }
+
+    saveFavorites(favorites);
+    renderBarbers();
+  });
+
+  profileButton?.addEventListener('click', toggleProfileMenu);
+
+  document.addEventListener('click', (event) => {
+    if (!profileMenu?.contains(event.target as Node)) {
+      closeProfileMenu();
+    }
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      closeProfileMenu();
+    }
+  });
+
+  logoutButton?.addEventListener('click', () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = '/login';
+  });
+
+  void setupProfile();
+  void loadBarbers();
+</script>

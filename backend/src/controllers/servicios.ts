@@ -1,6 +1,10 @@
 import { Request, Response } from 'express';
 import prisma from '../config/prisma';
 import { AuthRequest } from '../middleware/auth';
+import {
+  createServiceValidation,
+  updateServiceValidation,
+} from '../validations/servicios';
 
 const toInt = (value: unknown) => {
   if (typeof value === 'number') return value;
@@ -38,20 +42,14 @@ export const createService = async (req: AuthRequest, res: Response) => {
       return res.status(403).json({ message: 'Solo los barberos pueden crear servicios' });
     }
 
-    const { nombre_servicio, descripcion, precio, duracion_minutos } = req.body;
-
-    if (!nombre_servicio || precio === undefined || duracion_minutos === undefined) {
-      return res.status(400).json({
-        message: 'nombre_servicio, precio y duracion_minutos son requeridos',
-      });
+    const { error, value } = createServiceValidation.validate(req.body, { abortEarly: false });
+    if (error) {
+      return res.status(400).json({ message: error.details[0].message });
     }
 
+    const { nombre_servicio, descripcion, precio, duracion_minutos } = value;
     const priceValue = toInt(precio);
     const durationValue = toInt(duracion_minutos);
-
-    if (Number.isNaN(priceValue) || Number.isNaN(durationValue) || priceValue < 0 || durationValue <= 0) {
-      return res.status(400).json({ message: 'precio y duracion_minutos deben ser válidos' });
-    }
 
     const barberProfile = await getOwnBarberProfile(req.user.id);
     if (!barberProfile) {
@@ -167,22 +165,19 @@ export const updateService = async (req: AuthRequest, res: Response) => {
       return res.status(403).json({ message: 'No autorizado para editar este servicio' });
     }
 
-    const priceValue = req.body.precio !== undefined ? toInt(req.body.precio) : undefined;
-    const durationValue = req.body.duracion_minutos !== undefined ? toInt(req.body.duracion_minutos) : undefined;
-
-    if (priceValue !== undefined && Number.isNaN(priceValue)) {
-      return res.status(400).json({ message: 'precio debe ser válido' });
+    const { error, value } = updateServiceValidation.validate(req.body, { abortEarly: false });
+    if (error) {
+      return res.status(400).json({ message: error.details[0].message });
     }
 
-    if (durationValue !== undefined && (Number.isNaN(durationValue) || durationValue <= 0)) {
-      return res.status(400).json({ message: 'duracion_minutos debe ser válida' });
-    }
+    const priceValue = value.precio !== undefined ? toInt(value.precio) : undefined;
+    const durationValue = value.duracion_minutos !== undefined ? toInt(value.duracion_minutos) : undefined;
 
     const updated = await prisma.service.update({
       where: { id },
       data: {
-        nombre_servicio: req.body.nombre_servicio ?? undefined,
-        descripcion: req.body.descripcion !== undefined ? req.body.descripcion : undefined,
+        nombre_servicio: value.nombre_servicio ?? undefined,
+        descripcion: value.descripcion !== undefined ? value.descripcion : undefined,
         precio: priceValue ?? undefined,
         duracion_minutos: durationValue ?? undefined,
       },

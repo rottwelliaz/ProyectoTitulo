@@ -3,6 +3,7 @@ import prisma from '../config/prisma';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { AuthRequest } from '../middleware/auth';
+import { updateProfileValidation } from '../validations/usuarios';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'tu_clave_jwt_super_segura_cambiar_esto';
 const JWT_EXPIRE = process.env.JWT_EXPIRE || '2h';
@@ -78,7 +79,12 @@ export const getMe = async (req: AuthRequest, res: Response) => {
 
 export const updateMe = async (req: AuthRequest, res: Response) => {
   try {
-    const { nombre, email, password, telefono } = req.body;
+    const { error, value } = updateProfileValidation.validate(req.body, { abortEarly: false });
+    if (error) {
+      return res.status(400).json({ message: error.details[0].message });
+    }
+
+    const { nombre, email, password, telefono } = value;
 
     const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
     if (!user) {

@@ -3,52 +3,86 @@ import Layout from '../layouts/Layout.astro';
 import FeaturedBarbers from '../components/FeaturedBarbers.astro';
 import HomeHeader from '../components/HomeHeader.astro';
 import HomeHero from '../components/HomeHero.astro';
-import homeFoto from '../assets/homefoto.png';
+import barberiaFoto from '../assets/barberia.jpg';
+import conceChile from '../assets/Conce-Chile.jpg';
 import logoConce from '../assets/logotesis.png';
-import { CalendarDays } from 'lucide-astro';
+import {
+  CalendarCheck,
+  CalendarDays,
+  CheckCircle2,
+  Instagram,
+  Mail,
+  MapPin,
+  Search,
+  UserRoundPlus,
+} from 'lucide-astro';
 import '../styles/home.css';
-
-const categorias = [
-  { nombre: 'Fade', detalle: 'Los mas pedidos', icono: 'clipper', slug: 'fade', tono: 'azul' },
-  { nombre: 'Barba', detalle: 'Perfilado y cuidado', icono: 'beard', slug: 'barba', tono: 'verde' },
-  { nombre: 'Premium', detalle: 'Experiencia completa', icono: 'crown', slug: 'premium', tono: 'amarillo' },
-  { nombre: 'Clasico', detalle: 'Tradicion y estilo', icono: 'pole', slug: 'clasico', tono: 'azul' },
-  { nombre: 'Corte + Barba', detalle: 'El combo perfecto', icono: 'scissors', slug: 'corte-barba', tono: 'verde' },
-  { nombre: 'Infantil', detalle: 'Para los mas chicos', icono: 'kid', slug: 'infantil', tono: 'amarillo' },
-];
-
 ---
 
-<Layout title="Inicio - Barberias Concepción">
+<Layout title="Inicio - Barberias Concepcion">
   <div class="home-root">
-    <section class="home-hero-shell" style={`--hero-image: url(${homeFoto.src});`}>
+    <section class="home-hero-shell" style={`--conce-bg: url(${conceChile.src});`}>
       <HomeHeader logoSrc={logoConce.src} />
       <HomeHero />
     </section>
 
     <main class="home-main">
-      <section class="category-section" id="categorias">
+      <FeaturedBarbers />
+
+      <section class="how-section" id="como-funciona">
         <div class="section-heading">
-          <h2>Categorias</h2>
+          <h2>¿Como funciona?</h2>
         </div>
 
-        <div class="category-grid">
-          {categorias.map((categoria) => (
-            <a class={`category-card tone-${categoria.tono}`} href={`/categorias/${categoria.slug}`}>
-              <span class={`category-icon icon-${categoria.icono}`} aria-hidden="true"></span>
-              <strong>{categoria.nombre}</strong>
-              <span>{categoria.detalle}</span>
-            </a>
-          ))}
+        <div class="how-grid">
+          <article class="how-card">
+            <span class="step-number">1</span>
+            <Search class="how-icon" size={44} aria-hidden="true" />
+            <div>
+              <h3>Encuentra tu barbero</h3>
+              <p>Busca y compara barberos segun tu estilo, ubicacion y servicios.</p>
+            </div>
+          </article>
+
+          <article class="how-card">
+            <span class="step-number">2</span>
+            <CalendarDays class="how-icon" size={44} aria-hidden="true" />
+            <div>
+              <h3>Elige fecha y hora</h3>
+              <p>Consulta la disponibilidad en tiempo real y elige el horario que prefieras.</p>
+            </div>
+          </article>
+
+          <article class="how-card">
+            <span class="step-number">3</span>
+            <CheckCircle2 class="how-icon" size={44} aria-hidden="true" />
+            <div>
+              <h3>Reserva tu cita</h3>
+              <p>Confirma tu reserva en segundos y recibe la confirmacion al instante.</p>
+            </div>
+          </article>
         </div>
       </section>
 
-      <FeaturedBarbers />
+      <section class="barber-invite">
+        <div class="barber-invite-media" style={`--invite-image: url(${barberiaFoto.src});`}></div>
+        <div>
+          <h2>¿Eres barbero?</h2>
+          <p>Haz crecer tu negocio con Conce Barber Club. Crea tu perfil profesional, administra tu agenda y recibe reservas todos los dias.</p>
+        </div>
+        <div class="barber-invite-action">
+          <a class="btn btn-primary" href="/registro">
+            <UserRoundPlus class="button-icon" size={21} aria-hidden="true" />
+            Crear perfil profesional
+          </a>
+          <span>Unete a nuestra comunidad de barberos.</span>
+        </div>
+      </section>
 
-      <section class="home-cta" style={`--hero-image: url(${homeFoto.src});`}>
+      <section class="home-cta">
         <CalendarDays class="cta-lucide-icon" size={34} aria-hidden="true" />
         <div>
-          <h2>Listo para tu proximo corte?</h2>
+          <h2>¿Listo para tu proximo corte?</h2>
           <p>Reserva ahora y vive la experiencia Conce Barber Club.</p>
         </div>
         <a class="btn btn-primary" href="/booking">
@@ -57,5 +91,44 @@ const categorias = [
         </a>
       </section>
     </main>
+
+    <footer class="home-footer">
+      <div class="home-footer-inner">
+        <a class="footer-brand" href="/home" aria-label="Conce Barber Club">
+          <img src={logoConce.src} alt="Conce Barber Club" />
+        </a>
+
+        <div>
+          <h2>Navegacion</h2>
+          <a href="/home">Inicio</a>
+          <a href="/barberos">Barberos</a>
+          <a href="/sobre-nosotros">Sobre nosotros</a>
+          <a href="#como-funciona">Como funciona</a>
+        </div>
+
+        <div>
+          <h2>Legal</h2>
+          <a href="/terminos">Terminos y condiciones</a>
+          <a href="/privacidad">Politica de privacidad</a>
+          <a href="/cookies">Cookies</a>
+        </div>
+
+        <div>
+          <h2>Siguenos</h2>
+          <div class="social-links">
+            <a href="#" aria-label="Instagram"><Instagram size={18} aria-hidden="true" /></a>
+            <a href="#" aria-label="Reservas"><CalendarCheck size={18} aria-hidden="true" /></a>
+          </div>
+        </div>
+
+        <div>
+          <h2>Contacto</h2>
+          <p><Mail size={16} aria-hidden="true" /> franciscoflorescares@gmail.com</p>
+          <p><MapPin size={16} aria-hidden="true" /> Concepcion, Chile</p>
+        </div>
+      </div>
+
+      <p class="footer-copy">© 2026 Conce Barber Club. Todos los derechos reservados.</p>
+    </footer>
   </div>
 </Layout>

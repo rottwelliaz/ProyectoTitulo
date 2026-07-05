@@ -2,16 +2,18 @@ import { Request, Response } from 'express';
 import prisma from '../config/prisma';
 import bcrypt from 'bcryptjs';
 import { AuthRequest } from '../middleware/auth';
+import { createUserValidation, updateUserValidation } from '../validations/usuarios';
 
 // Crear usuario
 export const createUser = async (req: Request, res: Response) => {
   try {
-    const { nombre, email, password, telefono, rol } = req.body;
-    const selectedRole = rol === 'barbero' ? 'barbero' : 'cliente';
-
-    if (!nombre || !email || !password) {
-      return res.status(400).json({ message: 'nombre, email y password son requeridos' });
+    const { error, value } = createUserValidation.validate(req.body, { abortEarly: false });
+    if (error) {
+      return res.status(400).json({ message: error.details[0].message });
     }
+
+    const { nombre, email, password, telefono, rol } = value;
+    const selectedRole = rol === 'barbero' ? 'barbero' : 'cliente';
 
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
@@ -65,6 +67,9 @@ export const getUsers = async (req: Request, res: Response) => {
         perfilBarbero: {
           include: {
             lugarTrabajo: true,
+            servicios: {
+              orderBy: { nombre_servicio: 'asc' },
+            },
           },
         },
       },
@@ -274,7 +279,12 @@ export const updateUser = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
-    const { nombre, email, password, telefono, rol, aprobado } = req.body;
+    const { error, value } = updateUserValidation.validate(req.body, { abortEarly: false });
+    if (error) {
+      return res.status(400).json({ message: error.details[0].message });
+    }
+
+    const { nombre, email, password, telefono, rol, aprobado } = value;
     const rolesPermitidos = ['cliente', 'barbero', 'admin'];
 
     // Si viene nuevo email, verificar que no esté en uso por otro usuario
