@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { addDays, addWeeks, format, startOfDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -50,6 +50,9 @@ const money = (value: number) =>
   }).format(value);
 
 export default function BookingFlow() {
+  const servicesPanelRef = useRef<HTMLElement | null>(null);
+  const schedulePanelRef = useRef<HTMLElement | null>(null);
+  const summaryRef = useRef<HTMLDivElement | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [barbers, setBarbers] = useState<Barber[]>([]);
@@ -73,6 +76,16 @@ export default function BookingFlow() {
   const selectedBarber = barbers.find((barber) => barber.id === selectedBarberId) ?? null;
   const selectedService = selectedBarber?.servicios.find((service) => service.id === selectedServiceId) ?? null;
   const selectedSlot = slots.find((slot) => slot.id === selectedSlotId) ?? null;
+
+  const scrollToElement = (element: HTMLElement | null) => {
+    if (!element) return;
+    window.setTimeout(() => {
+      element.scrollIntoView({
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+        block: 'start',
+      });
+    }, 0);
+  };
 
   useEffect(() => {
     const savedToken = window.localStorage.getItem('token');
@@ -147,6 +160,24 @@ export default function BookingFlow() {
 
     void loadAvailability();
   }, [selectedBarberId, selectedDate, token]);
+
+  useEffect(() => {
+    if (selectedBarber) {
+      scrollToElement(servicesPanelRef.current);
+    }
+  }, [selectedBarberId, selectedBarber]);
+
+  useEffect(() => {
+    if (selectedService) {
+      scrollToElement(schedulePanelRef.current);
+    }
+  }, [selectedServiceId, selectedService]);
+
+  useEffect(() => {
+    if (selectedSlot) {
+      scrollToElement(summaryRef.current);
+    }
+  }, [selectedSlotId, selectedSlot]);
 
   const chooseBarber = (barber: Barber) => {
     setSelectedBarberId(barber.id);
@@ -252,7 +283,7 @@ export default function BookingFlow() {
       </section>
 
       {selectedBarber && (
-        <section className="booking-panel">
+        <section className="booking-panel" ref={servicesPanelRef} id="servicios">
           <div className="booking-section-title">
             <span>02</span>
             <div><h2>Selecciona un servicio</h2><p>Servicios ofrecidos por {selectedBarber.usuario.nombre}.</p></div>
@@ -282,7 +313,7 @@ export default function BookingFlow() {
       )}
 
       {selectedBarber && selectedService && (
-        <section className="booking-panel">
+        <section className="booking-panel" ref={schedulePanelRef} id="horarios">
           <div className="booking-section-title">
             <span>03</span>
             <div><h2>Selecciona fecha y hora</h2><p>Solo se muestran bloques disponibles en la agenda.</p></div>
@@ -332,7 +363,7 @@ export default function BookingFlow() {
           </div>
 
           {selectedSlot && (
-            <div className="booking-summary">
+            <div className="booking-summary" ref={summaryRef} id="resumen-reserva">
               <div>
                 <span>Resumen</span>
                 <strong>{selectedBarber.usuario.nombre} · {selectedService.nombre_servicio}</strong>

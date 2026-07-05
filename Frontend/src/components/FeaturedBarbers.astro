@@ -67,7 +67,7 @@
         const initials = getInitials(barber.nombre);
         const workplace = barber.perfilBarbero?.lugarTrabajo?.nombre_barberia || 'Barbero disponible';
         const detail = barber.perfilBarbero?.biografia || barber.telefono || barber.email || 'Agenda tu hora con este barbero.';
-        const bookingUrl = barber.perfilBarbero?.id ? `/booking?barbero=${barber.perfilBarbero.id}` : '/booking';
+        const bookingUrl = barber.perfilBarbero?.id ? `/booking?barbero=${barber.perfilBarbero.id}#servicios` : '/booking';
 
         return `
           <article class="barber-card tone-${tone}">

@@ -21,7 +21,7 @@ import '../styles/home.css';
 
 <Layout title="Inicio - Barberias Concepcion">
   <div class="home-root">
-    <section class="home-hero-shell" style={`--conce-bg: url(${conceChile.src});`}>
+    <section class="home-hero-shell" id="inicio" style={`--conce-bg: url(${conceChile.src});`}>
       <HomeHeader logoSrc={logoConce.src} />
       <HomeHero />
     </section>
@@ -92,7 +92,7 @@ import '../styles/home.css';
       </section>
     </main>
 
-    <footer class="home-footer">
+    <footer class="home-footer" id="contacto">
       <div class="home-footer-inner">
         <a class="footer-brand" href="/home" aria-label="Conce Barber Club">
           <img src={logoConce.src} alt="Conce Barber Club" />
@@ -100,9 +100,9 @@ import '../styles/home.css';
 
         <div>
           <h2>Navegacion</h2>
-          <a href="/home">Inicio</a>
+          <a href="#inicio">Inicio</a>
           <a href="/barberos">Barberos</a>
-          <a href="/sobre-nosotros">Sobre nosotros</a>
+          <a href="#contacto">Sobre nosotros</a>
           <a href="#como-funciona">Como funciona</a>
         </div>
 

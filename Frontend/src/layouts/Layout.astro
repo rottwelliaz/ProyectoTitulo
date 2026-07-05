@@ -21,25 +21,74 @@ const { title } = Astro.props;
     
     <slot />
 
-    {/* TODO: Footer */}
     <script>
-      document.addEventListener('click', (event) => {
-        const link = (event.target as HTMLElement).closest<HTMLAnchorElement>('a[href^="#"]');
-        if (!link) return;
+      const prefersReducedMotion = () =>
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-        const hash = link.getAttribute('href');
-        if (!hash || hash === '#') return;
+      const PENDING_SCROLL_KEY = 'pending-scroll-target';
 
+      const scrollToHash = (hash: string, updateUrl = false) => {
+        if (!hash || hash === '#') return false;
         const target = document.querySelector<HTMLElement>(hash);
-        if (!target) return;
+        if (!target) return false;
 
-        event.preventDefault();
         target.scrollIntoView({
-          behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+          behavior: prefersReducedMotion() ? 'auto' : 'smooth',
           block: 'start',
         });
 
-        history.pushState(null, '', hash);
+        if (updateUrl) {
+          history.pushState(null, '', hash);
+        }
+
+        return true;
+      };
+
+      const scrollToHashWhenReady = (hash: string, updateUrl = false, attempts = 40) => {
+        if (scrollToHash(hash, updateUrl)) return;
+        if (attempts <= 0) return;
+
+        window.setTimeout(() => {
+          scrollToHashWhenReady(hash, updateUrl, attempts - 1);
+        }, 100);
+      };
+
+      document.addEventListener('click', (event) => {
+        const link = (event.target as HTMLElement).closest<HTMLAnchorElement>('a[href*="#"]');
+        if (!link) return;
+
+        const href = link.getAttribute('href');
+        if (!href || href === '#') return;
+
+        const url = new URL(href, window.location.href);
+        const samePage =
+          url.origin === window.location.origin &&
+          url.pathname.replace(/\/$/, '') === window.location.pathname.replace(/\/$/, '');
+
+        if (!samePage) {
+          event.preventDefault();
+          sessionStorage.setItem(PENDING_SCROLL_KEY, url.hash);
+          window.location.href = `${url.pathname}${url.search}`;
+          return;
+        }
+
+        if (scrollToHash(url.hash, true)) {
+          event.preventDefault();
+        }
+      });
+
+      window.addEventListener('load', () => {
+        const pendingHash = sessionStorage.getItem(PENDING_SCROLL_KEY);
+        if (pendingHash) {
+          sessionStorage.removeItem(PENDING_SCROLL_KEY);
+        }
+
+        const hash = pendingHash || window.location.hash;
+        if (!hash) return;
+
+        window.setTimeout(() => {
+          scrollToHashWhenReady(hash, Boolean(pendingHash));
+        }, 0);
       });
     </script>
   </body>

@@ -26,9 +26,9 @@ import '../styles/barberos.css';
 
       <nav class="barbers-nav" aria-label="Navegacion principal">
         <a href="/home">Inicio</a>
-        <a href="/home#categorias">Categorias</a>
+        <a href="/home#como-funciona">Como funciona</a>
         <a class="active" href="/barberos">Barberos</a>
-        <a href="/home">Sobre nosotros</a>
+        <a href="/home#contacto">Sobre nosotros</a>
       </nav>
 
       <div class="barbers-user-actions">
@@ -205,7 +205,7 @@ import '../styles/barberos.css';
     'Ubicacion no informada';
 
   const getBookingUrl = (barber: BarberUser) =>
-    barber.perfilBarbero?.id ? `/booking?barbero=${barber.perfilBarbero.id}` : '/booking';
+    barber.perfilBarbero?.id ? `/booking?barbero=${barber.perfilBarbero.id}#servicios` : '/booking';
 
   const getFavorites = () => {
     try {
