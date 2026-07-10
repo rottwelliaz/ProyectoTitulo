@@ -8,6 +8,8 @@ interface Appointment {
   id: string;
   fecha_hora: string;
   estado: AppointmentStatus;
+  comprobanteTransferencia: string | null;
+  comprobanteNombre: string | null;
   cliente: {
     id: number;
     nombre: string;
@@ -27,6 +29,9 @@ const STATUS_LABELS: Record<AppointmentStatus, string> = {
   cancelada: 'Cancelada',
   finalizada: 'Finalizada',
 };
+
+const sortAppointmentsByNewest = (items: Appointment[]) =>
+  [...items].sort((a, b) => new Date(b.fecha_hora).getTime() - new Date(a.fecha_hora).getTime());
 
 export default function BarberAppointments() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -48,7 +53,7 @@ export default function BarberAppointments() {
         });
         const data = await response.json().catch(() => []);
         if (!response.ok) throw new Error(data.message || 'No se pudieron cargar tus citas.');
-        setAppointments(Array.isArray(data) ? data : []);
+        setAppointments(Array.isArray(data) ? sortAppointmentsByNewest(data as Appointment[]) : []);
       } catch (requestError) {
         setError(requestError instanceof Error ? requestError.message : 'No se pudieron cargar tus citas.');
       } finally {
@@ -80,11 +85,41 @@ export default function BarberAppointments() {
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.message || 'No se pudo actualizar la cita.');
 
-      setAppointments((current) => current.map((item) => item.id === data.id ? data as Appointment : item));
+      setAppointments((current) =>
+        sortAppointmentsByNewest(current.map((item) => item.id === data.id ? data as Appointment : item)),
+      );
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'No se pudo actualizar la cita.');
     } finally {
       setUpdatingId(null);
+    }
+  };
+
+  const viewProof = async (appointment: Appointment) => {
+    if (!appointment.comprobanteTransferencia) {
+      setError('Esta cita no tiene comprobante registrado.');
+      return;
+    }
+
+    const proofWindow = window.open('', '_blank');
+    if (!proofWindow) {
+      setError('El navegador bloqueo la pestaña del comprobante.');
+      return;
+    }
+
+    proofWindow.opener = null;
+    proofWindow.document.title = appointment.comprobanteNombre || 'Comprobante';
+    proofWindow.document.body.innerHTML = '<p style="font-family: system-ui; padding: 24px;">Cargando comprobante...</p>';
+
+    try {
+      const response = await fetch(appointment.comprobanteTransferencia);
+      const blob = await response.blob();
+      const proofUrl = URL.createObjectURL(blob);
+      proofWindow.location.href = proofUrl;
+      window.setTimeout(() => URL.revokeObjectURL(proofUrl), 60_000);
+    } catch {
+      proofWindow.close();
+      setError('No se pudo abrir el comprobante.');
     }
   };
 
@@ -122,8 +157,19 @@ export default function BarberAppointments() {
                 {STATUS_LABELS[appointment.estado]}
               </span>
 
-              {appointment.estado === 'confirmada' && (
-                <div className="appointment-actions">
+              <div className="appointment-actions">
+                {appointment.comprobanteTransferencia && (
+                  <button
+                    type="button"
+                    className="is-proof"
+                    onClick={() => void viewProof(appointment)}
+                  >
+                    Ver comprobante
+                  </button>
+                )}
+
+                {appointment.estado === 'confirmada' && (
+                  <>
                   <button
                     type="button"
                     className="is-cancel"
@@ -140,8 +186,9 @@ export default function BarberAppointments() {
                   >
                     Finalizar
                   </button>
-                </div>
-              )}
+                  </>
+                )}
+              </div>
             </section>
           ))}
         </div>

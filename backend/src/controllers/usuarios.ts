@@ -63,9 +63,19 @@ export const getUsers = async (req: Request, res: Response) => {
 
     const users = await prisma.user.findMany({
       where,
-      include: {
+      select: {
+        id: true,
+        nombre: true,
+        email: true,
+        telefono: true,
+        rol: true,
+        aprobado: true,
+        fecha_creacion: true,
         perfilBarbero: {
-          include: {
+          select: {
+            id: true,
+            biografia: true,
+            foto_perfil: true,
             lugarTrabajo: true,
             servicios: {
               orderBy: { nombre_servicio: 'asc' },
@@ -78,12 +88,7 @@ export const getUsers = async (req: Request, res: Response) => {
       },
     });
 
-    const safe = users.map((u) => {
-      // @ts-ignore
-      const { password: _p, ...rest } = u;
-      return rest;
-    });
-    return res.json(safe);
+    return res.json(users);
   } catch (error) {
     console.error('getUsers error', error);
     return res.status(500).json({ message: 'Error al obtener usuarios' });

@@ -131,6 +131,10 @@
   padding: 0.85rem 1rem;
 }
 
+.booking-alert-bottom {
+  margin: 1rem 0 0;
+}
+
 .booking-alert.is-error {
   background: rgba(239, 68, 68, 0.12);
   border: 1px solid rgba(239, 68, 68, 0.55);
@@ -406,6 +410,106 @@
   opacity: 0.65;
 }
 
+.booking-payment {
+  background: #041428;
+  border: 1px solid var(--booking-line);
+  border-radius: 10px;
+  margin-top: 1rem;
+  padding: 1rem;
+}
+
+.booking-payment .booking-section-title {
+  margin-bottom: 1rem;
+}
+
+.booking-bank-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.booking-bank-grid div {
+  background: rgba(18, 97, 216, 0.12);
+  border: 1px solid rgba(13, 71, 161, 0.7);
+  border-radius: 8px;
+  padding: 0.8rem;
+}
+
+.booking-bank-grid span,
+.booking-bank-grid strong {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.booking-bank-grid span {
+  color: #66a8ff;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.booking-bank-grid strong {
+  margin-top: 0.25rem;
+}
+
+.booking-proof-field {
+  color: #fff;
+  display: grid;
+  font-weight: 850;
+  gap: 0.45rem;
+  margin-top: 1rem;
+}
+
+.booking-proof-field input {
+  background: #020b18;
+  border: 1px solid var(--booking-line);
+  border-radius: 8px;
+  color: #fff;
+  padding: 0.75rem;
+}
+
+.booking-proof-field small,
+.booking-proof-name {
+  color: var(--booking-muted);
+}
+
+.booking-proof-name {
+  font-weight: 800;
+  margin: 0.8rem 0 0;
+}
+
+.booking-payment-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.booking-payment-actions button {
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 850;
+  min-height: 44px;
+  padding: 0 1rem;
+}
+
+.booking-payment-actions button:first-child {
+  background: transparent;
+  border: 1px solid var(--booking-line);
+  color: #fff;
+}
+
+.booking-payment-actions button:last-child {
+  background: var(--booking-blue);
+  border: 1px solid var(--booking-hover);
+  color: #fff;
+}
+
+.booking-payment-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
 @media (max-width: 760px) {
   .booking-root {
     padding-top: 1rem;
@@ -422,6 +526,15 @@
     grid-template-columns: repeat(4, 1fr);
   }
 
+  .booking-bank-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .booking-payment-actions {
+    flex-direction: column;
+  }
+
+  .booking-payment-actions button,
   .booking-summary button {
     width: 100%;
   }

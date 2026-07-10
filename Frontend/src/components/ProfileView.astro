@@ -306,7 +306,11 @@ import logoConce from '../assets/logotesis.png';
       finalizada: 'Finalizada',
     };
 
-    clientAppointmentsList.innerHTML = appointments.map((appointment) => {
+    const sortedAppointments = [...appointments].sort((current, next) =>
+      new Date(next.fecha_hora).getTime() - new Date(current.fecha_hora).getTime()
+    );
+
+    clientAppointmentsList.innerHTML = sortedAppointments.map((appointment) => {
       const date = new Date(appointment.fecha_hora);
       const dateLabel = new Intl.DateTimeFormat('es-CL', {
         weekday: 'long',
@@ -322,6 +326,8 @@ import logoConce from '../assets/logotesis.png';
       const service = escapeHtml(appointment.servicio?.nombre_servicio || 'Servicio');
       const workplace = escapeHtml(appointment.barbero?.lugarTrabajo?.nombre_barberia || 'Barberia');
       const status = String(appointment.estado || 'confirmada');
+      const appointmentDate = new Date(appointment.fecha_hora);
+      const canCancel = ['pendiente', 'confirmada'].includes(status) && appointmentDate > new Date();
 
       return `
         <section class="client-appointment-item">
@@ -334,12 +340,58 @@ import logoConce from '../assets/logotesis.png';
             <span>Con ${barber}</span>
             <small>${workplace}</small>
           </div>
-          <span class="client-appointment-status is-${escapeHtml(status)}">
-            ${escapeHtml(statusLabels[status] || status)}
-          </span>
+          <div class="client-appointment-actions">
+            <span class="client-appointment-status is-${escapeHtml(status)}">
+              ${escapeHtml(statusLabels[status] || status)}
+            </span>
+            ${canCancel ? `
+              <button
+                class="client-appointment-cancel"
+                type="button"
+                data-cancel-appointment="${escapeHtml(appointment.id)}"
+              >
+                Cancelar
+              </button>
+            ` : ''}
+          </div>
         </section>
       `;
     }).join('');
+  };
+
+  const cancelClientAppointment = async (appointmentId: string, button: HTMLButtonElement) => {
+    if (!token) {
+      window.location.href = '/login';
+      return;
+    }
+
+    const confirmed = window.confirm(
+      'Si cancelas esta hora perderas el pago previo asociado a la reserva. Esta accion no se puede deshacer. ¿Deseas continuar?',
+    );
+
+    if (!confirmed) return;
+
+    button.disabled = true;
+    const previousText = button.textContent || 'Cancelar';
+    button.textContent = 'Cancelando...';
+    showMessage('', 'info');
+
+    try {
+      const response = await fetch(`${API_URL}/citas/cliente/${appointmentId}/cancelar`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.message || 'No se pudo cancelar la cita.');
+
+      showMessage('Cita cancelada correctamente.', 'success');
+      await loadClientAppointments();
+    } catch (error) {
+      showMessage(error instanceof Error ? error.message : 'Error al cancelar la cita.', 'error');
+      button.disabled = false;
+      button.textContent = previousText;
+    }
   };
 
   const loadClientAppointments = async () => {
@@ -359,6 +411,14 @@ import logoConce from '../assets/logotesis.png';
       `;
     }
   };
+
+  clientAppointmentsList?.addEventListener('click', (event) => {
+    const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-cancel-appointment]');
+    const appointmentId = button?.dataset.cancelAppointment;
+    if (!button || !appointmentId) return;
+
+    void cancelClientAppointment(appointmentId, button);
+  });
 
   const renderUser = (user: typeof currentUser) => {
     if (!user) return;

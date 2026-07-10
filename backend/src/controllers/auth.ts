@@ -3,6 +3,7 @@ import prisma from '../config/prisma';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { AuthRequest } from '../middleware/auth';
+import { datosBancariosValidation } from '../validations/datosBancarios';
 import { updateProfileValidation } from '../validations/usuarios';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'tu_clave_jwt_super_segura_cambiar_esto';
@@ -54,6 +55,12 @@ export const getMe = async (req: AuthRequest, res: Response) => {
             id: true,
             biografia: true,
             foto_perfil: true,
+            bancoNombre: true,
+            bancoRut: true,
+            bancoNombreBanco: true,
+            bancoTipoCuenta: true,
+            bancoNroCuenta: true,
+            bancoCorreo: true,
             lugarTrabajo: {
               select: {
                 id: true,
@@ -125,4 +132,53 @@ export const updateMe = async (req: AuthRequest, res: Response) => {
     return res.status(500).json({ message: 'Error al actualizar perfil' });
   }
 };
-export default { login, getMe, updateMe };
+
+export const updateBankingData = async (req: AuthRequest, res: Response) => {
+  try {
+    if (req.user?.rol !== 'barbero') {
+      return res.status(403).json({ message: 'Solo los barberos pueden editar sus datos bancarios' });
+    }
+
+    const { error, value } = datosBancariosValidation.validate(req.body, { abortEarly: false });
+    if (error) {
+      return res.status(400).json({ message: error.details[0].message });
+    }
+
+    const fields = {
+      bancoNombre: value.nombre,
+      bancoRut: value.rut,
+      bancoNombreBanco: value.banco,
+      bancoTipoCuenta: value.tipoCuenta,
+      bancoNroCuenta: value.nroCuenta,
+      bancoCorreo: value.correo,
+    };
+
+    const profile = await prisma.barberProfile.findUnique({
+      where: { usuarioId: req.user.id },
+    });
+
+    if (!profile) {
+      return res.status(404).json({ message: 'No tienes perfil profesional creado' });
+    }
+
+    const updated = await prisma.barberProfile.update({
+      where: { id: profile.id },
+      data: fields,
+      select: {
+        id: true,
+        bancoNombre: true,
+        bancoRut: true,
+        bancoNombreBanco: true,
+        bancoTipoCuenta: true,
+        bancoNroCuenta: true,
+        bancoCorreo: true,
+      },
+    });
+
+    return res.json(updated);
+  } catch (error) {
+    console.error('updateBankingData error', error);
+    return res.status(500).json({ message: 'Error al actualizar datos bancarios' });
+  }
+};
+export default { login, getMe, updateMe, updateBankingData };

@@ -216,7 +216,7 @@ export const saveWeekAvailability = async (req: AuthRequest, res: Response) => {
         estado: CitaEstado.disponible,
         fecha_hora: { gte: weekStart, lt: weekEnd },
       },
-      orderBy: { fecha_hora: 'asc' },
+      orderBy: { fecha_hora: 'desc' },
     });
 
     return res.json({
@@ -308,6 +308,12 @@ export const getBarberosParaReserva = async (_req: AuthRequest, res: Response) =
             direccion: true,
           },
         },
+        bancoNombre: true,
+        bancoRut: true,
+        bancoNombreBanco: true,
+        bancoTipoCuenta: true,
+        bancoNroCuenta: true,
+        bancoCorreo: true,
         servicios: {
           select: {
             id: true,
@@ -363,7 +369,7 @@ export const getReservationCalendar = async (req: AuthRequest, res: Response) =>
           select: { id: true, nombre_servicio: true, duracion_minutos: true },
         },
       },
-      orderBy: { fecha_hora: 'asc' },
+      orderBy: { fecha_hora: 'desc' },
     });
 
     return res.json(citas);
@@ -408,6 +414,100 @@ export const getClientAppointments = async (req: AuthRequest, res: Response) => 
   } catch (error) {
     console.error('getClientAppointments error', error);
     return res.status(500).json({ message: 'Error al obtener tus citas' });
+  }
+};
+
+export const cancelClientAppointment = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const cita = await prisma.cita.findUnique({
+      where: { id },
+      include: {
+        barbero: {
+          select: {
+            id: true,
+            usuario: { select: { id: true, nombre: true } },
+            lugarTrabajo: {
+              select: { id: true, nombre_barberia: true, direccion: true },
+            },
+          },
+        },
+        servicio: {
+          select: {
+            id: true,
+            nombre_servicio: true,
+            duracion_minutos: true,
+            precio: true,
+          },
+        },
+      },
+    });
+
+    if (!cita) {
+      return res.status(404).json({ message: 'Cita no encontrada' });
+    }
+
+    if (cita.clienteId !== req.user!.id) {
+      return res.status(403).json({ message: 'No autorizado para cancelar esta cita' });
+    }
+
+    if (cita.estado !== CitaEstado.pendiente && cita.estado !== CitaEstado.confirmada) {
+      return res.status(409).json({ message: 'Solo puedes cancelar citas pendientes o confirmadas' });
+    }
+
+    const updated = await prisma.$transaction(async (tx) => {
+      const appointment = await tx.cita.update({
+        where: { id },
+        data: { estado: CitaEstado.cancelada },
+        include: {
+          barbero: {
+            select: {
+              id: true,
+              usuario: { select: { id: true, nombre: true } },
+              lugarTrabajo: {
+                select: { id: true, nombre_barberia: true, direccion: true },
+              },
+            },
+          },
+          servicio: {
+            select: {
+              id: true,
+              nombre_servicio: true,
+              duracion_minutos: true,
+              precio: true,
+            },
+          },
+        },
+      });
+
+      if (cita.fecha_hora > new Date()) {
+        const available = await tx.cita.findFirst({
+          where: {
+            barberoId: cita.barberoId,
+            fecha_hora: cita.fecha_hora,
+            estado: CitaEstado.disponible,
+          },
+        });
+
+        if (!available) {
+          await tx.cita.create({
+            data: {
+              barberoId: cita.barberoId,
+              fecha_hora: cita.fecha_hora,
+              estado: CitaEstado.disponible,
+            },
+          });
+        }
+      }
+
+      return appointment;
+    });
+
+    return res.json(updated);
+  } catch (error) {
+    console.error('cancelClientAppointment error', error);
+    return res.status(500).json({ message: 'Error al cancelar la cita' });
   }
 };
 
@@ -515,12 +615,29 @@ export const updateAppointmentStatus = async (req: AuthRequest, res: Response) =
 export const agendarCita = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    let { servicioId } = req.body;
+    let { servicioId, comprobanteTransferencia, comprobanteNombre } = req.body;
 
     if (typeof servicioId !== 'string' || !servicioId.trim()) {
       return res.status(400).json({ message: 'servicioId es requerido' });
     }
     servicioId = servicioId.trim();
+
+    if (typeof comprobanteTransferencia !== 'string' || !comprobanteTransferencia.trim()) {
+      return res.status(400).json({ message: 'Debes subir un comprobante de transferencia' });
+    }
+
+    if (!/^data:(image\/(png|jpeg|jpg|webp)|application\/pdf);base64,/.test(comprobanteTransferencia)) {
+      return res.status(400).json({ message: 'El comprobante debe ser una imagen o PDF valido' });
+    }
+
+    if (comprobanteTransferencia.length > 5_500_000) {
+      return res.status(400).json({ message: 'El comprobante no puede superar 4 MB' });
+    }
+
+    comprobanteNombre =
+      typeof comprobanteNombre === 'string' && comprobanteNombre.trim()
+        ? comprobanteNombre.trim().slice(0, 180)
+        : 'comprobante-transferencia';
 
     const cita = await prisma.cita.findUnique({ where: { id } });
     if (!cita) {
@@ -554,6 +671,8 @@ export const agendarCita = async (req: AuthRequest, res: Response) => {
       data: {
         clienteId: req.user!.id,  // Int, viene del token ✓
         servicioId,               // String uuid ✓
+        comprobanteTransferencia,
+        comprobanteNombre,
         estado: CitaEstado.confirmada,
       },
     });

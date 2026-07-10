@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { type ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { addDays, addWeeks, format, startOfDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -14,6 +14,12 @@ interface Barber {
   id: number;
   biografia: string | null;
   foto_perfil: string | null;
+  bancoNombre: string | null;
+  bancoRut: string | null;
+  bancoNombreBanco: string | null;
+  bancoTipoCuenta: string | null;
+  bancoNroCuenta: string | null;
+  bancoCorreo: string | null;
   usuario: {
     id: number;
     nombre: string;
@@ -53,6 +59,9 @@ export default function BookingFlow() {
   const servicesPanelRef = useRef<HTMLElement | null>(null);
   const schedulePanelRef = useRef<HTMLElement | null>(null);
   const summaryRef = useRef<HTMLDivElement | null>(null);
+  const paymentPanelRef = useRef<HTMLDivElement | null>(null);
+  const successMessageRef = useRef<HTMLParagraphElement | null>(null);
+  const errorMessageRef = useRef<HTMLParagraphElement | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [barbers, setBarbers] = useState<Barber[]>([]);
@@ -65,6 +74,9 @@ export default function BookingFlow() {
   const [loadingBarbers, setLoadingBarbers] = useState(true);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [booking, setBooking] = useState(false);
+  const [showPayment, setShowPayment] = useState(false);
+  const [proofData, setProofData] = useState('');
+  const [proofName, setProofName] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -76,6 +88,14 @@ export default function BookingFlow() {
   const selectedBarber = barbers.find((barber) => barber.id === selectedBarberId) ?? null;
   const selectedService = selectedBarber?.servicios.find((service) => service.id === selectedServiceId) ?? null;
   const selectedSlot = slots.find((slot) => slot.id === selectedSlotId) ?? null;
+  const hasBankingData = Boolean(
+    selectedBarber?.bancoNombre &&
+    selectedBarber?.bancoRut &&
+    selectedBarber?.bancoNombreBanco &&
+    selectedBarber?.bancoTipoCuenta &&
+    selectedBarber?.bancoNroCuenta &&
+    selectedBarber?.bancoCorreo,
+  );
 
   const scrollToElement = (element: HTMLElement | null) => {
     if (!element) return;
@@ -179,10 +199,31 @@ export default function BookingFlow() {
     }
   }, [selectedSlotId, selectedSlot]);
 
+  useEffect(() => {
+    if (showPayment) {
+      scrollToElement(paymentPanelRef.current);
+    }
+  }, [showPayment]);
+
+  useEffect(() => {
+    if (message) {
+      scrollToElement(successMessageRef.current);
+    }
+  }, [message]);
+
+  useEffect(() => {
+    if (error) {
+      scrollToElement(errorMessageRef.current);
+    }
+  }, [error]);
+
   const chooseBarber = (barber: Barber) => {
     setSelectedBarberId(barber.id);
     setSelectedServiceId(null);
     setSelectedSlotId(null);
+    setShowPayment(false);
+    setProofData('');
+    setProofName('');
     setMessage('');
     setError('');
   };
@@ -194,8 +235,53 @@ export default function BookingFlow() {
     setSelectedDate(nextStart);
   };
 
+  const openPaymentStep = () => {
+    if (!hasBankingData) {
+      setError('Este barbero aun no tiene datos bancarios registrados. Intenta con otro barbero o contactalo directamente.');
+      return;
+    }
+
+    setError('');
+    setMessage('');
+    setShowPayment(true);
+  };
+
+  const handleProofChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    setProofData('');
+    setProofName('');
+    setError('');
+
+    if (!file) return;
+
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'application/pdf'];
+    if (!allowedTypes.includes(file.type)) {
+      setError('El comprobante debe ser una imagen o PDF.');
+      event.target.value = '';
+      return;
+    }
+
+    if (file.size > 4 * 1024 * 1024) {
+      setError('El comprobante no puede superar 4 MB.');
+      event.target.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.addEventListener('load', () => {
+      setProofData(String(reader.result || ''));
+      setProofName(file.name);
+    });
+    reader.readAsDataURL(file);
+  };
+
   const confirmBooking = async () => {
     if (!token || !selectedSlotId || !selectedServiceId) return;
+    if (!proofData) {
+      setError('Debes subir el comprobante de transferencia antes de reservar.');
+      return;
+    }
+
     setBooking(true);
     setError('');
     setMessage('');
@@ -207,13 +293,20 @@ export default function BookingFlow() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ servicioId: selectedServiceId }),
+        body: JSON.stringify({
+          servicioId: selectedServiceId,
+          comprobanteTransferencia: proofData,
+          comprobanteNombre: proofName,
+        }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.message || 'No se pudo completar la reserva.');
 
       setSlots((current) => current.filter((slot) => slot.id !== selectedSlotId));
       setSelectedSlotId(null);
+      setShowPayment(false);
+      setProofData('');
+      setProofName('');
       setMessage('Hora reservada y confirmada correctamente.');
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'No se pudo completar la reserva.');
@@ -249,9 +342,6 @@ export default function BookingFlow() {
           <span className={selectedSlot ? 'is-complete' : selectedService ? 'is-current' : ''}>3 Horario</span>
         </div>
       </header>
-
-      {error && <p className="booking-alert is-error" role="alert">{error}</p>}
-      {message && <p className="booking-alert is-success" role="status">{message}</p>}
 
       <section className="booking-panel">
         <div className="booking-section-title">
@@ -301,6 +391,9 @@ export default function BookingFlow() {
                   onClick={() => {
                     setSelectedServiceId(service.id);
                     setSelectedSlotId(null);
+                    setShowPayment(false);
+                    setProofData('');
+                    setProofName('');
                   }}
                 >
                   <span><strong>{service.nombre_servicio}</strong><small>{service.descripcion || 'Servicio profesional'}</small></span>
@@ -354,7 +447,13 @@ export default function BookingFlow() {
                   key={slot.id}
                   type="button"
                   className={selectedSlotId === slot.id ? 'is-selected' : ''}
-                  onClick={() => setSelectedSlotId(slot.id)}
+                  onClick={() => {
+                    setSelectedSlotId(slot.id);
+                    setShowPayment(false);
+                    setProofData('');
+                    setProofName('');
+                    setMessage('');
+                  }}
                 >
                   {format(new Date(slot.fecha_hora), 'HH:mm')}
                 </button>
@@ -369,12 +468,88 @@ export default function BookingFlow() {
                 <strong>{selectedBarber.usuario.nombre} · {selectedService.nombre_servicio}</strong>
                 <p>{format(new Date(selectedSlot.fecha_hora), "EEEE d 'de' MMMM, HH:mm", { locale: es })}</p>
               </div>
-              <button type="button" disabled={booking} onClick={confirmBooking}>
-                {booking ? 'Reservando...' : 'Confirmar reserva'}
+              <button type="button" disabled={booking} onClick={openPaymentStep}>
+                Confirmar reserva
               </button>
             </div>
           )}
+
+          {selectedSlot && showPayment && (
+            <div className="booking-payment" ref={paymentPanelRef}>
+              <div className="booking-section-title">
+                <span>04</span>
+                <div>
+                  <h2>Transferencia y comprobante</h2>
+                  <p>Transfiere al barbero y sube el comprobante para confirmar tu reserva.</p>
+                </div>
+              </div>
+
+              {hasBankingData ? (
+                <div className="booking-bank-grid">
+                  <div>
+                    <span>Nombre</span>
+                    <strong>{selectedBarber.bancoNombre}</strong>
+                  </div>
+                  <div>
+                    <span>Rut</span>
+                    <strong>{selectedBarber.bancoRut}</strong>
+                  </div>
+                  <div>
+                    <span>Banco</span>
+                    <strong>{selectedBarber.bancoNombreBanco}</strong>
+                  </div>
+                  <div>
+                    <span>Tipo de cuenta</span>
+                    <strong>{selectedBarber.bancoTipoCuenta}</strong>
+                  </div>
+                  <div>
+                    <span>Nro de cuenta</span>
+                    <strong>{selectedBarber.bancoNroCuenta}</strong>
+                  </div>
+                  <div>
+                    <span>Correo</span>
+                    <strong>{selectedBarber.bancoCorreo}</strong>
+                  </div>
+                </div>
+              ) : (
+                <p className="booking-empty">Este barbero aun no tiene datos bancarios registrados.</p>
+              )}
+
+              <label className="booking-proof-field">
+                Comprobante de transferencia
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,application/pdf"
+                  onChange={handleProofChange}
+                />
+                <small>Formatos permitidos: PNG, JPG, WEBP o PDF. Maximo 4 MB.</small>
+              </label>
+
+              {proofName && <p className="booking-proof-name">Comprobante cargado: {proofName}</p>}
+
+              <div className="booking-payment-actions">
+                <button type="button" onClick={() => setShowPayment(false)} disabled={booking}>
+                  Volver
+                </button>
+                <button type="button" disabled={booking || !proofData || !hasBankingData} onClick={confirmBooking}>
+                  {booking ? 'Reservando...' : 'Reservar con comprobante'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {message && (
+            <p className="booking-alert booking-alert-bottom is-success" role="status" ref={successMessageRef}>
+              {message}
+            </p>
+          )}
         </section>
+      )}
+
+      {error && (
+        <p className="booking-alert booking-alert-bottom is-error" role="alert" ref={errorMessageRef}>
+          {error}
+        </p>
       )}
     </main>
   );

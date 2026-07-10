@@ -234,6 +234,51 @@ import {
         </form>
       </article>
 
+      <article class="pro-panel pro-banking">
+        <div class="pro-panel-header">
+          <div>
+            <h2>Datos Bancarios</h2>
+            <p id="banking-helper" class="workplace-helper">Registra los datos para que tus clientes puedan transferir.</p>
+          </div>
+          <span id="banking-status" class="workplace-status">Cargando...</span>
+        </div>
+
+        <form id="banking-form" class="workplace-form banking-form">
+          <label>
+            Nombre
+            <input name="nombre" type="text" maxlength="120" required placeholder="Ej: Francisco Flores" />
+          </label>
+          <label>
+            Rut
+            <input name="rut" type="text" maxlength="20" required placeholder="Ej: 12345678-9" />
+          </label>
+          <label>
+            Banco
+            <input name="banco" type="text" maxlength="80" required placeholder="Ej: Banco Estado" />
+          </label>
+          <label>
+            Tipo de cuenta
+            <input name="tipoCuenta" type="text" maxlength="60" required placeholder="Ej: Cuenta corriente" />
+          </label>
+          <label>
+            Nro de cuenta
+            <input name="nroCuenta" type="text" maxlength="40" required placeholder="Ej: 123456789" />
+          </label>
+          <label>
+            Correo
+            <input name="correo" type="email" maxlength="120" required placeholder="correo@ejemplo.com" />
+          </label>
+
+          <p id="banking-message" class="workplace-message" role="status"></p>
+
+          <div class="workplace-actions">
+            <button id="save-banking" class="workplace-primary" type="submit">Guardar datos bancarios</button>
+            <button id="edit-banking" class="workplace-primary" type="button" hidden>Editar datos</button>
+            <button id="cancel-banking-edit" type="button" hidden>Cancelar cambios</button>
+          </div>
+        </form>
+      </article>
+
       <BarberAppointments client:only="react" />
     </section>
   </section>
@@ -308,8 +353,27 @@ import {
   const deleteWorkplaceButton = document.querySelector<HTMLButtonElement>('#delete-workplace');
   const workplaceNameInput = workplaceForm?.elements.namedItem('nombre_barberia') as HTMLInputElement | null;
   const workplaceAddressInput = workplaceForm?.elements.namedItem('direccion') as HTMLInputElement | null;
+  const bankingForm = document.querySelector<HTMLFormElement>('#banking-form');
+  const bankingStatus = document.querySelector<HTMLElement>('#banking-status');
+  const bankingHelper = document.querySelector<HTMLElement>('#banking-helper');
+  const bankingMessage = document.querySelector<HTMLElement>('#banking-message');
+  const saveBankingButton = document.querySelector<HTMLButtonElement>('#save-banking');
+  const editBankingButton = document.querySelector<HTMLButtonElement>('#edit-banking');
+  const cancelBankingButton = document.querySelector<HTMLButtonElement>('#cancel-banking-edit');
+  const bankingInputs = bankingForm
+    ? Array.from(bankingForm.querySelectorAll<HTMLInputElement>('input'))
+    : [];
   let currentWorkplace: { id: number; nombre_barberia?: string | null; direccion?: string | null } | null = null;
+  let currentBankingData: {
+    bancoNombre?: string | null;
+    bancoRut?: string | null;
+    bancoNombreBanco?: string | null;
+    bancoTipoCuenta?: string | null;
+    bancoNroCuenta?: string | null;
+    bancoCorreo?: string | null;
+  } | null = null;
   let isEditingWorkplace = false;
+  let isEditingBanking = false;
 
   const formatPrice = (value: number) =>
     new Intl.NumberFormat('es-CL', {
@@ -330,6 +394,7 @@ import {
     if (professionalBio && profile?.biografia) professionalBio.textContent = profile.biografia;
     if (sidebarName) sidebarName.textContent = name;
     if (sidebarSpecialty) sidebarSpecialty.textContent = specialty;
+    renderBanking(profile || null);
   };
 
   const renderServices = (services: any[]) => {
@@ -403,6 +468,66 @@ import {
     if (!workplaceMessage) return;
     workplaceMessage.textContent = message;
     workplaceMessage.classList.toggle('is-error', isError);
+  };
+
+  const hasCompleteBankingData = (bankingData: typeof currentBankingData) =>
+    Boolean(
+      bankingData?.bancoNombre &&
+      bankingData?.bancoRut &&
+      bankingData?.bancoNombreBanco &&
+      bankingData?.bancoTipoCuenta &&
+      bankingData?.bancoNroCuenta &&
+      bankingData?.bancoCorreo,
+    );
+
+  const setBankingMessage = (message = '', isError = false) => {
+    if (!bankingMessage) return;
+    bankingMessage.textContent = message;
+    bankingMessage.classList.toggle('is-error', isError);
+  };
+
+  const setBankingReadonly = (readonly: boolean) => {
+    bankingInputs.forEach((input) => {
+      input.readOnly = readonly;
+    });
+  };
+
+  const renderBanking = (bankingData: typeof currentBankingData) => {
+    currentBankingData = bankingData;
+    isEditingBanking = false;
+
+    const hasData = hasCompleteBankingData(bankingData);
+    const values: Record<string, string> = {
+      nombre: bankingData?.bancoNombre || '',
+      rut: bankingData?.bancoRut || '',
+      banco: bankingData?.bancoNombreBanco || '',
+      tipoCuenta: bankingData?.bancoTipoCuenta || '',
+      nroCuenta: bankingData?.bancoNroCuenta || '',
+      correo: bankingData?.bancoCorreo || '',
+    };
+
+    bankingInputs.forEach((input) => {
+      input.value = values[input.name] || '';
+    });
+    setBankingReadonly(hasData);
+
+    if (bankingStatus) {
+      bankingStatus.textContent = hasData ? 'Registrado' : 'Pendiente';
+      bankingStatus.classList.toggle('is-complete', hasData);
+    }
+
+    if (bankingHelper) {
+      bankingHelper.textContent = hasData
+        ? 'Puedes editar estos datos cuando necesites actualizar tu informacion bancaria.'
+        : 'Registra los datos para que tus clientes puedan transferir.';
+    }
+
+    if (saveBankingButton) {
+      saveBankingButton.hidden = hasData;
+      saveBankingButton.textContent = hasData ? 'Guardar cambios' : 'Guardar datos bancarios';
+    }
+    if (editBankingButton) editBankingButton.hidden = !hasData;
+    if (cancelBankingButton) cancelBankingButton.hidden = true;
   };
 
   const renderWorkplace = (workplace: typeof currentWorkplace) => {
@@ -610,6 +735,72 @@ import {
       );
     } finally {
       deleteWorkplaceButton.disabled = false;
+    }
+  });
+
+  editBankingButton?.addEventListener('click', () => {
+    if (!saveBankingButton) return;
+    isEditingBanking = true;
+    setBankingReadonly(false);
+    saveBankingButton.hidden = false;
+    saveBankingButton.textContent = 'Guardar cambios';
+    editBankingButton.hidden = true;
+    if (cancelBankingButton) cancelBankingButton.hidden = false;
+    bankingInputs[0]?.focus();
+    setBankingMessage();
+  });
+
+  cancelBankingButton?.addEventListener('click', () => {
+    renderBanking(currentBankingData);
+    setBankingMessage();
+  });
+
+  bankingForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!token || !bankingForm || !saveBankingButton) return;
+
+    const hasData = hasCompleteBankingData(currentBankingData);
+    if (hasData && !isEditingBanking) return;
+
+    const formData = new FormData(bankingForm);
+    const payload = {
+      nombre: String(formData.get('nombre') || '').trim(),
+      rut: String(formData.get('rut') || '').trim(),
+      banco: String(formData.get('banco') || '').trim(),
+      tipoCuenta: String(formData.get('tipoCuenta') || '').trim(),
+      nroCuenta: String(formData.get('nroCuenta') || '').trim(),
+      correo: String(formData.get('correo') || '').trim(),
+    };
+
+    saveBankingButton.disabled = true;
+    saveBankingButton.textContent = 'Guardando...';
+    setBankingMessage();
+
+    try {
+      const response = await fetch(`${API_URL}/auth/me/banking`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.message || 'No se pudieron guardar los datos bancarios.');
+
+      renderBanking(data);
+      setBankingMessage(hasData ? 'Datos bancarios actualizados.' : 'Datos bancarios registrados.');
+      await loadProfessionalProfile();
+    } catch (error) {
+      setBankingMessage(
+        error instanceof Error ? error.message : 'No se pudieron guardar los datos bancarios.',
+        true,
+      );
+    } finally {
+      saveBankingButton.disabled = false;
+      if (!saveBankingButton.hidden) {
+        saveBankingButton.textContent = currentBankingData ? 'Guardar cambios' : 'Guardar datos bancarios';
+      }
     }
   });
 

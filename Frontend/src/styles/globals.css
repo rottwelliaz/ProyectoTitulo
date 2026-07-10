@@ -1,6 +1,3 @@
-/* Estilos globales */
-/* TODO: Implementar estilos globales */
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -13,10 +10,6 @@ section[id],
 [data-scroll-target],
 [id] {
   scroll-margin-top: 96px;
-}
-
-body {
-  /* TODO: Agregar estilos globales */
 }
 
 @media (prefers-reduced-motion: reduce) {

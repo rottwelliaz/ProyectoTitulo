@@ -5,6 +5,7 @@ import {
   updateCita,
   deleteCita,
   getBarberosParaReserva,
+  cancelClientAppointment,
   getClientAppointments,
   getMyAppointments,
   getReservationCalendar,
@@ -23,6 +24,7 @@ router.post('/', authorizeRoles('barbero'), createCita);
 router.get('/mias', authorizeRoles('barbero'), getMyAppointments);
 router.get('/agenda-reservas', authorizeRoles('barbero'), getReservationCalendar);
 router.get('/cliente/mias', authorizeRoles('cliente'), getClientAppointments);
+router.patch('/cliente/:id/cancelar', authorizeRoles('cliente'), cancelClientAppointment);
 router.put('/disponibilidad/semana', authorizeRoles('barbero'), saveWeekAvailability);
 router.patch('/:id/estado', authorizeRoles('barbero'), updateAppointmentStatus);
 router.put('/:id', authorizeRoles('barbero'), updateCita);

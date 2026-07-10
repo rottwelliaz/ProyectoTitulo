@@ -1149,7 +1149,8 @@
   display: none;
 }
 
-.pro-workplace {
+.pro-workplace,
+.pro-banking {
   grid-column: 1 / -1;
 }
 
@@ -1238,7 +1239,9 @@
 
 .appointment-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.55rem;
+  justify-content: flex-end;
 }
 
 .appointment-actions button {
@@ -1260,6 +1263,11 @@
 .appointment-actions .is-finish {
   background: #0d5bd1;
   border-color: #1679ff;
+}
+
+.appointment-actions .is-proof {
+  border-color: rgba(255, 202, 34, 0.75);
+  color: var(--pro-yellow);
 }
 
 .appointment-actions button:disabled {
@@ -1424,6 +1432,7 @@
   .pro-gallery,
   .pro-reviews,
   .pro-workplace,
+  .pro-banking,
   .pro-appointments,
   .reservations-calendar {
     grid-column: auto;
@@ -1484,6 +1493,10 @@
   .appointment-actions {
     grid-column: 2;
     justify-self: start;
+  }
+
+  .appointment-actions {
+    justify-content: flex-start;
   }
 
   .agenda-hours {

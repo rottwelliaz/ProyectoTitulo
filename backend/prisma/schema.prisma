@@ -43,6 +43,12 @@ model BarberProfile {
   usuario          User      @relation(fields: [usuarioId], references: [id])
   biografia        String?
   foto_perfil      String?
+  bancoNombre      String?
+  bancoRut         String?
+  bancoNombreBanco String?
+  bancoTipoCuenta  String?
+  bancoNroCuenta   String?
+  bancoCorreo      String?
   lugarTrabajoId   Int?
   lugarTrabajo     LugarTrabajo? @relation(fields: [lugarTrabajoId], references: [id])
 
@@ -79,6 +85,8 @@ model Cita {
   servicio       Service?      @relation(fields: [servicioId], references: [id])
   fecha_hora     DateTime
   estado         CitaEstado   @default(disponible)
+  comprobanteTransferencia String?
+  comprobanteNombre        String?
   fecha_creacion DateTime     @default(now())
 }
 
