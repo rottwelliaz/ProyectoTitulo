@@ -14,6 +14,8 @@ const getOwnBarberProfile = async (userId: number) => {
 const isExactHourBlock = (date: Date): boolean =>
   date.getMinutes() === 0 && date.getSeconds() === 0 && date.getMilliseconds() === 0;
 
+const isFutureDate = (date: Date): boolean => date.getTime() > Date.now();
+
 // ─── Fase 1: Gestión del Barbero ────────────────────────────────────────────
 
 export const createCita = async (req: AuthRequest, res: Response) => {
@@ -33,6 +35,10 @@ export const createCita = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({
         message: 'fecha_hora debe ser un bloque de hora exacta (ej. 14:00:00)',
       });
+    }
+
+    if (!isFutureDate(fechaDate)) {
+      return res.status(400).json({ message: 'No puedes crear disponibilidad en una fecha u hora pasada' });
     }
 
     const barberProfile = await getOwnBarberProfile(req.user!.id);
@@ -84,6 +90,10 @@ export const updateCita = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({
         message: 'fecha_hora debe ser un bloque de hora exacta (ej. 14:00:00)',
       });
+    }
+
+    if (!isFutureDate(fechaDate)) {
+      return res.status(400).json({ message: 'No puedes mover una cita a una fecha u hora pasada' });
     }
 
     const barberProfile = await getOwnBarberProfile(req.user!.id);
@@ -171,10 +181,10 @@ export const saveWeekAvailability = async (req: AuthRequest, res: Response) => {
 
     const uniqueDates = [...new Set(bloques.map((value: unknown) => String(value)))].map((value) => new Date(value));
     const invalidBlock = uniqueDates.some((date) =>
-      Number.isNaN(date.getTime()) || !isExactHourBlock(date) || date < weekStart || date >= weekEnd,
+      Number.isNaN(date.getTime()) || !isExactHourBlock(date) || date < weekStart || date >= weekEnd || !isFutureDate(date),
     );
     if (invalidBlock) {
-      return res.status(400).json({ message: 'Los bloques deben pertenecer a la semana y usar horas exactas' });
+      return res.status(400).json({ message: 'Los bloques deben pertenecer a la semana, usar horas exactas y ser futuros' });
     }
 
     const barberProfile = await getOwnBarberProfile(req.user!.id);
@@ -249,6 +259,9 @@ export const getDisponibilidad = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: 'Formato de fecha inválido, usa YYYY-MM-DD' });
     }
 
+    const now = new Date();
+    const desde = diaInicio.getTime() > now.getTime() ? diaInicio : now;
+
     const barberProfile = await prisma.barberProfile.findUnique({
       where: { id: barberoProfileId },
     });
@@ -261,7 +274,7 @@ export const getDisponibilidad = async (req: AuthRequest, res: Response) => {
       where: {
         barberoId: barberoProfileId,
         estado: CitaEstado.disponible,  // ← enum tipado, no string
-        fecha_hora: { gte: diaInicio, lte: diaFin },
+        fecha_hora: { gte: desde, lte: diaFin },
       },
       orderBy: { fecha_hora: 'asc' },
     });
@@ -627,7 +640,7 @@ export const agendarCita = async (req: AuthRequest, res: Response) => {
     }
 
     if (!/^data:(image\/(png|jpeg|jpg|webp)|application\/pdf);base64,/.test(comprobanteTransferencia)) {
-      return res.status(400).json({ message: 'El comprobante debe ser una imagen o PDF valido' });
+      return res.status(400).json({ message: 'El comprobante debe ser una imagen o PDF válido' });
     }
 
     if (comprobanteTransferencia.length > 5_500_000) {
@@ -646,6 +659,10 @@ export const agendarCita = async (req: AuthRequest, res: Response) => {
 
     if (cita.estado !== CitaEstado.disponible) {
       return res.status(409).json({ message: 'Esta cita ya no está disponible' });
+    }
+
+    if (!isFutureDate(cita.fecha_hora)) {
+      return res.status(409).json({ message: 'No puedes reservar una hora pasada' });
     }
 
     const servicio = await prisma.service.findUnique({

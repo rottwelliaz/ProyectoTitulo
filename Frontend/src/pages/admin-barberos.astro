@@ -15,7 +15,7 @@ import Layout from '../layouts/Layout.astro';
             <p class="text-sm font-black uppercase tracking-[0.18em] text-[#F2C230]">Admin</p>
             <h1 class="mt-2 text-3xl font-black">Barberos pendientes</h1>
             <p class="mt-2 max-w-2xl text-sm leading-6 text-[#C7D2E1]">
-              Revisa las solicitudes de cuentas de barbero y apruebalas para que puedan iniciar sesion y crear su perfil profesional.
+              Revisa las solicitudes de cuentas de barbero y apruébalas para que puedan iniciar sesión y crear su perfil profesional.
             </p>
           </div>
           <button
@@ -80,8 +80,8 @@ import Layout from '../layouts/Layout.astro';
 
     const user = getUser();
     if (user?.rol !== 'admin') {
-      renderEmpty('No tienes permisos para ver esta pagina.');
-      showMessage('Solo un usuario admin puede aprobar barberos.', 'error');
+      renderEmpty('No tienes permisos para ver esta página.');
+      showMessage('Solo un usuario administrador puede aprobar barberos.', 'error');
       return;
     }
 
@@ -113,7 +113,7 @@ import Layout from '../layouts/Layout.astro';
               <div>
                 <h2 class="text-xl font-black">${escapeHtml(barber.nombre)}</h2>
                 <p class="mt-1 text-sm text-[#C7D2E1]">${escapeHtml(barber.email)}</p>
-                <p class="mt-1 text-sm text-[#C7D2E1]">Telefono: ${escapeHtml(barber.telefono || 'No registrado')}</p>
+                <p class="mt-1 text-sm text-[#C7D2E1]">Teléfono: ${escapeHtml(barber.telefono || 'No registrado')}</p>
                 <p class="mt-2 text-xs font-bold uppercase tracking-[0.16em] text-[#F2C230]">Solicitado: ${escapeHtml(date)}</p>
               </div>
               <button

@@ -16,13 +16,13 @@ const email = Joi.string()
   .trim()
   .messages({
     'string.base': 'El email debe ser texto',
-    'string.empty': 'El email no puede estar vacio',
+    'string.empty': 'El email no puede estar vacío',
   });
 
 const password = Joi.string()
   .messages({
     'string.base': 'El password debe ser texto',
-    'string.empty': 'El password no puede estar vacio',
+    'string.empty': 'El password no puede estar vacío',
   });
 
 const telefono = Joi.string()
@@ -30,8 +30,8 @@ const telefono = Joi.string()
   .pattern(telefonoRegex)
   .allow(null, '')
   .messages({
-    'string.base': 'El telefono debe ser texto',
-    'string.pattern.base': 'El telefono debe contener exactamente 9 numeros',
+    'string.base': 'El teléfono debe ser texto',
+    'string.pattern.base': 'El teléfono debe contener exactamente 9 números',
   });
 
 export const createUserValidation = Joi.object({
@@ -49,11 +49,11 @@ export const createUserValidation = Joi.object({
     .valid('cliente', 'barbero')
     .optional()
     .messages({
-      'any.only': 'Rol invalido',
+      'any.only': 'Rol inválido',
       'string.base': 'El rol debe ser texto',
     }),
 }).unknown(false).messages({
-  'object.unknown': 'No se permiten campos adicionales en la creacion de usuario',
+  'object.unknown': 'No se permiten campos adicionales en la creación de usuario',
 });
 
 export const updateUserValidation = Joi.object({
@@ -65,7 +65,7 @@ export const updateUserValidation = Joi.object({
     .valid('cliente', 'barbero', 'admin')
     .optional()
     .messages({
-      'any.only': 'Rol invalido',
+      'any.only': 'Rol inválido',
       'string.base': 'El rol debe ser texto',
     }),
   aprobado: Joi.boolean()
@@ -74,7 +74,7 @@ export const updateUserValidation = Joi.object({
       'boolean.base': 'El campo aprobado debe ser verdadero o falso',
     }),
 }).unknown(false).messages({
-  'object.unknown': 'No se permiten campos adicionales en la edicion de usuario',
+  'object.unknown': 'No se permiten campos adicionales en la edición de usuario',
 });
 
 export const updateProfileValidation = Joi.object({
@@ -83,5 +83,5 @@ export const updateProfileValidation = Joi.object({
   password: password.optional(),
   telefono: telefono.optional(),
 }).unknown(false).messages({
-  'object.unknown': 'No se permiten campos adicionales en la edicion de perfil',
+  'object.unknown': 'No se permiten campos adicionales en la edición de perfil',
 });

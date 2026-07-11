@@ -9,7 +9,7 @@ const nombreServicio = Joi.string()
   .messages({
     'string.base': 'El nombre del servicio debe ser texto',
     'string.empty': 'El nombre del servicio es obligatorio',
-    'string.pattern.base': 'El nombre del servicio solo puede contener letras y simbolos permitidos, sin numeros',
+    'string.pattern.base': 'El nombre del servicio solo puede contener letras y símbolos permitidos, sin números',
   });
 
 const descripcion = Joi.string()
@@ -17,8 +17,8 @@ const descripcion = Joi.string()
   .pattern(descripcionRegex)
   .allow(null, '')
   .messages({
-    'string.base': 'La descripcion debe ser texto',
-    'string.pattern.base': 'La descripcion solo puede contener letras y numeros',
+    'string.base': 'La descripción debe ser texto',
+    'string.pattern.base': 'La descripción solo puede contener letras y números',
   });
 
 const precio = Joi.number()
@@ -26,8 +26,8 @@ const precio = Joi.number()
   .min(1000)
   .max(50000)
   .messages({
-    'number.base': 'El precio debe ser un numero',
-    'number.integer': 'El precio debe ser un numero entero',
+    'number.base': 'El precio debe ser un número',
+    'number.integer': 'El precio debe ser un número entero',
     'number.min': 'El precio debe empezar desde 1000',
     'number.max': 'El precio no puede ser mayor a 50000',
   });
@@ -37,10 +37,10 @@ const duracionMinutos = Joi.number()
   .min(10)
   .max(60)
   .messages({
-    'number.base': 'La duracion debe ser un numero',
-    'number.integer': 'La duracion debe ser un numero entero',
-    'number.min': 'La duracion minima es 10 minutos',
-    'number.max': 'La duracion maxima es 60 minutos',
+    'number.base': 'La duración debe ser un número',
+    'number.integer': 'La duración debe ser un número entero',
+    'number.min': 'La duración mínima es 10 minutos',
+    'number.max': 'La duración máxima es 60 minutos',
   });
 
 export const createServiceValidation = Joi.object({
@@ -52,10 +52,10 @@ export const createServiceValidation = Joi.object({
     'any.required': 'El precio es obligatorio',
   }),
   duracion_minutos: duracionMinutos.required().messages({
-    'any.required': 'La duracion es obligatoria',
+    'any.required': 'La duración es obligatoria',
   }),
 }).unknown(false).messages({
-  'object.unknown': 'No se permiten campos adicionales en la creacion de servicio',
+  'object.unknown': 'No se permiten campos adicionales en la creación de servicio',
 });
 
 export const updateServiceValidation = Joi.object({
@@ -64,5 +64,5 @@ export const updateServiceValidation = Joi.object({
   precio: precio.optional(),
   duracion_minutos: duracionMinutos.optional(),
 }).unknown(false).messages({
-  'object.unknown': 'No se permiten campos adicionales en la edicion de servicio',
+  'object.unknown': 'No se permiten campos adicionales en la edición de servicio',
 });

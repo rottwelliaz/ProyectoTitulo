@@ -124,11 +124,11 @@ export default function BarberAppointments() {
   };
 
   return (
-    <article className="pro-panel pro-appointments">
+    <article id="citas-profesional" className="pro-panel pro-appointments">
       <div className="pro-panel-header">
         <div>
           <h2>Mis citas</h2>
-          <p className="appointments-helper">Las reservas de clientes se confirman automaticamente.</p>
+          <p className="appointments-helper">Las reservas de clientes se confirman automáticamente.</p>
         </div>
       </div>
 
@@ -150,7 +150,7 @@ export default function BarberAppointments() {
               <div className="appointment-info">
                 <strong>{appointment.cliente?.nombre || 'Cliente'}</strong>
                 <span>{appointment.servicio?.nombre_servicio || 'Servicio'}</span>
-                <small>{appointment.cliente?.telefono || 'Sin telefono registrado'}</small>
+                <small>{appointment.cliente?.telefono || 'Sin teléfono registrado'}</small>
               </div>
 
               <span className={`appointment-status is-${appointment.estado}`}>

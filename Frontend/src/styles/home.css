@@ -504,14 +504,6 @@
   color: #ffcd25;
 }
 
-.barber-detail {
-  color: rgba(255, 255, 255, 0.78);
-  font-size: 0.9rem;
-  line-height: 1.35;
-  margin: 0 0 1rem;
-  min-height: 2.45rem;
-}
-
 .barber-card a {
   background: #144fb3;
   border-radius: 8px;
@@ -876,5 +868,54 @@
   .section-heading-row {
     align-items: flex-start;
     gap: 0.75rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .home-header,
+  .home-hero,
+  .home-main,
+  .home-footer {
+    width: min(100% - 20px, 1120px);
+  }
+
+  .home-header {
+    grid-template-columns: 62px 1fr;
+  }
+
+  .brand-link img {
+    height: 58px;
+    width: 62px;
+  }
+
+  .search-pill {
+    font-size: 0.78rem;
+  }
+
+  .hero-title {
+    font-size: 2.1rem;
+    line-height: 1.08;
+  }
+
+  .hero-copy {
+    font-size: 0.98rem;
+  }
+
+  .section-heading h2,
+  .barber-invite h2,
+  .home-cta h2 {
+    font-size: 1.35rem;
+  }
+
+  .barber-card,
+  .how-card,
+  .benefit-item,
+  .home-cta,
+  .barber-invite {
+    border-radius: 8px;
+  }
+
+  .home-footer-inner {
+    gap: 1.4rem;
   }
 }

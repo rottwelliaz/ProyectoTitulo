@@ -583,3 +583,42 @@
     justify-content: center;
   }
 }
+
+@media (max-width: 460px) {
+  .barbers-header,
+  .barbers-main {
+    width: min(100% - 20px, 1460px);
+  }
+
+  .barbers-header {
+    gap: 0.8rem;
+  }
+
+  .barbers-brand img {
+    height: 62px;
+    width: 70px;
+  }
+
+  .barbers-search {
+    min-height: 42px;
+    padding: 0 0.9rem;
+  }
+
+  .barbers-title h1 {
+    font-size: 2.2rem;
+  }
+
+  .barbers-filters,
+  .barber-profile-card,
+  .barbers-empty {
+    border-radius: 8px;
+  }
+
+  .barber-profile-body {
+    padding: 0.85rem;
+  }
+
+  .profile-button {
+    width: 100%;
+  }
+}

@@ -4,16 +4,14 @@ import homeFoto from '../assets/homefoto.png';
 import BarberCalendar from './calendar/BarberCalendar';
 import BarberAppointments from './BarberAppointments';
 import {
-  ArrowRight,
+  BriefcaseBusiness,
   CalendarDays,
-  Images,
+  ClipboardList,
+  CreditCard,
   LayoutDashboard,
   Pencil,
   Plus,
   Scissors,
-  Settings,
-  Star,
-  Users,
 } from 'lucide-astro';
 ---
 
@@ -23,34 +21,30 @@ import {
       <img src={logoConce.src} alt="Conce Barber Club" />
     </a>
 
-    <nav class="pro-nav" aria-label="Menu profesional">
-      <a class="pro-nav-link is-active" href="/perfil-profesional">
+    <nav class="pro-nav" aria-label="Menú profesional">
+      <a class="pro-nav-link is-active" href="#resumen-profesional">
         <LayoutDashboard class="pro-nav-lucide" size={23} aria-hidden="true" />
         Resumen
       </a>
-      <a class="pro-nav-link" href="/perfil-profesional">
+      <a class="pro-nav-link" href="#agenda-profesional">
         <CalendarDays class="pro-nav-lucide" size={23} aria-hidden="true" />
         Mi agenda
       </a>
-      <a class="pro-nav-link" href="/perfil-profesional">
+      <a class="pro-nav-link" href="#servicios-profesional">
         <Scissors class="pro-nav-lucide" size={23} aria-hidden="true" />
-        Servicios
+        Mis servicios
       </a>
-      <a class="pro-nav-link" href="/perfil-profesional">
-        <Users class="pro-nav-lucide" size={23} aria-hidden="true" />
-        Clientes
+      <a class="pro-nav-link" href="#citas-profesional">
+        <ClipboardList class="pro-nav-lucide" size={23} aria-hidden="true" />
+        Mis citas
       </a>
-      <a class="pro-nav-link" href="/perfil-profesional">
-        <Star class="pro-nav-lucide" size={23} aria-hidden="true" />
-        Reseñas
+      <a class="pro-nav-link" href="#lugar-trabajo">
+        <BriefcaseBusiness class="pro-nav-lucide" size={23} aria-hidden="true" />
+        Lugar de trabajo
       </a>
-      <a class="pro-nav-link" href="/perfil-profesional">
-        <Images class="pro-nav-lucide" size={23} aria-hidden="true" />
-        Galeria
-      </a>
-      <a class="pro-nav-link" href="/configuracion">
-        <Settings class="pro-nav-lucide" size={23} aria-hidden="true" />
-        Configuracion
+      <a class="pro-nav-link" href="#datos-bancarios">
+        <CreditCard class="pro-nav-lucide" size={23} aria-hidden="true" />
+        Datos bancarios
       </a>
     </nav>
 
@@ -67,7 +61,7 @@ import {
   <section class="pro-main">
     <header class="pro-topbar">
       <div>
-        <h1>Perfil Profesional</h1>
+        <h1>Perfil profesional</h1>
         <p>Gestiona tu negocio y agenda</p>
       </div>
 
@@ -79,7 +73,7 @@ import {
       </div>
     </header>
 
-    <section class="pro-hero-card is-minimal">
+    <section id="resumen-profesional" class="pro-hero-card is-minimal">
       <div class="pro-avatar-wrap">
         <div class="pro-avatar" aria-hidden="true"></div>
         <button class="pro-camera" type="button" aria-label="Cambiar foto"></button>
@@ -91,15 +85,15 @@ import {
           <span class="pro-verified" aria-label="Verificado"></span>
         </div>
         <p id="professional-specialty" class="pro-specialty">Fade Master</p>
-        <p id="professional-shop" class="pro-meta">Barberia El Puente</p>
+        <p id="professional-shop" class="pro-meta">Barbería El Puente</p>
         <p id="professional-location" class="pro-meta">Concepción, Chile</p>
-        <p class="pro-rating"><span>★</span> 4.9 <small>(156 resenas)</small></p>
+        <p class="pro-rating"><span>★</span> 4.9 <small>(156 reseñas)</small></p>
       </div>
 
       <div class="pro-about">
         <h3>Sobre mi</h3>
         <p id="professional-bio">
-          Apasionado por los detalles y la transformacion. Mas de 6 anos de experiencia entregando estilos unicos y personalizados.
+          Apasionado por los detalles y la transformación. Más de 6 años de experiencia entregando estilos únicos y personalizados.
         </p>
         <div class="pro-socials" aria-label="Redes sociales">
           <a href="/perfil-profesional" aria-label="Instagram">ig</a>
@@ -113,7 +107,7 @@ import {
       </div>
     </section>
 
-    <section class="pro-stats" aria-label="Estadisticas profesionales" hidden>
+    <section class="pro-stats" aria-label="Estadísticas profesionales" hidden>
       <article class="pro-stat-card">
         <span class="pro-stat-icon icon-calendar" aria-hidden="true"></span>
         <div>
@@ -135,9 +129,9 @@ import {
       <article class="pro-stat-card">
         <span class="pro-stat-icon icon-star" aria-hidden="true"></span>
         <div>
-          <p>Calificacion</p>
+          <p>Calificación</p>
           <strong>4.9 ★★★★★</strong>
-          <small>Basado en 156 resenas</small>
+          <small>Basado en 156 reseñas</small>
         </div>
       </article>
     </section>
@@ -145,7 +139,7 @@ import {
     <section class="pro-grid">
       <BarberCalendar client:only="react" />
 
-      <article class="pro-panel pro-services">
+      <article id="servicios-profesional" class="pro-panel pro-services">
         <div class="pro-panel-header">
           <h2>Mis servicios</h2>
           <button id="open-service-modal" type="button">
@@ -162,49 +156,9 @@ import {
           <Scissors size={21} aria-hidden="true" />
         </template>
 
-        <a class="pro-panel-link" href="/perfil-profesional">
-          Ver todos mis servicios
-          <ArrowRight size={18} aria-hidden="true" />
-        </a>
       </article>
 
-      <article class="pro-panel pro-gallery" hidden>
-        <div class="pro-panel-header">
-          <h2>Mi galeria de trabajos</h2>
-          <button type="button">+ Agregar fotos</button>
-        </div>
-        <div class="gallery-grid">
-          <span></span>
-          <span></span>
-          <span></span>
-          <span></span>
-          <span></span>
-          <span class="gallery-more">+12<br />Ver mas</span>
-        </div>
-      </article>
-
-      <article class="pro-panel pro-reviews" hidden>
-        <div class="pro-panel-header">
-          <h2>Resenas recientes</h2>
-          <button type="button">Ver todas</button>
-        </div>
-        <div class="review-grid">
-          <article>
-            <strong>Juan Soto</strong>
-            <span>24 Mayo, 2024</span>
-            <p>★★★★★</p>
-            <small>Excelente atencion y el mejor fade de Concepción.</small>
-          </article>
-          <article>
-            <strong>Matias Rojas</strong>
-            <span>22 Mayo, 2024</span>
-            <p>★★★★★</p>
-            <small>Muy profesional y buen ambiente. Volvere sin duda.</small>
-          </article>
-        </div>
-      </article>
-
-      <article class="pro-panel pro-workplace">
+      <article id="lugar-trabajo" class="pro-panel pro-workplace">
         <div class="pro-panel-header">
           <div>
             <h2>Mi lugar de trabajo</h2>
@@ -215,11 +169,11 @@ import {
 
         <form id="workplace-form" class="workplace-form">
           <label>
-            Nombre de la barberia
+            Nombre de la barbería
             <input name="nombre_barberia" type="text" maxlength="100" required placeholder="Ej: Conce Barber Club" />
           </label>
           <label>
-            Direccion
+            Dirección
             <input name="direccion" type="text" maxlength="180" required placeholder="Ej: Avenida Central 123, Concepción" />
           </label>
 
@@ -234,10 +188,10 @@ import {
         </form>
       </article>
 
-      <article class="pro-panel pro-banking">
+      <article id="datos-bancarios" class="pro-panel pro-banking">
         <div class="pro-panel-header">
           <div>
-            <h2>Datos Bancarios</h2>
+            <h2>Datos bancarios</h2>
             <p id="banking-helper" class="workplace-helper">Registra los datos para que tus clientes puedan transferir.</p>
           </div>
           <span id="banking-status" class="workplace-status">Cargando...</span>
@@ -249,19 +203,19 @@ import {
             <input name="nombre" type="text" maxlength="120" required placeholder="Ej: Francisco Flores" />
           </label>
           <label>
-            Rut
+            RUT
             <input name="rut" type="text" maxlength="20" required placeholder="Ej: 12345678-9" />
           </label>
           <label>
             Banco
-            <input name="banco" type="text" maxlength="80" required placeholder="Ej: Banco Estado" />
+            <input name="banco" type="text" maxlength="80" required placeholder="Ej: BancoEstado" />
           </label>
           <label>
             Tipo de cuenta
-            <input name="tipoCuenta" type="text" maxlength="60" required placeholder="Ej: Cuenta corriente" />
+            <input name="tipoCuenta" type="text" maxlength="60" required placeholder="Ej: CuentaRUT" />
           </label>
           <label>
-            Nro de cuenta
+            N.º de cuenta
             <input name="nroCuenta" type="text" maxlength="40" required placeholder="Ej: 123456789" />
           </label>
           <label>
@@ -288,7 +242,7 @@ import {
       <div class="service-form-header">
         <div>
           <h2>Agregar servicio</h2>
-          <p>Completa los datos que veran tus clientes.</p>
+          <p>Completa los datos que verán tus clientes.</p>
         </div>
         <button id="close-service-modal" class="service-modal-close" type="button" aria-label="Cerrar">×</button>
       </div>
@@ -299,7 +253,7 @@ import {
       </label>
 
       <label>
-        Descripcion
+        Descripción
         <textarea name="descripcion" maxlength="300" rows="3" placeholder="Describe brevemente el servicio"></textarea>
       </label>
 
@@ -309,7 +263,7 @@ import {
           <input name="precio" type="number" min="0" step="1" required placeholder="12000" />
         </label>
         <label>
-          Duracion (minutos)
+          Duración (minutos)
           <input name="duracion_minutos" type="number" min="1" step="1" required placeholder="60" />
         </label>
       </div>
@@ -327,6 +281,7 @@ import {
 <script>
   const API_URL = 'http://localhost:3001/api';
   const token = localStorage.getItem('token');
+  const navLinks = document.querySelectorAll<HTMLAnchorElement>('.pro-nav-link');
 
   const professionalName = document.querySelector<HTMLElement>('#professional-name');
   const professionalSpecialty = document.querySelector<HTMLElement>('#professional-specialty');
@@ -382,6 +337,12 @@ import {
       maximumFractionDigits: 0,
     }).format(value);
 
+  navLinks.forEach((link) => {
+    link.addEventListener('click', () => {
+      navLinks.forEach((item) => item.classList.toggle('is-active', item === link));
+    });
+  });
+
   const renderUser = (user: any) => {
     const name = user?.nombre || 'Barbero';
     const profile = user?.perfilBarbero;
@@ -401,7 +362,7 @@ import {
     if (!serviceList) return;
 
     if (!services.length) {
-      serviceList.innerHTML = '<p class="pro-empty">Aun no tienes servicios registrados.</p>';
+      serviceList.innerHTML = '<p class="pro-empty">Aún no tienes servicios registrados.</p>';
       return;
     }
 
@@ -518,7 +479,7 @@ import {
 
     if (bankingHelper) {
       bankingHelper.textContent = hasData
-        ? 'Puedes editar estos datos cuando necesites actualizar tu informacion bancaria.'
+        ? 'Puedes editar estos datos cuando necesites actualizar tu información bancaria.'
         : 'Registra los datos para que tus clientes puedan transferir.';
     }
 
@@ -708,7 +669,7 @@ import {
   deleteWorkplaceButton?.addEventListener('click', async () => {
     if (!token || !currentWorkplace || !deleteWorkplaceButton) return;
     const confirmed = window.confirm(
-      '¿Eliminar este lugar de trabajo? Tendras que crear otro para completar tu perfil.',
+      '¿Eliminar este lugar de trabajo? Tendrás que crear otro para completar tu perfil.',
     );
     if (!confirmed) return;
 

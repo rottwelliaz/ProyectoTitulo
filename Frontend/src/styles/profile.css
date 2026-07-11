@@ -4,11 +4,11 @@
   --blue: #123e9c;
   --yellow: #ffc928;
   --green: #16a661;
-  --ink: #07143c;
-  --muted: #52617f;
-  --line: #e2e8f5;
+  --ink: #ffffff;
+  --muted: rgba(255, 255, 255, 0.72);
+  --line: rgba(43, 141, 255, 0.28);
   min-height: 100vh;
-  background: #f4f8ff;
+  background: #00162c;
   color: var(--ink);
   display: grid;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -141,6 +141,7 @@
 }
 
 .profile-main {
+  background: radial-gradient(circle at 15% 0%, rgba(20, 99, 232, 0.18), transparent 34%), #00162c;
   min-width: 0;
 }
 
@@ -152,16 +153,6 @@
   height: 122px;
   justify-content: flex-end;
   padding: 0 56px;
-}
-
-.profile-icon-button {
-  background: transparent;
-  border: 0;
-  color: #fff;
-  cursor: pointer;
-  height: 44px;
-  padding: 8px;
-  width: 44px;
 }
 
 .profile-user-menu {
@@ -243,7 +234,7 @@
   background: transparent;
   border: 0;
   border-radius: 7px;
-  color: var(--ink);
+  color: #07143c;
   cursor: pointer;
   display: block;
   font: inherit;
@@ -273,10 +264,10 @@
 }
 
 .profile-card {
-  background: #fff;
+  background: rgba(0, 32, 64, 0.88);
   border: 1px solid var(--line);
   border-radius: 8px;
-  box-shadow: 0 12px 28px rgba(16, 45, 96, 0.12);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
   overflow: hidden;
   position: relative;
 }
@@ -329,7 +320,7 @@
 }
 
 .profile-card-title {
-  color: #09266f;
+  color: #ffffff;
   font-size: 24px;
   font-weight: 950;
   margin: 0 0 52px;
@@ -348,7 +339,7 @@
 }
 
 .profile-summary h1 {
-  color: #050d2c;
+  color: #ffffff;
   font-size: 40px;
   font-weight: 950;
   letter-spacing: 0;
@@ -358,7 +349,7 @@
 .profile-pill,
 .profile-date {
   align-items: center;
-  color: #0d3192;
+  color: #ffffff;
   display: flex;
   font-size: 20px;
   font-weight: 900;
@@ -367,7 +358,7 @@
 }
 
 .profile-pill {
-  background: #edf3ff;
+  background: rgba(20, 99, 232, 0.22);
   border-radius: 8px;
   display: inline-flex;
   padding: 8px 12px;
@@ -464,7 +455,7 @@
 }
 
 .profile-field-label {
-  color: var(--ink);
+  color: #ffffff;
   font-size: 18px;
   font-weight: 800;
 }
@@ -486,14 +477,14 @@
 }
 
 .profile-field input:not(:disabled) {
-  background: #f8fbff;
+  background: rgba(255, 255, 255, 0.08);
   border-color: #715cff;
   outline: 3px solid rgba(113, 92, 255, 0.12);
 }
 
 .profile-edit-button {
   align-items: center;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.06);
   border: 1.5px solid #806cff;
   border-radius: 8px;
   color: #674df0;
@@ -540,9 +531,9 @@
 }
 
 .profile-cancel-button {
-  background: #fff;
+  background: rgba(255, 255, 255, 0.06);
   border: 1px solid #cbd5e1;
-  color: #334155;
+  color: #ffffff;
 }
 
 .profile-message {
@@ -610,7 +601,7 @@
 
 .client-appointment-item {
   align-items: center;
-  background: #f8fbff;
+  background: rgba(0, 22, 44, 0.72);
   border: 1px solid var(--line);
   border-radius: 9px;
   display: grid;
@@ -640,7 +631,7 @@
 }
 
 .client-appointment-detail strong {
-  color: var(--ink);
+  color: #ffffff;
   font-size: 17px;
 }
 
@@ -666,7 +657,7 @@
 }
 
 .client-appointment-cancel {
-  background: #fff;
+  background: rgba(255, 255, 255, 0.04);
   border: 1px solid #ef4444;
   border-radius: 999px;
   color: #c72f2f;
@@ -702,7 +693,7 @@
 }
 
 .client-appointments-empty strong {
-  color: var(--ink);
+  color: #ffffff;
 }
 
 .client-appointments-error {
@@ -717,7 +708,7 @@
 
 .profile-security {
   align-items: center;
-  background: #eaf4ff;
+  background: rgba(0, 32, 64, 0.88);
   border: 1px solid var(--line);
   border-radius: 8px;
   box-shadow: 0 12px 28px rgba(16, 45, 96, 0.1);
@@ -745,7 +736,7 @@
 }
 
 .profile-security strong {
-  color: #071d55;
+  color: #ffffff;
   display: block;
   font-size: 18px;
   font-weight: 950;
@@ -753,7 +744,7 @@
 }
 
 .profile-security p {
-  color: #071d55;
+  color: var(--muted);
   font-size: 15px;
   font-weight: 550;
   line-height: 1.45;
@@ -807,7 +798,18 @@
   }
 
   .profile-nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     margin-top: 10px;
+  }
+
+  .profile-sidebar-link {
+    justify-content: center;
+    min-height: 54px;
+    padding: 0 14px;
+  }
+
+  .profile-sidebar-link.is-active::before {
+    display: none;
   }
 
   .profile-booking {
@@ -883,10 +885,12 @@
   .profile-topbar {
     gap: 12px;
     justify-content: space-between;
+    padding: 0 14px;
   }
 
   .profile-user-chip {
     gap: 8px;
+    max-width: 100%;
   }
 
   .profile-mini-avatar {
@@ -896,6 +900,27 @@
 
   .profile-chip-text strong {
     font-size: 15px;
+  }
+
+  .profile-chip-text {
+    min-width: 0;
+  }
+
+  .profile-dropdown {
+    max-width: calc(100vw - 28px);
+    right: 0;
+  }
+
+  .profile-content {
+    padding: 18px 12px 28px;
+  }
+
+  .profile-nav {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-sidebar-link {
+    justify-content: flex-start;
   }
 
   .profile-summary h1 {
@@ -914,5 +939,53 @@
 
   .profile-appointments-card {
     padding: 26px 20px;
+  }
+
+  .profile-identity {
+    padding: 26px 20px;
+  }
+
+  .profile-photo {
+    height: 132px;
+    width: 132px;
+  }
+
+  .profile-camera-button {
+    height: 44px;
+    width: 44px;
+  }
+
+  .profile-field {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-field input,
+  .profile-edit-button {
+    grid-column: auto;
+    width: 100%;
+  }
+
+  .profile-field-icon {
+    height: 46px;
+    width: 46px;
+  }
+
+  .profile-actions {
+    flex-direction: column;
+  }
+
+  .profile-security {
+    grid-template-columns: 1fr;
+  }
+
+  .client-appointment-item {
+    padding: 16px;
+  }
+
+  .client-appointment-status,
+  .client-appointment-cancel {
+    justify-self: stretch;
+    text-align: center;
+    width: 100%;
   }
 }

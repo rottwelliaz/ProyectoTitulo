@@ -1,13 +1,13 @@
 # Conce Barber Club
 
-Proyecto fullstack para gestion de barberias, barberos, servicios y reservas.
+Proyecto fullstack para gestión de barberías, barberos, servicios y reservas.
 
 ## Requisitos
 
 - Node.js 20 o superior
 - npm
-- Docker Desktop, solo si usaras Docker
-- PostgreSQL local, solo si iniciaras sin Docker
+- Docker Desktop, solo si usarás Docker
+- PostgreSQL local, solo si iniciarás sin Docker
 
 ## URLs del proyecto
 
@@ -17,7 +17,7 @@ Proyecto fullstack para gestion de barberias, barberos, servicios y reservas.
 
 ## Iniciar con Docker
 
-Desde la raiz del proyecto:
+Desde la raíz del proyecto:
 
 ```powershell
 cd C:\Users\RottWelliaZ\Desktop\ProyectoTitulo
@@ -125,7 +125,7 @@ Admin: admin@demo.com
 Password: 123456
 ```
 
-## Comandos utiles
+## Comandos útiles
 
 Compilar frontend:
 
@@ -152,4 +152,4 @@ npx prisma db push
 
 - Si usas Docker, no necesitas instalar PostgreSQL local.
 - Si usas local, debes tener PostgreSQL iniciado antes del backend.
-- Si el puerto `3000`, `3001` o `5432` esta ocupado, cierra el proceso que lo usa o cambia los puertos en `.env`.
+- Si el puerto `3000`, `3001` o `5432` está ocupado, cierra el proceso que lo usa o cambia los puertos en `.env`.

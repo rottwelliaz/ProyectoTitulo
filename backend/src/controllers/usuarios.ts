@@ -51,7 +51,7 @@ export const getUsers = async (req: Request, res: Response) => {
     const rolesPermitidos = ['cliente', 'barbero', 'admin'];
 
     if (rol && !rolesPermitidos.includes(rol)) {
-      return res.status(400).json({ message: 'Rol invalido' });
+      return res.status(400).json({ message: 'Rol inválido' });
     }
 
     const where =
@@ -128,7 +128,7 @@ export const approveBarber = async (req: AuthRequest, res: Response) => {
     const id = Number(req.params.id);
 
     if (Number.isNaN(id)) {
-      return res.status(400).json({ message: 'ID invalido' });
+      return res.status(400).json({ message: 'ID inválido' });
     }
 
     const user = await prisma.user.findUnique({
@@ -301,7 +301,7 @@ export const updateUser = async (req: Request, res: Response) => {
     }
 
     if (rol && !rolesPermitidos.includes(rol)) {
-      return res.status(400).json({ message: 'Rol invalido' });
+      return res.status(400).json({ message: 'Rol inválido' });
     }
 
     // Si viene nueva password, hashearla

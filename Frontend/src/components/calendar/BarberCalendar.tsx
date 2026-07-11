@@ -48,6 +48,14 @@ const getDefaultStatus = (hour: number): SlotStatus => {
 
 const capitalize = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
 
+const buildSlotDate = (date: Date, hour: number) => {
+  const blockDate = new Date(date);
+  blockDate.setHours(hour, 0, 0, 0);
+  return blockDate;
+};
+
+const isPastSlot = (date: Date, hour: number) => buildSlotDate(date, hour).getTime() <= Date.now();
+
 export default function BarberCalendar() {
   const today = useMemo(() => new Date(), []);
   const currentWeek = useMemo(() => startOfWeek(today, { weekStartsOn: 1 }), [today]);
@@ -127,10 +135,15 @@ export default function BarberCalendar() {
   const openSlot = (date: Date, hour: number) => {
     const key = getSlotKey(date, hour);
     const reservedSlot = reservedSlots[key];
+    if (isPastSlot(date, hour)) {
+      setCopyFeedback('No puedes editar bloques de horas pasadas.');
+      return;
+    }
+
     if (reservedSlot) {
       const client = reservedSlot.cliente?.nombre || 'Cliente';
       const service = reservedSlot.servicio?.nombre_servicio || 'Servicio';
-      setCopyFeedback(`La hora ${String(hour).padStart(2, '0')}:00 ya esta reservada por ${client} (${service}).`);
+      setCopyFeedback(`La hora ${String(hour).padStart(2, '0')}:00 ya está reservada por ${client} (${service}).`);
       return;
     }
     setSelectedSlot({ date, hour, key, status: slots[key] ?? getDefaultStatus(hour) });
@@ -141,7 +154,7 @@ export default function BarberCalendar() {
   const syncWeekAvailability = async (weekSlots: StoredSlots, days = weekDays) => {
     const token = window.localStorage.getItem('token');
     if (!token) {
-      setCopyFeedback('Inicia sesion para guardar la agenda en el sistema.');
+      setCopyFeedback('Inicia sesión para guardar la agenda en el sistema.');
       return;
     }
 
@@ -150,9 +163,10 @@ export default function BarberCalendar() {
       HOURS.forEach((hour) => {
         const key = getSlotKey(date, hour);
         if ((weekSlots[key] ?? getDefaultStatus(hour)) === 'available') {
-          const blockDate = new Date(date);
-          blockDate.setHours(hour, 0, 0, 0);
-          availableBlocks.push(blockDate.toISOString());
+          const blockDate = buildSlotDate(date, hour);
+          if (blockDate.getTime() > Date.now()) {
+            availableBlocks.push(blockDate.toISOString());
+          }
         }
       });
     });
@@ -212,7 +226,7 @@ export default function BarberCalendar() {
 
     const label = `${format(weekStart, 'd MMM', { locale: es })} - ${format(weekDays[6], 'd MMM', { locale: es })}`;
     setCopiedWeek({ label, slots: copiedSlots });
-    setCopyFeedback(`Semana ${label} copiada. Navega a otra semana y presiona "Pegar aqui".`);
+    setCopyFeedback(`Semana ${label} copiada. Navega a otra semana y presiona "Pegar aquí".`);
   };
 
   const pasteCopiedWeek = () => {
@@ -220,7 +234,7 @@ export default function BarberCalendar() {
 
     const targetLabel = `${format(weekStart, 'd MMM', { locale: es })} - ${format(weekDays[6], 'd MMM', { locale: es })}`;
     const confirmed = window.confirm(
-      `¿Copiar la agenda de ${copiedWeek.label} sobre la semana ${targetLabel}? Se reemplazaran sus bloques.`,
+      `¿Copiar la agenda de ${copiedWeek.label} sobre la semana ${targetLabel}? Se reemplazarán sus bloques.`,
     );
     if (!confirmed) return;
 
@@ -238,7 +252,7 @@ export default function BarberCalendar() {
   const weekEnd = weekDays[6];
 
   return (
-    <article className="pro-panel pro-agenda barber-calendar">
+    <article id="agenda-profesional" className="pro-panel pro-agenda barber-calendar">
       <div className="calendar-toolbar">
         <div>
           <h2>Mi agenda semanal</h2>
@@ -247,11 +261,11 @@ export default function BarberCalendar() {
             {format(weekEnd, "d 'de' MMMM 'de' yyyy", { locale: es })}
           </p>
           <small className="calendar-toolbar-hint">
-            Organiza tu semana y revisa aqui mismo las reservas confirmadas.
+            Organiza tu semana y revisa aquí mismo las reservas confirmadas.
           </small>
         </div>
 
-        <div className="calendar-actions" aria-label="Navegacion de la agenda">
+        <div className="calendar-actions" aria-label="Navegación de la agenda">
           <button type="button" onClick={() => goToCurrentWeek(true)}>Hoy</button>
           <button type="button" onClick={() => goToCurrentWeek(false)}>Semana actual</button>
           <button
@@ -284,7 +298,7 @@ export default function BarberCalendar() {
             disabled={!copiedWeek}
             title={copiedWeek ? `Copiar desde ${copiedWeek.label}` : 'Primero copia una semana'}
           >
-            Pegar aqui
+            Pegar aquí
           </button>
           <button
             type="button"
@@ -322,6 +336,7 @@ export default function BarberCalendar() {
                 {HOURS.map((hour) => {
                   const key = getSlotKey(date, hour);
                   const reservedSlot = reservedSlots[key];
+                  const pastSlot = isPastSlot(date, hour);
                   const detail = reservedSlot
                     ? `${reservedSlot.cliente?.nombre || 'Cliente'} · ${reservedSlot.servicio?.nombre_servicio || 'Servicio'}`
                     : undefined;
@@ -331,7 +346,7 @@ export default function BarberCalendar() {
                       dateLabel={dateLabel}
                       hour={hour}
                       status={reservedSlot ? 'reserved' : slots[key] ?? getDefaultStatus(hour)}
-                      disabled={Boolean(reservedSlot)}
+                      disabled={Boolean(reservedSlot) || pastSlot}
                       detail={detail}
                       onClick={() => openSlot(date, hour)}
                     />

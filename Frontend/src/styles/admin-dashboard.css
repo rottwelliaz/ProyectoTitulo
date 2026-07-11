@@ -648,6 +648,7 @@
 
   .admin-sidebar {
     min-height: auto;
+    position: static;
   }
 
   .admin-brand {
@@ -683,7 +684,7 @@
 
 @media (max-width: 760px) {
   .admin-main {
-    padding: 1rem;
+    padding: 1rem 0.75rem;
   }
 
   .admin-topbar,
@@ -726,5 +727,64 @@
   .admin-modal-actions button {
     justify-content: center;
     width: 100%;
+  }
+}
+
+@media (max-width: 520px) {
+  .admin-sidebar {
+    padding: 0.85rem;
+  }
+
+  .admin-brand {
+    min-height: 92px;
+  }
+
+  .admin-brand img {
+    height: 76px;
+  }
+
+  .admin-nav {
+    grid-template-columns: 1fr;
+    overflow-x: visible;
+  }
+
+  .admin-nav-link {
+    justify-content: flex-start;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .admin-topbar h1,
+  .admin-hero-card h2 {
+    font-size: 1.8rem;
+  }
+
+  .admin-panel,
+  .admin-hero-card,
+  .admin-stat-card,
+  .admin-summary-card {
+    border-radius: 8px;
+  }
+
+  .admin-panel,
+  .admin-hero-card {
+    padding: 1rem;
+  }
+
+  .admin-top-actions,
+  .admin-user-actions,
+  .admin-modal-actions {
+    flex-direction: column;
+  }
+
+  .admin-top-actions button,
+  .admin-user-actions button,
+  .admin-modal-actions button {
+    width: 100%;
+  }
+
+  .admin-modal-card {
+    max-height: calc(100vh - 1.5rem);
+    padding: 1rem;
   }
 }

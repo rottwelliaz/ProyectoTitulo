@@ -66,7 +66,6 @@
         const tone = getTone(index);
         const initials = getInitials(barber.nombre);
         const workplace = barber.perfilBarbero?.lugarTrabajo?.nombre_barberia || 'Barbero disponible';
-        const detail = barber.perfilBarbero?.biografia || barber.telefono || barber.email || 'Agenda tu hora con este barbero.';
         const bookingUrl = barber.perfilBarbero?.id ? `/booking?barbero=${barber.perfilBarbero.id}#servicios` : '/booking';
 
         return `
@@ -76,7 +75,6 @@
             </div>
             <h3>${escapeHtml(barber.nombre)}</h3>
             <p class="barber-specialty">${escapeHtml(workplace)}</p>
-            <p class="barber-detail">${escapeHtml(detail)}</p>
             <a href="${bookingUrl}">Reservar</a>
           </article>
         `;

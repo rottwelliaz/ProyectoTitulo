@@ -1,0 +1,89 @@
+---
+import Layout from '../layouts/Layout.astro';
+import logoConce from '../assets/logotesis.png';
+import '../styles/globals.css';
+import '../styles/profile.css';
+---
+
+<Layout title="Configuración - Conce Barber Club">
+  <main class="profile-root">
+    <aside class="profile-sidebar">
+      <a class="profile-brand" href="/home" aria-label="Conce Barber Club">
+        <img class="profile-brand-logo" src={logoConce.src} alt="Conce Barber Club" />
+      </a>
+
+      <nav class="profile-nav" aria-label="Navegación de perfil">
+        <a class="profile-sidebar-link" href="/perfil">
+          <span class="profile-link-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/></svg>
+          </span>
+          Perfil
+        </a>
+        <a class="profile-sidebar-link is-active" href="/configuracion">
+          <span class="profile-link-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.05.05a2 2 0 1 1-2.83 2.83l-.05-.05A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.05.05a2 2 0 1 1-2.83-2.83l.05-.05A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3a2 2 0 1 1 0-4h-.1A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.05-.05a2 2 0 1 1 2.83-2.83l.05.05A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3a2 2 0 1 1 4 0v.1A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.88-.34l.05-.05a2 2 0 1 1 2.83 2.83l-.05.05A1.7 1.7 0 0 0 19.4 9c.2.38.56.65 1 .6h.6a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1.4Z"/></svg>
+          </span>
+          Configuración
+        </a>
+      </nav>
+
+      <section class="profile-booking">
+        <div class="profile-booking-title">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4M16 2v4M3 10h18"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="m9 16 2 2 4-5"/></svg>
+          <strong>¿Listo para tu próximo corte?</strong>
+        </div>
+        <p>Reserva ahora y vive la experiencia Conce Barber Club.</p>
+        <a href="/booking">Reservar ahora</a>
+      </section>
+    </aside>
+
+    <section class="profile-main">
+      <header class="profile-topbar">
+        <a class="settings-home-link" href="/home">Volver al inicio</a>
+      </header>
+
+      <div class="profile-content">
+        <article class="profile-card settings-dev-card">
+          <p class="profile-card-title">Configuración</p>
+          <h1>Sección en desarrollo</h1>
+          <p>Esta opción todavía no está disponible. Pronto podrás administrar tus preferencias desde aquí.</p>
+          <a class="profile-primary-button" href="/perfil">Volver a mi perfil</a>
+        </article>
+      </div>
+    </section>
+  </main>
+</Layout>
+
+<style>
+  .settings-home-link {
+    color: #ffffff;
+    font-weight: 900;
+    text-decoration: none;
+  }
+
+  .settings-dev-card {
+    margin: 0 auto;
+    max-width: 760px;
+    min-height: 320px;
+  }
+
+  .settings-dev-card h1 {
+    color: var(--ink);
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    margin: 1.8rem 0 1rem;
+  }
+
+  .settings-dev-card > p:not(.profile-card-title) {
+    color: var(--muted);
+    font-size: 1rem;
+    line-height: 1.65;
+    margin: 0 0 2rem;
+    max-width: 540px;
+  }
+
+  .settings-dev-card .profile-primary-button {
+    display: inline-flex;
+    text-decoration: none;
+    width: auto;
+  }
+</style>

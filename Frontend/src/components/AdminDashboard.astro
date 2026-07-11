@@ -54,7 +54,7 @@ import {
     <header class="admin-topbar">
       <div>
         <p>Conce Barber Club</p>
-        <h1>Panel Administrador</h1>
+        <h1>Panel de administración</h1>
       </div>
 
       <div class="admin-top-actions">
@@ -70,10 +70,10 @@ import {
 
     <section class="admin-hero-card">
       <div>
-        <span class="admin-kicker">Administracion general</span>
+        <span class="admin-kicker">Administración general</span>
         <h2 id="admin-welcome-title">Gestiona usuarios, barberos y permisos</h2>
         <p>
-          Desde aqui puedes revisar clientes registrados, barberos activos,
+          Desde aquí puedes revisar clientes registrados, barberos activos,
           solicitudes pendientes y usuarios administradores.
         </p>
       </div>
@@ -109,7 +109,7 @@ import {
       <div class="admin-panel-header">
         <div>
           <h2>Resumen del sistema</h2>
-          <p>Vista rapida de actividad y permisos.</p>
+          <p>Vista rápida de actividad y permisos.</p>
         </div>
       </div>
 
@@ -122,12 +122,12 @@ import {
         <article>
           <UserCheck size={28} aria-hidden="true" />
           <strong id="summary-pending">0 solicitudes pendientes</strong>
-          <span>Cuentas de barbero esperando revision de admin.</span>
+          <span>Cuentas de barbero esperando revisión del administrador.</span>
         </article>
         <article>
           <ShieldCheck size={28} aria-hidden="true" />
           <strong id="summary-admins">0 administradores</strong>
-          <span>Usuarios con permisos de gestion.</span>
+          <span>Usuarios con permisos de gestión.</span>
         </article>
       </div>
     </section>
@@ -136,7 +136,7 @@ import {
       <div class="admin-panel-header">
         <div>
           <h2>Clientes registrados</h2>
-          <p>Lista completa de usuarios con rol cliente.</p>
+          <p>Lista completa de usuarios con rol de cliente.</p>
         </div>
       </div>
       <div id="admin-clientes-list" class="admin-table-list"></div>
@@ -198,7 +198,7 @@ import {
       </label>
 
       <label>
-        <span>Telefono</span>
+        <span>Teléfono</span>
         <input name="telefono" type="tel" maxlength="30" />
       </label>
 
@@ -218,7 +218,7 @@ import {
 
       <label>
         <span>Nueva contraseña <small>(opcional)</small></span>
-        <input name="password" type="password" minlength="6" placeholder="Dejar vacio para mantener la actual" />
+        <input name="password" type="password" minlength="6" placeholder="Dejar vacío para mantener la actual" />
       </label>
 
       <p id="admin-edit-message" class="admin-edit-message" hidden></p>
@@ -432,15 +432,15 @@ import {
 
           <div class="admin-user-meta">
             <span>Rol: ${escapeHtml(user.rol)}</span>
-            <span>Telefono: ${escapeHtml(user.telefono || 'No registrado')}</span>
+            <span>Teléfono: ${escapeHtml(user.telefono || 'No registrado')}</span>
             <span>Creado: ${escapeHtml(formatDate(user.fecha_creacion))}</span>
             <span>Citas: ${escapeHtml(citasCount)}</span>
           </div>
 
           ${options.showBarberInfo ? `
             <div class="admin-barber-details">
-              <span>Barberia: ${escapeHtml(workplace?.nombre_barberia || 'Sin lugar registrado')}</span>
-              <span>Direccion: ${escapeHtml(workplace?.direccion || 'Sin direccion')}</span>
+              <span>Barbería: ${escapeHtml(workplace?.nombre_barberia || 'Sin lugar registrado')}</span>
+              <span>Dirección: ${escapeHtml(workplace?.direccion || 'Sin dirección')}</span>
               <span>Servicios: ${escapeHtml(servicesCount)}</span>
             </div>
             ${services.length > 0 ? `
@@ -524,7 +524,7 @@ import {
 
     const user = getStoredUser();
     if (user?.rol !== 'admin') {
-      showMessage('Solo un usuario admin puede entrar a este panel.', 'error');
+      showMessage('Solo un usuario administrador puede entrar a este panel.', 'error');
       renderEmpty(clientesList, 'Sin permisos.');
       renderEmpty(barberosList, 'Sin permisos.');
       renderEmpty(pendientesList, 'Sin permisos.');
@@ -544,12 +544,12 @@ import {
 
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        throw new Error(data.message || 'No se pudo cargar el panel admin.');
+        throw new Error(data.message || 'No se pudo cargar el panel de administración.');
       }
 
       renderDashboard(data);
     } catch (error) {
-      const text = error instanceof Error ? error.message : 'Error al cargar el panel admin.';
+      const text = error instanceof Error ? error.message : 'Error al cargar el panel de administración.';
       showMessage(text, 'error');
     } finally {
       refreshButton?.removeAttribute('disabled');
@@ -584,7 +584,7 @@ import {
   const deleteUser = async (id: string) => {
     if (!token) return;
 
-    const ok = window.confirm('Seguro que quieres eliminar este usuario? Esta accion no se puede deshacer.');
+    const ok = window.confirm('¿Seguro que quieres eliminar este usuario? Esta acción no se puede deshacer.');
     if (!ok) return;
 
     try {

@@ -39,7 +39,7 @@ export const createLugarTrabajo = async (req: AuthRequest, res: Response) => {
     const { nombre_barberia, direccion, perfilBarberoId } = req.body;
 
     if (!nombre_barberia?.trim() || !direccion?.trim()) {
-      return res.status(400).json({ message: 'nombre_barberia y direccion son requeridos' });
+      return res.status(400).json({ message: 'Nombre de la barbería y dirección son requeridos' });
     }
 
     let barberProfileId: number;
@@ -58,7 +58,7 @@ export const createLugarTrabajo = async (req: AuthRequest, res: Response) => {
     } else {
       barberProfileId = toInt(perfilBarberoId);
       if (Number.isNaN(barberProfileId)) {
-        return res.status(400).json({ message: 'perfilBarberoId debe ser valido' });
+        return res.status(400).json({ message: 'perfilBarberoId debe ser válido' });
       }
 
       const barberProfile = await prisma.barberProfile.findUnique({
@@ -146,7 +146,7 @@ export const getLugarTrabajoById = async (req: AuthRequest, res: Response) => {
   try {
     const id = toInt(req.params.id);
     if (Number.isNaN(id)) {
-      return res.status(400).json({ message: 'ID invalido' });
+      return res.status(400).json({ message: 'ID inválido' });
     }
 
     const { lugarTrabajo, allowed } = await canAccessLugarTrabajo(id, req);
@@ -170,7 +170,7 @@ export const updateLugarTrabajo = async (req: AuthRequest, res: Response) => {
   try {
     const id = toInt(req.params.id);
     if (Number.isNaN(id)) {
-      return res.status(400).json({ message: 'ID invalido' });
+      return res.status(400).json({ message: 'ID inválido' });
     }
 
     const { lugarTrabajo, allowed } = await canAccessLugarTrabajo(id, req);
@@ -187,7 +187,7 @@ export const updateLugarTrabajo = async (req: AuthRequest, res: Response) => {
     const direccion = req.body.direccion;
     if ((nombreBarberia !== undefined && !String(nombreBarberia).trim()) ||
         (direccion !== undefined && !String(direccion).trim())) {
-      return res.status(400).json({ message: 'El nombre y la direccion no pueden estar vacios' });
+      return res.status(400).json({ message: 'El nombre y la dirección no pueden estar vacíos' });
     }
 
     const updated = await prisma.lugarTrabajo.update({
@@ -209,7 +209,7 @@ export const deleteLugarTrabajo = async (req: AuthRequest, res: Response) => {
   try {
     const id = toInt(req.params.id);
     if (Number.isNaN(id)) {
-      return res.status(400).json({ message: 'ID invalido' });
+      return res.status(400).json({ message: 'ID inválido' });
     }
 
     const { lugarTrabajo, allowed } = await canAccessLugarTrabajo(id, req);

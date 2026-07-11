@@ -55,6 +55,8 @@ const money = (value: number) =>
     maximumFractionDigits: 0,
   }).format(value);
 
+const isFutureSlot = (slot: AppointmentSlot) => new Date(slot.fecha_hora).getTime() > Date.now();
+
 export default function BookingFlow() {
   const servicesPanelRef = useRef<HTMLElement | null>(null);
   const schedulePanelRef = useRef<HTMLElement | null>(null);
@@ -123,7 +125,7 @@ export default function BookingFlow() {
           headers: { Authorization: `Bearer ${savedToken}` },
         });
         const user = await meResponse.json().catch(() => ({}));
-        if (!meResponse.ok) throw new Error('Tu sesion expiro. Inicia sesion nuevamente.');
+        if (!meResponse.ok) throw new Error('Tu sesión expiró. Inicia sesión nuevamente.');
         if (user.rol !== 'cliente') throw new Error('Las reservas deben realizarse desde una cuenta de cliente.');
 
         const response = await fetch(`${API_URL}/citas/barberos`, {
@@ -169,7 +171,7 @@ export default function BookingFlow() {
         );
         const data = await response.json().catch(() => ({})) as AvailabilityResponse;
         if (!response.ok) throw new Error(data.message || 'No se pudo cargar la disponibilidad.');
-        setSlots(Array.isArray(data.citas) ? data.citas : []);
+        setSlots(Array.isArray(data.citas) ? data.citas.filter(isFutureSlot) : []);
       } catch (requestError) {
         setSlots([]);
         setError(requestError instanceof Error ? requestError.message : 'No se pudo cargar la disponibilidad.');
@@ -236,6 +238,13 @@ export default function BookingFlow() {
   };
 
   const openPaymentStep = () => {
+    if (selectedSlot && !isFutureSlot(selectedSlot)) {
+      setSelectedSlotId(null);
+      setShowPayment(false);
+      setError('Esta hora ya pasó. Selecciona otro horario disponible.');
+      return;
+    }
+
     if (!hasBankingData) {
       setError('Este barbero aun no tiene datos bancarios registrados. Intenta con otro barbero o contactalo directamente.');
       return;
@@ -277,6 +286,13 @@ export default function BookingFlow() {
 
   const confirmBooking = async () => {
     if (!token || !selectedSlotId || !selectedServiceId) return;
+    if (selectedSlot && !isFutureSlot(selectedSlot)) {
+      setSelectedSlotId(null);
+      setShowPayment(false);
+      setError('Esta hora ya pasó. Selecciona otro horario disponible.');
+      return;
+    }
+
     if (!proofData) {
       setError('Debes subir el comprobante de transferencia antes de reservar.');
       return;
@@ -320,9 +336,9 @@ export default function BookingFlow() {
       <main className="booking-root booking-centered">
         <section className="booking-auth-card">
           <span>Reserva protegida</span>
-          <h1>Inicia sesion para reservar</h1>
+          <h1>Inicia sesión para reservar</h1>
           <p>Necesitas una cuenta de cliente para elegir barbero, servicio y horario.</p>
-          <a href="/login?redirect=/booking">Iniciar sesion</a>
+          <a href="/login?redirect=/booking">Iniciar sesión</a>
         </section>
       </main>
     );
@@ -364,8 +380,8 @@ export default function BookingFlow() {
               >
                 <span className="booking-avatar">{initials(barber.usuario.nombre)}</span>
                 <strong>{barber.usuario.nombre}</strong>
-                <small>{barber.lugarTrabajo?.nombre_barberia || 'Barberia'}</small>
-                <em>{barber.lugarTrabajo?.direccion || 'Direccion no informada'}</em>
+                <small>{barber.lugarTrabajo?.nombre_barberia || 'Barbería'}</small>
+                <em>{barber.lugarTrabajo?.direccion || 'Dirección no informada'}</em>
               </button>
             ))}
           </div>
@@ -491,7 +507,7 @@ export default function BookingFlow() {
                     <strong>{selectedBarber.bancoNombre}</strong>
                   </div>
                   <div>
-                    <span>Rut</span>
+                    <span>RUT</span>
                     <strong>{selectedBarber.bancoRut}</strong>
                   </div>
                   <div>
@@ -503,7 +519,7 @@ export default function BookingFlow() {
                     <strong>{selectedBarber.bancoTipoCuenta}</strong>
                   </div>
                   <div>
-                    <span>Nro de cuenta</span>
+                    <span>N.º de cuenta</span>
                     <strong>{selectedBarber.bancoNroCuenta}</strong>
                   </div>
                   <div>

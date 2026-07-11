@@ -183,8 +183,7 @@
 }
 
 .pro-edit-button,
-.pro-panel-header button,
-.pro-panel-link {
+.pro-panel-header button {
   align-items: center;
   border: 1px solid rgba(22, 121, 255, 0.75);
   border-radius: 8px;
@@ -454,8 +453,7 @@
   margin: 0;
 }
 
-.pro-panel-header button,
-.pro-panel-link {
+.pro-panel-header button {
   background: transparent;
   color: #2f8cff;
   min-height: 36px;
@@ -963,8 +961,7 @@
 }
 
 .pro-service-icon svg,
-.pro-services .pro-panel-header button svg,
-.pro-services .pro-panel-link svg {
+.pro-services .pro-panel-header button svg {
   stroke-width: 2;
 }
 
@@ -986,14 +983,6 @@
 
 .pro-service-item b {
   font-size: 0.95rem;
-}
-
-.pro-panel-link {
-  border: 0;
-  justify-content: space-between;
-  margin-top: 1.3rem;
-  padding: 0;
-  width: 100%;
 }
 
 .service-modal {
@@ -1108,45 +1097,6 @@
 .service-form-actions button:disabled {
   cursor: wait;
   opacity: 0.65;
-}
-
-.pro-gallery {
-  grid-column: 1 / 2;
-}
-
-.gallery-grid {
-  display: grid;
-  gap: 0.8rem;
-  grid-template-columns: repeat(6, 1fr);
-}
-
-.gallery-grid span {
-  background:
-    radial-gradient(circle at 50% 22%, rgba(255, 255, 255, 0.86) 0 8%, transparent 9%),
-    linear-gradient(145deg, #9a7252, #0f1726 72%);
-  border-radius: 8px;
-  display: block;
-  min-height: 116px;
-}
-
-.gallery-grid .gallery-more {
-  align-items: center;
-  background: rgba(0, 0, 0, 0.42);
-  display: flex;
-  font-size: 1.25rem;
-  font-weight: 950;
-  justify-content: center;
-  line-height: 1.3;
-  text-align: center;
-}
-
-.pro-reviews {
-  grid-column: 2 / 3;
-}
-
-.pro-gallery[hidden],
-.pro-reviews[hidden] {
-  display: none;
 }
 
 .pro-workplace,
@@ -1383,34 +1333,6 @@
   opacity: 0.65;
 }
 
-.review-grid {
-  display: grid;
-  gap: 1rem;
-  grid-template-columns: repeat(2, 1fr);
-}
-
-.review-grid article {
-  border: 1px solid var(--pro-line);
-  border-radius: 8px;
-  padding: 1rem;
-}
-
-.review-grid strong,
-.review-grid span,
-.review-grid small {
-  display: block;
-}
-
-.review-grid span,
-.review-grid small {
-  color: var(--pro-muted);
-}
-
-.review-grid p {
-  color: var(--pro-yellow);
-  margin: 0.65rem 0;
-}
-
 @media (max-width: 1180px) {
   .pro-root {
     grid-template-columns: 1fr;
@@ -1418,10 +1340,16 @@
 
   .pro-sidebar {
     min-height: auto;
+    position: static;
   }
 
   .pro-nav {
     grid-template-columns: repeat(4, 1fr);
+    overflow-x: auto;
+  }
+
+  .pro-nav-link {
+    min-width: 150px;
   }
 
   .pro-hero-card,
@@ -1429,8 +1357,6 @@
     grid-template-columns: 1fr;
   }
 
-  .pro-gallery,
-  .pro-reviews,
   .pro-workplace,
   .pro-banking,
   .pro-appointments,
@@ -1441,7 +1367,7 @@
 
 @media (max-width: 760px) {
   .pro-main {
-    padding: 1rem;
+    padding: 1rem 0.75rem;
   }
 
   .pro-topbar,
@@ -1469,10 +1395,12 @@
   }
 
   .pro-nav,
-  .pro-stats,
-  .gallery-grid,
-  .review-grid {
+  .pro-stats {
     grid-template-columns: 1fr;
+  }
+
+  .pro-nav {
+    display: flex;
   }
 
   .agenda-board,
@@ -1505,5 +1433,82 @@
 
   .agenda-days {
     overflow-x: auto;
+  }
+}
+
+@media (max-width: 520px) {
+  .pro-sidebar {
+    padding: 0.85rem;
+  }
+
+  .pro-brand img {
+    height: 92px;
+  }
+
+  .pro-topbar,
+  .pro-panel,
+  .reservations-calendar,
+  .pro-services,
+  .pro-workplace,
+  .pro-banking,
+  .pro-appointments {
+    border-radius: 8px;
+  }
+
+  .pro-topbar {
+    padding: 1.1rem;
+  }
+
+  .pro-topbar h1 {
+    font-size: 1.75rem;
+  }
+
+  .pro-panel,
+  .reservations-calendar {
+    padding: 1rem;
+  }
+
+  .pro-hero-card {
+    padding: 1rem;
+  }
+
+  .pro-avatar {
+    height: 116px;
+    width: 116px;
+  }
+
+  .pro-stats {
+    gap: 0.75rem;
+  }
+
+  .calendar-actions button {
+    flex: 1 1 100%;
+  }
+
+  .calendar-legend {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .pro-service-item,
+  .appointment-card {
+    grid-template-columns: 1fr;
+  }
+
+  .appointment-actions,
+  .appointment-status {
+    justify-content: stretch;
+    justify-self: stretch;
+  }
+
+  .appointment-actions button,
+  .appointment-status {
+    width: 100%;
+  }
+
+  .banking-form,
+  .workplace-form,
+  .service-form-row {
+    grid-template-columns: 1fr;
   }
 }

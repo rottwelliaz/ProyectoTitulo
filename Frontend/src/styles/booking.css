@@ -512,7 +512,7 @@
 
 @media (max-width: 760px) {
   .booking-root {
-    padding-top: 1rem;
+    padding: 1rem max(0.75rem, calc((100vw - 1240px) / 2)) 2rem;
   }
 
   .booking-header,
@@ -524,6 +524,15 @@
 
   .booking-days {
     grid-template-columns: repeat(4, 1fr);
+  }
+
+  .booking-steps {
+    flex-wrap: wrap;
+  }
+
+  .booking-panel,
+  .booking-payment {
+    padding: 1rem;
   }
 
   .booking-bank-grid {
@@ -543,5 +552,28 @@
 @media (max-width: 460px) {
   .booking-days {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .booking-header h1 {
+    font-size: 2.2rem;
+  }
+
+  .booking-section-title {
+    align-items: flex-start;
+    gap: 0.8rem;
+  }
+
+  .booking-services,
+  .booking-barbers {
+    grid-template-columns: 1fr;
+  }
+
+  .booking-slots {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .booking-service-card,
+  .booking-barber-card {
+    min-width: 0;
   }
 }

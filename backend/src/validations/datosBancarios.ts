@@ -23,10 +23,10 @@ export const datosBancariosValidation = Joi.object({
     .pattern(rutRegex)
     .required()
     .messages({
-      'string.base': 'El rut debe ser texto',
-      'string.empty': 'El rut es obligatorio',
-      'string.pattern.base': 'El rut debe tener el formato XXXXXXXX-X y solo numeros',
-      'any.required': 'El rut es obligatorio',
+      'string.base': 'El RUT debe ser texto',
+      'string.empty': 'El RUT es obligatorio',
+      'string.pattern.base': 'El RUT debe tener el formato XXXXXXXX-X y solo números',
+      'any.required': 'El RUT es obligatorio',
     }),
   banco: textoSoloLetras('El banco'),
   tipoCuenta: textoSoloLetras('El tipo de cuenta'),
@@ -35,10 +35,10 @@ export const datosBancariosValidation = Joi.object({
     .pattern(soloNumerosRegex)
     .required()
     .messages({
-      'string.base': 'El numero de cuenta debe ser texto',
-      'string.empty': 'El numero de cuenta es obligatorio',
-      'string.pattern.base': 'El numero de cuenta solo puede contener numeros',
-      'any.required': 'El numero de cuenta es obligatorio',
+      'string.base': 'El número de cuenta debe ser texto',
+      'string.empty': 'El número de cuenta es obligatorio',
+      'string.pattern.base': 'El número de cuenta solo puede contener números',
+      'any.required': 'El número de cuenta es obligatorio',
     }),
   correo: Joi.string()
     .trim()
@@ -47,7 +47,7 @@ export const datosBancariosValidation = Joi.object({
     .messages({
       'string.base': 'El correo debe ser texto',
       'string.empty': 'El correo es obligatorio',
-      'string.email': 'El correo no es valido',
+      'string.email': 'El correo no es válido',
       'any.required': 'El correo es obligatorio',
     }),
 }).unknown(false).messages({

@@ -21,12 +21,12 @@ import '../styles/barberos.css';
 
       <label class="barbers-top-search">
         <Search size={21} aria-hidden="true" />
-        <input id="top-search" type="search" placeholder="Buscar barberos o barberias..." />
+        <input id="top-search" type="search" placeholder="Buscar barberos o barberías..." />
       </label>
 
-      <nav class="barbers-nav" aria-label="Navegacion principal">
+      <nav class="barbers-nav" aria-label="Navegación principal">
         <a href="/home">Inicio</a>
-        <a href="/home#como-funciona">Como funciona</a>
+        <a href="/home#como-funciona">Cómo funciona</a>
         <a class="active" href="/barberos">Barberos</a>
         <a href="/home#contacto">Sobre nosotros</a>
       </nav>
@@ -48,10 +48,10 @@ import '../styles/barberos.css';
 
           <div id="barbers-profile-dropdown" class="barbers-profile-dropdown" aria-hidden="true">
             <a id="profile-link" class="hidden" href="/perfil">Mi perfil</a>
-            <a id="professional-profile-link" class="hidden" href="/perfil-profesional">Perfil Profesional</a>
+            <a id="professional-profile-link" class="hidden" href="/perfil-profesional">Perfil profesional</a>
             <a id="admin-panel-link" class="hidden" href="/admin">Panel admin</a>
-            <a href="/configuracion">Configuracion</a>
-            <button id="logout-button" type="button">Cerrar sesion</button>
+            <a href="/configuracion">Configuración</a>
+            <button id="logout-button" type="button">Cerrar sesión</button>
           </div>
         </div>
       </div>
@@ -61,7 +61,7 @@ import '../styles/barberos.css';
       <section class="barbers-hero">
         <div>
           <h1>Barberos</h1>
-          <p>Encuentra a los mejores barberos de Concepcion</p>
+          <p>Encuentra a los mejores barberos de Concepción</p>
         </div>
       </section>
 
@@ -202,7 +202,7 @@ import '../styles/barberos.css';
   const getLocation = (barber: BarberUser) =>
     barber.perfilBarbero?.lugarTrabajo?.direccion ||
     barber.perfilBarbero?.lugarTrabajo?.nombre_barberia ||
-    'Ubicacion no informada';
+    'Ubicación no informada';
 
   const getBookingUrl = (barber: BarberUser) =>
     barber.perfilBarbero?.id ? `/booking?barbero=${barber.perfilBarbero.id}#servicios` : '/booking';
@@ -264,7 +264,7 @@ import '../styles/barberos.css';
       const freshUser = await response.json().catch(() => null);
 
       if (!response.ok) {
-        throw new Error(freshUser?.message || 'Sesion invalida');
+        throw new Error(freshUser?.message || 'Sesión inválida');
       }
 
       localStorage.setItem('user', JSON.stringify(freshUser));
@@ -321,7 +321,7 @@ import '../styles/barberos.css';
 
     const pageButtons = Array.from({ length: totalPages }, (_, index) => {
       const page = index + 1;
-      return `<button class="${page === currentPage ? 'active' : ''}" type="button" data-page="${page}" aria-label="Ir a pagina ${page}">${page}</button>`;
+      return `<button class="${page === currentPage ? 'active' : ''}" type="button" data-page="${page}" aria-label="Ir a página ${page}">${page}</button>`;
     }).join('');
 
     pagination.innerHTML = `
@@ -400,7 +400,7 @@ import '../styles/barberos.css';
       renderBarbers();
     } catch (error) {
       if (countLabel) countLabel.textContent = 'No se pudieron cargar los barberos';
-      if (grid) grid.innerHTML = '<p class="barbers-empty">No se pudo conectar con el backend. Revisa que el servidor este corriendo en el puerto 3001.</p>';
+      if (grid) grid.innerHTML = '<p class="barbers-empty">No se pudo conectar con el backend. Revisa que el servidor esté corriendo en el puerto 3001.</p>';
       if (pagination) pagination.innerHTML = '';
     }
   };

@@ -14,7 +14,7 @@
             Bienvenido
           </p>
           <h1 class="mt-3 text-3xl font-black text-zinc-950">
-            Iniciar sesion
+            Iniciar sesión
           </h1>
           <p class="mt-3 text-sm leading-6 text-zinc-600">
             Ingresa con tu cuenta para gestionar tus citas.
@@ -23,7 +23,7 @@
 
         <form id="login-form" class="mt-8 grid gap-5" method="post">
           <label class="grid gap-2 text-left">
-            <span class="text-sm font-semibold text-zinc-800">Correo electronico</span>
+            <span class="text-sm font-semibold text-zinc-800">Correo electrónico</span>
             <input
               type="email"
               name="email"
@@ -34,11 +34,11 @@
           </label>
 
           <label class="grid gap-2 text-left">
-            <span class="text-sm font-semibold text-zinc-800">Contrasena</span>
+            <span class="text-sm font-semibold text-zinc-800">Contraseña</span>
             <input
               type="password"
               name="password"
-              placeholder="Ingresa tu contrasena"
+              placeholder="Ingresa tu contraseña"
               required
               class="rounded-lg border border-zinc-300 bg-white px-4 py-3 text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-violet-600 focus:ring-2 focus:ring-violet-100"
             />
@@ -56,9 +56,9 @@
         <p id="login-message" class="mt-4 hidden rounded-lg px-4 py-3 text-sm font-semibold"></p>
 
         <p class="mt-6 text-center text-sm text-zinc-600">
-          No tienes cuenta?
+          ¿No tienes cuenta?
           <a href="/registro" class="font-bold text-violet-700 transition hover:text-violet-900">
-            Registrate
+            Regístrate
           </a>
         </p>
       </div>
@@ -105,7 +105,7 @@
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        throw new Error(data.message || data.error || 'No se pudo iniciar sesion.');
+        throw new Error(data.message || data.error || 'No se pudo iniciar sesión.');
       }
 
       const token = data.token || data.accessToken || data.jwt;
@@ -114,7 +114,7 @@
       if (token) localStorage.setItem('token', token);
       if (user) localStorage.setItem('user', JSON.stringify(user));
 
-      showMessage('Sesion iniciada correctamente.', 'success');
+      showMessage('Sesión iniciada correctamente.', 'success');
       window.setTimeout(() => {
         const requestedRedirect = new URLSearchParams(window.location.search).get('redirect');
         const safeRedirect = requestedRedirect?.startsWith('/') && !requestedRedirect.startsWith('//')
@@ -123,7 +123,7 @@
         window.location.href = safeRedirect;
       }, 800);
     } catch (error) {
-      const text = error instanceof Error ? error.message : 'Error al iniciar sesion.';
+      const text = error instanceof Error ? error.message : 'Error al iniciar sesión.';
       showMessage(text, 'error');
     } finally {
       button?.removeAttribute('disabled');
