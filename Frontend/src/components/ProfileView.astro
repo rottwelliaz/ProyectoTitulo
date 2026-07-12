@@ -61,6 +61,9 @@ import logoConce from '../assets/logotesis.png';
           <a id="professional-profile-link" href="/perfil-profesional" class="profile-dropdown-item is-hidden">
             Perfil profesional
           </a>
+          <a id="admin-panel-link" href="/admin" class="profile-dropdown-item is-hidden">
+            Panel admin
+          </a>
           <a href="/configuracion" class="profile-dropdown-item">Configuración</a>
           <button id="logout-button" class="profile-dropdown-item" type="button">
             Cerrar sesión
@@ -193,6 +196,7 @@ import logoConce from '../assets/logotesis.png';
   const profileMenuButton = document.querySelector<HTMLButtonElement>('#profile-menu-button');
   const profileDropdown = document.querySelector<HTMLDivElement>('#profile-dropdown');
   const professionalProfileLink = document.querySelector<HTMLAnchorElement>('#professional-profile-link');
+  const adminPanelLink = document.querySelector<HTMLAnchorElement>('#admin-panel-link');
   const logoutButton = document.querySelector<HTMLButtonElement>('#logout-button');
   const clientAppointmentsCard = document.querySelector<HTMLElement>('#client-appointments-card');
   const clientAppointmentsList = document.querySelector<HTMLElement>('#client-appointments-list');
@@ -428,6 +432,7 @@ import logoConce from '../assets/logotesis.png';
     if (emailInput) emailInput.value = user.email;
     if (telefonoInput) telefonoInput.value = user.telefono || '';
     professionalProfileLink?.classList.toggle('is-hidden', user.rol !== 'barbero');
+    adminPanelLink?.classList.toggle('is-hidden', user.rol !== 'admin');
     clientAppointmentsCard?.classList.toggle('is-hidden', user.rol !== 'cliente');
   };
 

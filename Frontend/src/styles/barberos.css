@@ -348,7 +348,7 @@
   background-image:
     linear-gradient(180deg, rgba(0, 0, 0, 0.04), rgba(1, 13, 28, 0.45)),
     var(--photo);
-  background-position: var(--position);
+  background-position: center top;
   background-size: 170%;
   height: 122px;
   position: relative;

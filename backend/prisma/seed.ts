@@ -92,11 +92,31 @@ async function main() {
     },
   });
 
+  const admin1 = await prisma.user.upsert({
+    where: { email: 'admin1@demo.com' },
+    update: {
+      nombre: 'Martin Palermo',
+      password: passwordHash,
+      telefono: '945108855',
+      rol: UserRole.admin,
+      aprobado: true,
+    },
+    create: {
+      nombre: 'Martin Palermo',
+      email: 'admin1@demo.com',
+      password: passwordHash,
+      telefono: '945108855',
+      rol: UserRole.admin,
+      aprobado: true,
+    },
+  });
+
   console.log('Seed completado');
   console.log({
     cliente: { email: cliente.email, rol: cliente.rol },
     barbero: { email: barbero.email, rol: barbero.rol },
     admin: { email: admin.email, rol: admin.rol },
+    admin1: { email: admin1.email, rol: admin1.rol },
     password: '123456',
   });
 }

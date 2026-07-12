@@ -355,11 +355,9 @@ import '../styles/barberos.css';
       const profileId = barber.perfilBarbero?.id || '';
       const hasServices = services.length > 0;
       const isFavorite = favorites.has(barber.id);
-      const photoPosition = ['left top', 'center top', 'right top', 'left center', 'center center', 'right center', 'center bottom', 'right bottom'][index % 8];
-
       return `
         <article class="barber-profile-card" data-barber-id="${barber.id}">
-          <div class="barber-profile-photo" style="--photo: url(${barberPhotoSrc}); --position: ${photoPosition};">
+          <div class="barber-profile-photo" style="--photo: url(${barberPhotoSrc});">
             <span class="availability ${hasServices ? '' : 'busy'}">${hasServices ? 'Disponible' : 'Sin servicios'}</span>
           </div>
           <div class="barber-profile-body">
