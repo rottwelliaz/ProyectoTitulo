@@ -38,6 +38,11 @@
 
   const getTone = (index: number) => ['azul', 'verde', 'amarillo'][index % 3];
 
+  const getRandomBarbers = (barbers: BarberUser[], limit = 4) =>
+    [...barbers]
+      .sort(() => Math.random() - 0.5)
+      .slice(0, limit);
+
   const escapeHtml = (value: string) =>
     value.replace(/[&<>"']/g, (char) => {
       const entities: Record<string, string> = {
@@ -61,7 +66,7 @@
       return;
     }
 
-    barberGrid.innerHTML = onlyBarbers
+    barberGrid.innerHTML = getRandomBarbers(onlyBarbers)
       .map((barber, index) => {
         const tone = getTone(index);
         const initials = getInitials(barber.nombre);
