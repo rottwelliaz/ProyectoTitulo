@@ -64,7 +64,7 @@
 .booking-summary button {
   background: var(--booking-blue);
   border: 1px solid var(--booking-hover);
-  border-radius: 9px;
+  border-radius: 8px;
   color: #fff;
   display: inline-flex;
   font-weight: 850;
@@ -324,7 +324,7 @@
 }
 
 .booking-days button {
-  border-radius: 9px;
+  border-radius: 8px;
   min-height: 82px;
   padding: 0.55rem;
 }

@@ -713,7 +713,7 @@
 .barber-slot {
   align-items: center;
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: 8px;
   color: #ffffff;
   cursor: pointer;
   display: flex;
@@ -886,7 +886,7 @@
 .reservation-calendar-slot {
   align-items: center;
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: 8px;
   display: flex;
   flex-direction: column;
   font-size: 0.67rem;
@@ -1204,7 +1204,7 @@
 .appointment-actions button {
   background: transparent;
   border: 1px solid var(--pro-line);
-  border-radius: 7px;
+  border-radius: 8px;
   color: #fff;
   cursor: pointer;
   font-weight: 800;

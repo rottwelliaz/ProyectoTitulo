@@ -139,7 +139,7 @@
 
 .home-nav-cta {
   background-color: #ffc928;
-  border-radius: 6px;
+  border-radius: 8px;
   color: #061a45;
   font-size: 0.88rem;
   font-weight: 800;
@@ -230,7 +230,7 @@
 .profile-dropdown-item {
   background-color: transparent;
   border: 0;
-  border-radius: 6px;
+  border-radius: 8px;
   color: #18181b;
   cursor: pointer;
   display: block;

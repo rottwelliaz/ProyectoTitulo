@@ -1,6 +1,6 @@
 .profile-root {
-  --navy: #061a45;
-  --navy-2: #071f5d;
+  --navy: #020b18;
+  --navy-2: #061b33;
   --blue: #1261d8;
   --yellow: #ffc928;
   --green: #16a661;
@@ -8,7 +8,7 @@
   --muted: rgba(255, 255, 255, 0.72);
   --line: rgba(43, 141, 255, 0.28);
   min-height: 100vh;
-  background: #00162c;
+  background: #020b18;
   color: var(--ink);
   display: grid;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -24,7 +24,7 @@
 }
 
 .profile-sidebar {
-  background: linear-gradient(180deg, var(--navy), #031332);
+  background: linear-gradient(180deg, var(--navy), #03111f);
   color: #fff;
   display: flex;
   flex-direction: column;
@@ -130,7 +130,7 @@
 
 .profile-booking a {
   background: var(--yellow);
-  border-radius: 7px;
+  border-radius: 8px;
   color: var(--navy);
   display: block;
   font-size: 15px;
@@ -141,7 +141,7 @@
 }
 
 .profile-main {
-  background: radial-gradient(circle at 15% 0%, rgba(20, 99, 232, 0.18), transparent 34%), #00162c;
+  background: radial-gradient(circle at 15% 0%, rgba(18, 97, 216, 0.14), transparent 34%), #020b18;
   min-width: 0;
 }
 
@@ -233,7 +233,7 @@
 .profile-dropdown-item {
   background: transparent;
   border: 0;
-  border-radius: 7px;
+  border-radius: 8px;
   color: #07143c;
   cursor: pointer;
   display: block;
@@ -358,7 +358,7 @@
 }
 
 .profile-pill {
-  background: rgba(20, 99, 232, 0.22);
+  background: rgba(18, 97, 216, 0.22);
   border-radius: 8px;
   display: inline-flex;
   padding: 8px 12px;
