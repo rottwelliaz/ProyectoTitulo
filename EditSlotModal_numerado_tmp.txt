@@ -1,0 +1,65 @@
+   1: import { useEffect } from 'react';
+   2: import { SLOT_LABELS, type SlotStatus } from './CalendarSlot';
+   3: 
+   4: interface EditSlotModalProps {
+   5:   dateLabel: string;
+   6:   hourLabel: string;
+   7:   status: SlotStatus;
+   8:   onClose: () => void;
+   9:   onChange: (status: SlotStatus) => void;
+  10: }
+  11: 
+  12: const STATUS_OPTIONS = Object.keys(SLOT_LABELS) as SlotStatus[];
+  13: 
+  14: export default function EditSlotModal({
+  15:   dateLabel,
+  16:   hourLabel,
+  17:   status,
+  18:   onClose,
+  19:   onChange,
+  20: }: EditSlotModalProps) {
+  21:   useEffect(() => {
+  22:     const handleEscape = (event: KeyboardEvent) => {
+  23:       if (event.key === 'Escape') onClose();
+  24:     };
+  25: 
+  26:     window.addEventListener('keydown', handleEscape);
+  27:     return () => window.removeEventListener('keydown', handleEscape);
+  28:   }, [onClose]);
+  29: 
+  30:   return (
+  31:     <div className="slot-modal-backdrop" role="presentation" onMouseDown={onClose}>
+  32:       <section
+  33:         className="slot-modal"
+  34:         role="dialog"
+  35:         aria-modal="true"
+  36:         aria-labelledby="slot-modal-title"
+  37:         onMouseDown={(event) => event.stopPropagation()}
+  38:       >
+  39:         <div className="slot-modal-header">
+  40:           <div>
+  41:             <h3 id="slot-modal-title">Editar bloque</h3>
+  42:             <p>{dateLabel} · {hourLabel}</p>
+  43:           </div>
+  44:           <button type="button" className="slot-modal-close" onClick={onClose} aria-label="Cerrar">
+  45:             ×
+  46:           </button>
+  47:         </div>
+  48: 
+  49:         <div className="slot-status-options">
+  50:           {STATUS_OPTIONS.map((option) => (
+  51:             <button
+  52:               key={option}
+  53:               type="button"
+  54:               className={`slot-status-option is-${option}${status === option ? ' is-selected' : ''}`}
+  55:               onClick={() => onChange(option)}
+  56:             >
+  57:               <i aria-hidden="true" />
+  58:               {SLOT_LABELS[option]}
+  59:             </button>
+  60:           ))}
+  61:         </div>
+  62:       </section>
+  63:     </div>
+  64:   );
+  65: }

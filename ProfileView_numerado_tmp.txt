@@ -1,0 +1,580 @@
+   1: ---
+   2: import logoConce from '../assets/logotesis.png';
+   3: ---
+   4: 
+   5: <main class="profile-root">
+   6:   <aside class="profile-sidebar">
+   7:     <a class="profile-brand" href="/home" aria-label="Conce Barber Club">
+   8:       <img
+   9:         class="profile-brand-logo"
+  10:         src={logoConce.src}
+  11:         alt="Conce Barber Club"
+  12:       />
+  13:     </a>
+  14: 
+  15:     <nav class="profile-nav" aria-label="Navegación de perfil">
+  16:       <a class="profile-sidebar-link is-active" href="/perfil">
+  17:         <span class="profile-link-icon" aria-hidden="true">
+  18:           <svg viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/></svg>
+  19:         </span>
+  20:         Perfil
+  21:       </a>
+  22:       <a class="profile-sidebar-link" href="/configuracion">
+  23:         <span class="profile-link-icon" aria-hidden="true">
+  24:           <svg viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.05.05a2 2 0 1 1-2.83 2.83l-.05-.05A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.05.05a2 2 0 1 1-2.83-2.83l.05-.05A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3a2 2 0 1 1 0-4h-.1A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.05-.05a2 2 0 1 1 2.83-2.83l.05.05A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3a2 2 0 1 1 4 0v.1A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.88-.34l.05-.05a2 2 0 1 1 2.83 2.83l-.05.05A1.7 1.7 0 0 0 19.4 9c.2.38.56.65 1 .6h.6a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1.4Z"/></svg>
+  25:         </span>
+  26:         Configuración
+  27:       </a>
+  28:     </nav>
+  29: 
+  30:     <section class="profile-booking">
+  31:       <div class="profile-booking-title">
+  32:         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4M16 2v4M3 10h18"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="m9 16 2 2 4-5"/></svg>
+  33:         <strong>¿Listo para tu próximo corte?</strong>
+  34:       </div>
+  35:       <p>Reserva ahora y vive la experiencia Conce Barber Club.</p>
+  36:       <a href="/booking">Reservar ahora</a>
+  37:     </section>
+  38:   </aside>
+  39: 
+  40:   <section class="profile-main">
+  41:     <header class="profile-topbar">
+  42:       <div id="profile-menu" class="profile-user-menu">
+  43:         <button
+  44:           id="profile-menu-button"
+  45:           class="profile-user-chip"
+  46:           type="button"
+  47:           aria-label="Abrir menu de usuario"
+  48:           aria-expanded="false"
+  49:           aria-controls="profile-dropdown"
+  50:         >
+  51:           <span class="profile-mini-avatar" aria-hidden="true"></span>
+  52:           <span class="profile-chip-text">
+  53:             <strong id="profile-header-name">Cargando...</strong>
+  54:             <span id="profile-header-role">-</span>
+  55:           </span>
+  56:           <svg class="profile-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+  57:         </button>
+  58: 
+  59:         <div id="profile-dropdown" class="profile-dropdown" aria-hidden="true">
+  60:           <a href="/perfil" class="profile-dropdown-item">Mi perfil</a>
+  61:           <a id="professional-profile-link" href="/perfil-profesional" class="profile-dropdown-item is-hidden">
+  62:             Perfil profesional
+  63:           </a>
+  64:           <a id="admin-panel-link" href="/admin" class="profile-dropdown-item is-hidden">
+  65:             Panel admin
+  66:           </a>
+  67:           <a href="/configuracion" class="profile-dropdown-item">Configuración</a>
+  68:           <button id="logout-button" class="profile-dropdown-item" type="button">
+  69:             Cerrar sesión
+  70:           </button>
+  71:         </div>
+  72:       </div>
+  73:     </header>
+  74: 
+  75:     <div class="profile-content">
+  76:       <article class="profile-card profile-identity">
+  77:         <div class="profile-photo-wrap">
+  78:           <div class="profile-photo" aria-hidden="true"></div>
+  79:           <input id="profile-photo-input" class="profile-photo-input" type="file" accept="image/*" />
+  80:           <button id="profile-camera-button" class="profile-camera-button" type="button" aria-label="Cambiar foto">
+  81:             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4h-5L8 6H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3l-1.5-2Z"/><circle cx="12" cy="13" r="3"/></svg>
+  82:           </button>
+  83:         </div>
+  84: 
+  85:         <div class="profile-summary">
+  86:           <p class="profile-card-title">Tu identidad</p>
+  87:           <h1 id="profile-name">Cargando...</h1>
+  88:           <div class="profile-pill">
+  89:             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/></svg>
+  90:             Perfil: <span id="profile-role">-</span>
+  91:           </div>
+  92:           <div class="profile-date">
+  93:             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4M16 2v4M3 10h18"/><rect x="3" y="4" width="18" height="18" rx="2"/></svg>
+  94:             Desde: <span id="profile-created-at">-</span>
+  95:           </div>
+  96:         </div>
+  97: 
+  98:         <button id="edit-profile-button" class="profile-primary-button" type="button">
+  99:           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="m16.5 3.5 4 4L7 21H3v-4L16.5 3.5Z"/></svg>
+ 100:           Editar perfil
+ 101:         </button>
+ 102:       </article>
+ 103: 
+ 104:       <article class="profile-card profile-data-card">
+ 105:         <p class="profile-card-title">Tus datos personales</p>
+ 106: 
+ 107:         <form id="profile-form" class="profile-form">
+ 108:           <label class="profile-field">
+ 109:             <span class="profile-field-icon is-purple" aria-hidden="true">
+ 110:               <svg viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/></svg>
+ 111:             </span>
+ 112:             <span class="profile-field-label">Nombre completo</span>
+ 113:             <input id="profile-input-nombre" name="nombre" type="text" disabled />
+ 114:             <button class="profile-edit-button" type="button" data-edit-field="profile-input-nombre">
+ 115:               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="m16.5 3.5 4 4L7 21H3v-4L16.5 3.5Z"/></svg>
+ 116:               Editar
+ 117:             </button>
+ 118:           </label>
+ 119: 
+ 120:           <label class="profile-field">
+ 121:             <span class="profile-field-icon is-green" aria-hidden="true">
+ 122:               <svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="m4 7 8 6 8-6"/></svg>
+ 123:             </span>
+ 124:             <span class="profile-field-label">Email</span>
+ 125:             <input id="profile-input-email" name="email" type="email" disabled />
+ 126:             <button class="profile-edit-button" type="button" data-edit-field="profile-input-email">
+ 127:               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="m16.5 3.5 4 4L7 21H3v-4L16.5 3.5Z"/></svg>
+ 128:               Editar
+ 129:             </button>
+ 130:           </label>
+ 131: 
+ 132:           <label class="profile-field">
+ 133:             <span class="profile-field-icon is-yellow" aria-hidden="true">
+ 134:               <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.8 19.8 0 0 1 3 5.18 2 2 0 0 1 5 3h3a2 2 0 0 1 2 1.72c.12.9.33 1.77.62 2.6a2 2 0 0 1-.45 2.11L9 10.6a16 16 0 0 0 4.4 4.4l1.17-1.17a2 2 0 0 1 2.11-.45c.83.29 1.7.5 2.6.62A2 2 0 0 1 22 16.92Z"/></svg>
+ 135:             </span>
+ 136:             <span class="profile-field-label">Teléfono</span>
+ 137:             <input id="profile-input-telefono" name="telefono" type="tel" disabled />
+ 138:             <button class="profile-edit-button" type="button" data-edit-field="profile-input-telefono">
+ 139:               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="m16.5 3.5 4 4L7 21H3v-4L16.5 3.5Z"/></svg>
+ 140:               Editar
+ 141:             </button>
+ 142:           </label>
+ 143: 
+ 144:           <div id="profile-actions" class="profile-actions">
+ 145:             <button class="profile-save-button" type="submit">Guardar cambios</button>
+ 146:             <button id="cancel-profile-button" class="profile-cancel-button" type="button">
+ 147:               Cancelar
+ 148:             </button>
+ 149:           </div>
+ 150:         </form>
+ 151: 
+ 152:         <p id="profile-message" class="profile-message" aria-live="polite"></p>
+ 153:       </article>
+ 154: 
+ 155:       <article id="client-appointments-card" class="profile-card profile-appointments-card is-hidden">
+ 156:         <div class="profile-appointments-header">
+ 157:           <div>
+ 158:             <p class="profile-card-title">Mis citas</p>
+ 159:             <p>Revisa tus horas confirmadas y el historial de tus reservas.</p>
+ 160:           </div>
+ 161:           <a href="/booking">Reservar otra hora</a>
+ 162:         </div>
+ 163: 
+ 164:         <div id="client-appointments-list" class="client-appointments-list" aria-live="polite">
+ 165:           <p class="client-appointments-empty">Cargando tus citas...</p>
+ 166:         </div>
+ 167:       </article>
+ 168: 
+ 169:       <aside class="profile-security">
+ 170:         <div class="profile-shield" aria-hidden="true">
+ 171:           <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m8.5 12 2.25 2.25L16 9"/></svg>
+ 172:         </div>
+ 173:         <div>
+ 174:           <strong>Tu información está segura</strong>
+ 175:           <p>En Conce Barber Club protegemos tus datos y nunca los compartimos con terceros.</p>
+ 176:         </div>
+ 177:       </aside>
+ 178:     </div>
+ 179:   </section>
+ 180: </main>
+ 181: 
+ 182: <script>
+ 183:   const API_URL = 'http://localhost:3001/api';
+ 184:   const token = localStorage.getItem('token');
+ 185: 
+ 186:   const form = document.querySelector<HTMLFormElement>('#profile-form');
+ 187:   const message = document.querySelector<HTMLParagraphElement>('#profile-message');
+ 188:   const actions = document.querySelector<HTMLDivElement>('#profile-actions');
+ 189:   const editProfileButton = document.querySelector<HTMLButtonElement>('#edit-profile-button');
+ 190:   const cancelProfileButton = document.querySelector<HTMLButtonElement>('#cancel-profile-button');
+ 191:   const photoButton = document.querySelector<HTMLButtonElement>('#profile-camera-button');
+ 192:   const photoInput = document.querySelector<HTMLInputElement>('#profile-photo-input');
+ 193:   const profilePhoto = document.querySelector<HTMLDivElement>('.profile-photo');
+ 194:   const miniAvatar = document.querySelector<HTMLSpanElement>('.profile-mini-avatar');
+ 195:   const profileMenu = document.querySelector<HTMLDivElement>('#profile-menu');
+ 196:   const profileMenuButton = document.querySelector<HTMLButtonElement>('#profile-menu-button');
+ 197:   const profileDropdown = document.querySelector<HTMLDivElement>('#profile-dropdown');
+ 198:   const professionalProfileLink = document.querySelector<HTMLAnchorElement>('#professional-profile-link');
+ 199:   const adminPanelLink = document.querySelector<HTMLAnchorElement>('#admin-panel-link');
+ 200:   const logoutButton = document.querySelector<HTMLButtonElement>('#logout-button');
+ 201:   const clientAppointmentsCard = document.querySelector<HTMLElement>('#client-appointments-card');
+ 202:   const clientAppointmentsList = document.querySelector<HTMLElement>('#client-appointments-list');
+ 203: 
+ 204:   const nameTitle = document.querySelector<HTMLHeadingElement>('#profile-name');
+ 205:   const headerName = document.querySelector<HTMLElement>('#profile-header-name');
+ 206:   const headerRole = document.querySelector<HTMLElement>('#profile-header-role');
+ 207:   const roleText = document.querySelector<HTMLSpanElement>('#profile-role');
+ 208:   const createdAtText = document.querySelector<HTMLSpanElement>('#profile-created-at');
+ 209: 
+ 210:   const nombreInput = document.querySelector<HTMLInputElement>('#profile-input-nombre');
+ 211:   const emailInput = document.querySelector<HTMLInputElement>('#profile-input-email');
+ 212:   const telefonoInput = document.querySelector<HTMLInputElement>('#profile-input-telefono');
+ 213:   const inputs = [nombreInput, emailInput, telefonoInput].filter(Boolean) as HTMLInputElement[];
+ 214: 
+ 215:   let currentUser: {
+ 216:     id: number;
+ 217:     nombre: string;
+ 218:     email: string;
+ 219:     telefono: string | null;
+ 220:     rol: string;
+ 221:     fecha_creacion: string;
+ 222:   } | null = null;
+ 223: 
+ 224:   const showMessage = (text: string, type: 'success' | 'error' | 'info' = 'info') => {
+ 225:     if (!message) return;
+ 226:     message.textContent = text;
+ 227:     message.className = `profile-message is-${type}`;
+ 228:   };
+ 229: 
+ 230:   const getPhotoStorageKey = () => {
+ 231:     const userId = currentUser?.id ?? 'default';
+ 232:     return `profile-photo-${userId}`;
+ 233:   };
+ 234: 
+ 235:   const setProfilePhoto = (imageData: string | null) => {
+ 236:     [profilePhoto, miniAvatar].forEach((element) => {
+ 237:       if (!element) return;
+ 238:       if (imageData) {
+ 239:         element.style.backgroundImage = `url("${imageData}")`;
+ 240:         element.classList.add('has-photo');
+ 241:       } else {
+ 242:         element.style.backgroundImage = '';
+ 243:         element.classList.remove('has-photo');
+ 244:       }
+ 245:     });
+ 246:   };
+ 247: 
+ 248:   const loadSavedPhoto = () => {
+ 249:     setProfilePhoto(localStorage.getItem(getPhotoStorageKey()));
+ 250:   };
+ 251: 
+ 252:   const closeProfileMenu = () => {
+ 253:     profileMenu?.classList.remove('is-open');
+ 254:     profileMenuButton?.setAttribute('aria-expanded', 'false');
+ 255:     profileDropdown?.setAttribute('aria-hidden', 'true');
+ 256:   };
+ 257: 
+ 258:   const setEditing = (enabled: boolean, focusInput?: HTMLInputElement | null) => {
+ 259:     inputs.forEach((input) => {
+ 260:       input.disabled = !enabled;
+ 261:     });
+ 262: 
+ 263:     actions?.classList.toggle('is-visible', enabled);
+ 264: 
+ 265:     if (enabled) {
+ 266:       window.setTimeout(() => focusInput?.focus(), 0);
+ 267:     }
+ 268:   };
+ 269: 
+ 270:   const formatDate = (value: string) => {
+ 271:     return new Intl.DateTimeFormat('es-CL', {
+ 272:       year: 'numeric',
+ 273:       month: 'long',
+ 274:       day: 'numeric',
+ 275:     }).format(new Date(value));
+ 276:   };
+ 277: 
+ 278:   const escapeHtml = (value: string) =>
+ 279:     value.replace(/[&<>"']/g, (character) => {
+ 280:       const entities: Record<string, string> = {
+ 281:         '&': '&amp;',
+ 282:         '<': '&lt;',
+ 283:         '>': '&gt;',
+ 284:         '"': '&quot;',
+ 285:         "'": '&#039;',
+ 286:       };
+ 287:       return entities[character];
+ 288:     });
+ 289: 
+ 290:   const renderClientAppointments = (appointments: any[]) => {
+ 291:     if (!clientAppointmentsList) return;
+ 292:     if (!appointments.length) {
+ 293:       clientAppointmentsList.innerHTML = `
+ 294:         <div class="client-appointments-empty">
+ 295:           <strong>Aún no tienes citas.</strong>
+ 296:           <span>Cuando reserves una hora aparecerá en este apartado.</span>
+ 297:         </div>
+ 298:       `;
+ 299:       return;
+ 300:     }
+ 301: 
+ 302:     const statusLabels: Record<string, string> = {
+ 303:       pendiente: 'Pendiente',
+ 304:       confirmada: 'Confirmada',
+ 305:       cancelada: 'Cancelada',
+ 306:       finalizada: 'Finalizada',
+ 307:     };
+ 308: 
+ 309:     const sortedAppointments = [...appointments].sort((current, next) =>
+ 310:       new Date(next.fecha_hora).getTime() - new Date(current.fecha_hora).getTime()
+ 311:     );
+ 312: 
+ 313:     clientAppointmentsList.innerHTML = sortedAppointments.map((appointment) => {
+ 314:       const date = new Date(appointment.fecha_hora);
+ 315:       const dateLabel = new Intl.DateTimeFormat('es-CL', {
+ 316:         weekday: 'long',
+ 317:         day: 'numeric',
+ 318:         month: 'long',
+ 319:         year: 'numeric',
+ 320:       }).format(date);
+ 321:       const timeLabel = new Intl.DateTimeFormat('es-CL', {
+ 322:         hour: '2-digit',
+ 323:         minute: '2-digit',
+ 324:       }).format(date);
+ 325:       const barber = escapeHtml(appointment.barbero?.usuario?.nombre || 'Barbero');
+ 326:       const service = escapeHtml(appointment.servicio?.nombre_servicio || 'Servicio');
+ 327:       const workplace = escapeHtml(appointment.barbero?.lugarTrabajo?.nombre_barberia || 'Barbería');
+ 328:       const status = String(appointment.estado || 'confirmada');
+ 329:       const appointmentDate = new Date(appointment.fecha_hora);
+ 330:       const canCancel = ['pendiente', 'confirmada'].includes(status) && appointmentDate > new Date();
+ 331: 
+ 332:       return `
+ 333:         <section class="client-appointment-item">
+ 334:           <div class="client-appointment-date">
+ 335:             <strong>${escapeHtml(timeLabel)}</strong>
+ 336:             <span>${escapeHtml(dateLabel)}</span>
+ 337:           </div>
+ 338:           <div class="client-appointment-detail">
+ 339:             <strong>${service}</strong>
+ 340:             <span>Con ${barber}</span>
+ 341:             <small>${workplace}</small>
+ 342:           </div>
+ 343:           <div class="client-appointment-actions">
+ 344:             <span class="client-appointment-status is-${escapeHtml(status)}">
+ 345:               ${escapeHtml(statusLabels[status] || status)}
+ 346:             </span>
+ 347:             ${canCancel ? `
+ 348:               <button
+ 349:                 class="client-appointment-cancel"
+ 350:                 type="button"
+ 351:                 data-cancel-appointment="${escapeHtml(appointment.id)}"
+ 352:               >
+ 353:                 Cancelar
+ 354:               </button>
+ 355:             ` : ''}
+ 356:           </div>
+ 357:         </section>
+ 358:       `;
+ 359:     }).join('');
+ 360:   };
+ 361: 
+ 362:   const cancelClientAppointment = async (appointmentId: string, button: HTMLButtonElement) => {
+ 363:     if (!token) {
+ 364:       window.location.href = '/login';
+ 365:       return;
+ 366:     }
+ 367: 
+ 368:     const confirmed = window.confirm(
+ 369:       'Si cancelas esta hora perderás el pago previo asociado a la reserva. Esta acción no se puede deshacer. ¿Deseas continuar?',
+ 370:     );
+ 371: 
+ 372:     if (!confirmed) return;
+ 373: 
+ 374:     button.disabled = true;
+ 375:     const previousText = button.textContent || 'Cancelar';
+ 376:     button.textContent = 'Cancelando...';
+ 377:     showMessage('', 'info');
+ 378: 
+ 379:     try {
+ 380:       const response = await fetch(`${API_URL}/citas/cliente/${appointmentId}/cancelar`, {
+ 381:         method: 'PATCH',
+ 382:         headers: { Authorization: `Bearer ${token}` },
+ 383:       });
+ 384: 
+ 385:       const data = await response.json().catch(() => ({}));
+ 386:       if (!response.ok) throw new Error(data.message || 'No se pudo cancelar la cita.');
+ 387: 
+ 388:       showMessage('Cita cancelada correctamente.', 'success');
+ 389:       await loadClientAppointments();
+ 390:     } catch (error) {
+ 391:       showMessage(error instanceof Error ? error.message : 'Error al cancelar la cita.', 'error');
+ 392:       button.disabled = false;
+ 393:       button.textContent = previousText;
+ 394:     }
+ 395:   };
+ 396: 
+ 397:   const loadClientAppointments = async () => {
+ 398:     if (!token || !clientAppointmentsList) return;
+ 399:     try {
+ 400:       const response = await fetch(`${API_URL}/citas/cliente/mias`, {
+ 401:         headers: { Authorization: `Bearer ${token}` },
+ 402:       });
+ 403:       const data = await response.json().catch(() => []);
+ 404:       if (!response.ok) throw new Error(data.message || 'No se pudieron cargar tus citas.');
+ 405:       renderClientAppointments(Array.isArray(data) ? data : []);
+ 406:     } catch (error) {
+ 407:       clientAppointmentsList.innerHTML = `
+ 408:         <p class="client-appointments-error">
+ 409:           ${escapeHtml(error instanceof Error ? error.message : 'No se pudieron cargar tus citas.')}
+ 410:         </p>
+ 411:       `;
+ 412:     }
+ 413:   };
+ 414: 
+ 415:   clientAppointmentsList?.addEventListener('click', (event) => {
+ 416:     const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-cancel-appointment]');
+ 417:     const appointmentId = button?.dataset.cancelAppointment;
+ 418:     if (!button || !appointmentId) return;
+ 419: 
+ 420:     void cancelClientAppointment(appointmentId, button);
+ 421:   });
+ 422: 
+ 423:   const renderUser = (user: typeof currentUser) => {
+ 424:     if (!user) return;
+ 425: 
+ 426:     if (nameTitle) nameTitle.textContent = user.nombre;
+ 427:     if (headerName) headerName.textContent = user.nombre;
+ 428:     if (headerRole) headerRole.textContent = user.rol;
+ 429:     if (roleText) roleText.textContent = user.rol;
+ 430:     if (createdAtText) createdAtText.textContent = formatDate(user.fecha_creacion);
+ 431:     if (nombreInput) nombreInput.value = user.nombre;
+ 432:     if (emailInput) emailInput.value = user.email;
+ 433:     if (telefonoInput) telefonoInput.value = user.telefono || '';
+ 434:     professionalProfileLink?.classList.toggle('is-hidden', user.rol !== 'barbero');
+ 435:     adminPanelLink?.classList.toggle('is-hidden', user.rol !== 'admin');
+ 436:     clientAppointmentsCard?.classList.toggle('is-hidden', user.rol !== 'cliente');
+ 437:   };
+ 438: 
+ 439:   const loadProfile = async () => {
+ 440:     if (!token) {
+ 441:       window.location.href = '/login';
+ 442:       return;
+ 443:     }
+ 444: 
+ 445:     try {
+ 446:       const response = await fetch(`${API_URL}/auth/me`, {
+ 447:         headers: {
+ 448:           Authorization: `Bearer ${token}`,
+ 449:         },
+ 450:       });
+ 451: 
+ 452:       const data = await response.json().catch(() => ({}));
+ 453: 
+ 454:       if (!response.ok) {
+ 455:         throw new Error(data.message || data.error || 'No se pudo cargar el perfil.');
+ 456:       }
+ 457: 
+ 458:       currentUser = data;
+ 459:       localStorage.setItem('user', JSON.stringify(data));
+ 460:       renderUser(currentUser);
+ 461:       loadSavedPhoto();
+ 462:       if (data.rol === 'cliente') await loadClientAppointments();
+ 463:       showMessage('', 'info');
+ 464:     } catch (error) {
+ 465:       const text = error instanceof Error ? error.message : 'Error al cargar el perfil.';
+ 466:       showMessage(text, 'error');
+ 467:     }
+ 468:   };
+ 469: 
+ 470:   editProfileButton?.addEventListener('click', () => {
+ 471:     setEditing(true, nombreInput);
+ 472:   });
+ 473: 
+ 474:   photoButton?.addEventListener('click', () => {
+ 475:     photoInput?.click();
+ 476:   });
+ 477: 
+ 478:   photoInput?.addEventListener('change', () => {
+ 479:     const file = photoInput.files?.[0];
+ 480:     if (!file) return;
+ 481: 
+ 482:     if (!file.type.startsWith('image/')) {
+ 483:       showMessage('Selecciona una imagen válida.', 'error');
+ 484:       return;
+ 485:     }
+ 486: 
+ 487:     const reader = new FileReader();
+ 488:     reader.addEventListener('load', () => {
+ 489:       const imageData = String(reader.result || '');
+ 490:       localStorage.setItem(getPhotoStorageKey(), imageData);
+ 491:       setProfilePhoto(imageData);
+ 492:       showMessage('Foto actualizada correctamente.', 'success');
+ 493:     });
+ 494:     reader.readAsDataURL(file);
+ 495:   });
+ 496: 
+ 497:   profileMenuButton?.addEventListener('click', (event) => {
+ 498:     event.stopPropagation();
+ 499:     const isOpen = profileMenu?.classList.toggle('is-open') ?? false;
+ 500:     profileMenuButton.setAttribute('aria-expanded', String(isOpen));
+ 501:     profileDropdown?.setAttribute('aria-hidden', String(!isOpen));
+ 502:   });
+ 503: 
+ 504:   document.addEventListener('click', (event) => {
+ 505:     if (!profileMenu?.contains(event.target as Node)) {
+ 506:       closeProfileMenu();
+ 507:     }
+ 508:   });
+ 509: 
+ 510:   document.addEventListener('keydown', (event) => {
+ 511:     if (event.key === 'Escape') {
+ 512:       closeProfileMenu();
+ 513:     }
+ 514:   });
+ 515: 
+ 516:   logoutButton?.addEventListener('click', () => {
+ 517:     localStorage.removeItem('token');
+ 518:     localStorage.removeItem('user');
+ 519:     window.location.href = '/login';
+ 520:   });
+ 521: 
+ 522:   document.querySelectorAll<HTMLButtonElement>('[data-edit-field]').forEach((button) => {
+ 523:     button.addEventListener('click', () => {
+ 524:       const input = document.querySelector<HTMLInputElement>(`#${button.dataset.editField}`);
+ 525:       setEditing(true, input);
+ 526:     });
+ 527:   });
+ 528: 
+ 529:   cancelProfileButton?.addEventListener('click', () => {
+ 530:     renderUser(currentUser);
+ 531:     setEditing(false);
+ 532:     showMessage('', 'info');
+ 533:   });
+ 534: 
+ 535:   form?.addEventListener('submit', async (event) => {
+ 536:     event.preventDefault();
+ 537: 
+ 538:     if (!token) {
+ 539:       window.location.href = '/login';
+ 540:       return;
+ 541:     }
+ 542: 
+ 543:     const formData = new FormData(form);
+ 544:     const payload: Record<string, string> = {};
+ 545:     const nombre = String(formData.get('nombre') || '').trim();
+ 546:     const email = String(formData.get('email') || '').trim();
+ 547:     const telefono = String(formData.get('telefono') || '').trim();
+ 548:     if (nombre) payload.nombre = nombre;
+ 549:     if (email) payload.email = email;
+ 550:     if (telefono) payload.telefono = telefono;
+ 551: 
+ 552:     try {
+ 553:       const response = await fetch(`${API_URL}/auth/me`, {
+ 554:         method: 'PUT',
+ 555:         headers: {
+ 556:           'Content-Type': 'application/json',
+ 557:           Authorization: `Bearer ${token}`,
+ 558:         },
+ 559:         body: JSON.stringify(payload),
+ 560:       });
+ 561: 
+ 562:       const data = await response.json().catch(() => ({}));
+ 563: 
+ 564:       if (!response.ok) {
+ 565:         throw new Error(data.message || data.error || 'No se pudo actualizar el perfil.');
+ 566:       }
+ 567: 
+ 568:       currentUser = data;
+ 569:       localStorage.setItem('user', JSON.stringify(data));
+ 570:       renderUser(currentUser);
+ 571:       setEditing(false);
+ 572:       showMessage('Perfil actualizado correctamente.', 'success');
+ 573:     } catch (error) {
+ 574:       const text = error instanceof Error ? error.message : 'Error al actualizar el perfil.';
+ 575:       showMessage(text, 'error');
+ 576:     }
+ 577:   });
+ 578: 
+ 579:   loadProfile();
+ 580: </script>

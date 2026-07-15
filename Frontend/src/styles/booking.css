@@ -8,6 +8,8 @@
   --booking-muted: #c7d2e1;
   --booking-green: #16803a;
   --booking-red: #ef4444;
+  --booking-yellow: #ffc928;
+  --booking-yellow-hover: #ffd94d;
 }
 
 .booking-root {
@@ -30,7 +32,7 @@
 .booking-panel {
   background: linear-gradient(145deg, rgba(6, 27, 51, 0.98), rgba(3, 17, 34, 0.98));
   border: 1px solid var(--booking-line);
-  border-radius: 14px;
+  border-radius: 8px;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.24);
 }
 
@@ -224,7 +226,7 @@
 
 .booking-barber-card {
   align-items: flex-start;
-  border-radius: 10px;
+  border-radius: 8px;
   display: flex;
   flex-direction: column;
   min-height: 170px;
@@ -269,7 +271,7 @@
 
 .booking-service-card {
   align-items: center;
-  border-radius: 10px;
+  border-radius: 8px;
   display: flex;
   justify-content: space-between;
   min-height: 82px;
@@ -370,7 +372,7 @@
   align-items: center;
   background: #041428;
   border: 1px solid var(--booking-line);
-  border-radius: 10px;
+  border-radius: 8px;
   display: flex;
   gap: 1rem;
   justify-content: space-between;
@@ -401,8 +403,15 @@
 }
 
 .booking-summary button {
+  background: var(--booking-yellow);
+  border: 1px solid var(--booking-yellow-hover);
+  border-radius: 8px;
+  color: #061a45;
   cursor: pointer;
+  font-weight: 900;
+  min-height: 44px;
   margin: 0;
+  padding: 0 1rem;
 }
 
 .booking-summary button:disabled {
@@ -413,7 +422,7 @@
 .booking-payment {
   background: #041428;
   border: 1px solid var(--booking-line);
-  border-radius: 10px;
+  border-radius: 8px;
   margin-top: 1rem;
   padding: 1rem;
 }
@@ -500,9 +509,9 @@
 }
 
 .booking-payment-actions button:last-child {
-  background: var(--booking-blue);
-  border: 1px solid var(--booking-hover);
-  color: #fff;
+  background: var(--booking-yellow);
+  border: 1px solid var(--booking-yellow-hover);
+  color: #061a45;
 }
 
 .booking-payment-actions button:disabled {

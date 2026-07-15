@@ -9,7 +9,7 @@ import Layout from '../layouts/Layout.astro';
         ← Volver al inicio
       </a>
 
-      <div class="mt-8 rounded-2xl border border-[#0D47A1] bg-[#061B33] p-6 shadow-2xl shadow-black/30">
+      <div class="mt-8 rounded-lg border border-[#0D47A1] bg-[#061B33] p-6 shadow-2xl shadow-black/30">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p class="text-sm font-black uppercase tracking-[0.18em] text-[#F2C230]">Admin</p>
@@ -21,13 +21,13 @@ import Layout from '../layouts/Layout.astro';
           <button
             id="refresh-pending-barbers"
             type="button"
-            class="rounded-xl border border-[#1261D8] px-5 py-3 text-sm font-black text-white transition hover:border-[#1E6DFF] hover:bg-[#1261D8]"
+            class="rounded-lg border border-[#1261D8] px-5 py-3 text-sm font-black text-white transition hover:border-[#1E6DFF] hover:bg-[#1261D8]"
           >
             Actualizar
           </button>
         </div>
 
-        <p id="admin-message" class="mt-5 hidden rounded-xl px-4 py-3 text-sm font-bold"></p>
+        <p id="admin-message" class="mt-5 hidden rounded-lg px-4 py-3 text-sm font-bold"></p>
         <div id="pending-barbers-list" class="mt-6 grid gap-4"></div>
       </div>
     </section>
@@ -47,8 +47,8 @@ import Layout from '../layouts/Layout.astro';
     message.textContent = text;
     message.className =
       type === 'success'
-        ? 'mt-5 rounded-xl border border-green-500/50 bg-green-500/10 px-4 py-3 text-sm font-bold text-green-300'
-        : 'mt-5 rounded-xl border border-red-500/50 bg-red-500/10 px-4 py-3 text-sm font-bold text-red-300';
+        ? 'mt-5 rounded-lg border border-green-500/50 bg-green-500/10 px-4 py-3 text-sm font-bold text-green-300'
+        : 'mt-5 rounded-lg border border-red-500/50 bg-red-500/10 px-4 py-3 text-sm font-bold text-red-300';
   };
 
   const escapeHtml = (value: unknown) =>
@@ -69,7 +69,7 @@ import Layout from '../layouts/Layout.astro';
 
   const renderEmpty = (text: string) => {
     if (!list) return;
-    list.innerHTML = `<div class="rounded-xl border border-[#0D47A1] bg-[#020B18] p-5 text-[#C7D2E1]">${escapeHtml(text)}</div>`;
+    list.innerHTML = `<div class="rounded-lg border border-[#0D47A1] bg-[#020B18] p-5 text-[#C7D2E1]">${escapeHtml(text)}</div>`;
   };
 
   const loadPendingBarbers = async () => {
@@ -85,7 +85,7 @@ import Layout from '../layouts/Layout.astro';
       return;
     }
 
-    if (list) list.innerHTML = '<div class="rounded-xl border border-[#0D47A1] bg-[#020B18] p-5 text-[#C7D2E1]">Cargando solicitudes...</div>';
+    if (list) list.innerHTML = '<div class="rounded-lg border border-[#0D47A1] bg-[#020B18] p-5 text-[#C7D2E1]">Cargando solicitudes...</div>';
 
     try {
       const response = await fetch(`${API_URL}/usuarios/barberos/pendientes`, {
@@ -109,7 +109,7 @@ import Layout from '../layouts/Layout.astro';
         .map((barber) => {
           const date = barber.fecha_creacion ? new Date(barber.fecha_creacion).toLocaleDateString('es-CL') : '-';
           return `
-            <article class="grid gap-4 rounded-xl border border-[#0D47A1] bg-[#020B18] p-5 sm:grid-cols-[1fr_auto] sm:items-center">
+            <article class="grid gap-4 rounded-lg border border-[#0D47A1] bg-[#020B18] p-5 sm:grid-cols-[1fr_auto] sm:items-center">
               <div>
                 <h2 class="text-xl font-black">${escapeHtml(barber.nombre)}</h2>
                 <p class="mt-1 text-sm text-[#C7D2E1]">${escapeHtml(barber.email)}</p>
@@ -118,7 +118,7 @@ import Layout from '../layouts/Layout.astro';
               </div>
               <button
                 type="button"
-                class="approve-barber rounded-xl bg-[#1261D8] px-5 py-3 text-sm font-black text-white transition hover:bg-[#1E6DFF]"
+                class="approve-barber rounded-lg bg-[#16803A] px-5 py-3 text-sm font-black text-white transition hover:bg-[#1B9C48]"
                 data-id="${escapeHtml(barber.id)}"
               >
                 Aprobar barbero

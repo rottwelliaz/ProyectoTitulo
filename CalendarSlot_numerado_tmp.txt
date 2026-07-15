@@ -1,0 +1,35 @@
+   1: export type SlotStatus = 'available' | 'booking' | 'reserved' | 'break';
+   2: 
+   3: export const SLOT_LABELS: Record<SlotStatus, string> = {
+   4:   available: 'Disponible',
+   5:   booking: 'Reserva',
+   6:   reserved: 'Reservado',
+   7:   break: 'Descanso',
+   8: };
+   9: 
+  10: interface CalendarSlotProps {
+  11:   dateLabel: string;
+  12:   hour: number;
+  13:   status: SlotStatus;
+  14:   onClick: () => void;
+  15:   disabled?: boolean;
+  16:   detail?: string;
+  17: }
+  18: 
+  19: export default function CalendarSlot({ dateLabel, hour, status, onClick, disabled = false, detail }: CalendarSlotProps) {
+  20:   const hourLabel = `${String(hour).padStart(2, '0')}:00`;
+  21: 
+  22:   return (
+  23:     <button
+  24:       type="button"
+  25:       className={`barber-slot is-${status}`}
+  26:       onClick={onClick}
+  27:       disabled={disabled}
+  28:       title={detail}
+  29:       aria-label={`${dateLabel}, ${hourLabel}: ${SLOT_LABELS[status]}${detail ? `, ${detail}` : ''}${disabled ? '' : '. Cambiar estado.'}`}
+  30:     >
+  31:       <span>{SLOT_LABELS[status]}</span>
+  32:       {detail && <small>{detail}</small>}
+  33:     </button>
+  34:   );
+  35: }

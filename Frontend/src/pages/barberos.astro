@@ -162,6 +162,12 @@ import '../styles/barberos.css';
   let barbers: BarberUser[] = [];
   let currentPage = 1;
   let currentView: 'cards' | 'list' = 'cards';
+  const initialSearch = new URLSearchParams(window.location.search).get('buscar')?.trim() || '';
+
+  if (initialSearch) {
+    if (topSearch) topSearch.value = initialSearch;
+    if (barberSearch) barberSearch.value = initialSearch;
+  }
 
   const normalize = (value: string) =>
     value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();

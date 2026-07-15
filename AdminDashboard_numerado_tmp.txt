@@ -1,0 +1,729 @@
+   1: ---
+   2: import logoConce from '../assets/logotesis.png';
+   3: import {
+   4:   BadgeCheck,
+   5:   CalendarCheck,
+   6:   LayoutDashboard,
+   7:   LogOut,
+   8:   Scissors,
+   9:   ShieldCheck,
+  10:   UserCheck,
+  11:   Users,
+  12: } from 'lucide-astro';
+  13: ---
+  14: 
+  15: <main class="admin-root">
+  16:   <aside class="admin-sidebar">
+  17:     <a class="admin-brand" href="/home" aria-label="Conce Barber Club">
+  18:       <img src={logoConce.src} alt="Conce Barber Club" />
+  19:     </a>
+  20: 
+  21:     <nav class="admin-nav" aria-label="Panel administrador">
+  22:       <button class="admin-nav-link is-active" type="button" data-admin-tab="resumen">
+  23:         <LayoutDashboard size={22} aria-hidden="true" />
+  24:         Resumen
+  25:       </button>
+  26:       <button class="admin-nav-link" type="button" data-admin-tab="clientes">
+  27:         <Users size={22} aria-hidden="true" />
+  28:         Clientes
+  29:       </button>
+  30:       <button class="admin-nav-link" type="button" data-admin-tab="barberos">
+  31:         <Scissors size={22} aria-hidden="true" />
+  32:         Barberos
+  33:       </button>
+  34:       <button class="admin-nav-link" type="button" data-admin-tab="pendientes">
+  35:         <UserCheck size={22} aria-hidden="true" />
+  36:         Solicitudes
+  37:       </button>
+  38:       <button class="admin-nav-link" type="button" data-admin-tab="admins">
+  39:         <ShieldCheck size={22} aria-hidden="true" />
+  40:         Admins
+  41:       </button>
+  42:     </nav>
+  43: 
+  44:     <div class="admin-sidebar-card">
+  45:       <ShieldCheck size={22} aria-hidden="true" />
+  46:       <div>
+  47:         <strong>Modo admin</strong>
+  48:         <span>Control general del sistema.</span>
+  49:       </div>
+  50:     </div>
+  51:   </aside>
+  52: 
+  53:   <section class="admin-main">
+  54:     <header class="admin-topbar">
+  55:       <div>
+  56:         <p>Conce Barber Club</p>
+  57:         <h1>Panel de administración</h1>
+  58:       </div>
+  59: 
+  60:       <div class="admin-top-actions">
+  61:         <a class="admin-secondary-button" href="/home">Ir al inicio</a>
+  62:         <button id="admin-logout-button" class="admin-danger-ghost" type="button">
+  63:           <LogOut size={18} aria-hidden="true" />
+  64:           Salir
+  65:         </button>
+  66:       </div>
+  67:     </header>
+  68: 
+  69:     <p id="admin-dashboard-message" class="admin-message" hidden></p>
+  70: 
+  71:     <section class="admin-hero-card">
+  72:       <div>
+  73:         <span class="admin-kicker">Administración general</span>
+  74:         <h2 id="admin-welcome-title">Gestiona usuarios, barberos y permisos</h2>
+  75:         <p>
+  76:           Desde aquí puedes revisar clientes registrados, barberos activos,
+  77:           solicitudes pendientes y usuarios administradores.
+  78:         </p>
+  79:       </div>
+  80:       <button id="admin-refresh-button" class="admin-primary-button" type="button">
+  81:         Actualizar datos
+  82:       </button>
+  83:     </section>
+  84: 
+  85:     <section class="admin-stats-grid" aria-label="Resumen de usuarios">
+  86:       <article class="admin-stat-card">
+  87:         <span><Users size={24} aria-hidden="true" /></span>
+  88:         <small>Total usuarios</small>
+  89:         <strong id="stat-total">0</strong>
+  90:       </article>
+  91:       <article class="admin-stat-card">
+  92:         <span><Users size={24} aria-hidden="true" /></span>
+  93:         <small>Clientes</small>
+  94:         <strong id="stat-clientes">0</strong>
+  95:       </article>
+  96:       <article class="admin-stat-card">
+  97:         <span><Scissors size={24} aria-hidden="true" /></span>
+  98:         <small>Barberos</small>
+  99:         <strong id="stat-barberos">0</strong>
+ 100:       </article>
+ 101:       <article class="admin-stat-card is-warning">
+ 102:         <span><CalendarCheck size={24} aria-hidden="true" /></span>
+ 103:         <small>Pendientes</small>
+ 104:         <strong id="stat-pendientes">0</strong>
+ 105:       </article>
+ 106:     </section>
+ 107: 
+ 108:     <section class="admin-panel is-active" data-admin-panel="resumen">
+ 109:       <div class="admin-panel-header">
+ 110:         <div>
+ 111:           <h2>Resumen del sistema</h2>
+ 112:           <p>Vista rápida de actividad y permisos.</p>
+ 113:         </div>
+ 114:       </div>
+ 115: 
+ 116:       <div class="admin-summary-grid">
+ 117:         <article>
+ 118:           <BadgeCheck size={28} aria-hidden="true" />
+ 119:           <strong id="summary-approved">0 barberos aprobados</strong>
+ 120:           <span>Profesionales disponibles para recibir reservas.</span>
+ 121:         </article>
+ 122:         <article>
+ 123:           <UserCheck size={28} aria-hidden="true" />
+ 124:           <strong id="summary-pending">0 solicitudes pendientes</strong>
+ 125:           <span>Cuentas de barbero esperando revisión del administrador.</span>
+ 126:         </article>
+ 127:         <article>
+ 128:           <ShieldCheck size={28} aria-hidden="true" />
+ 129:           <strong id="summary-admins">0 administradores</strong>
+ 130:           <span>Usuarios con permisos de gestión.</span>
+ 131:         </article>
+ 132:       </div>
+ 133:     </section>
+ 134: 
+ 135:     <section class="admin-panel" data-admin-panel="clientes">
+ 136:       <div class="admin-panel-header">
+ 137:         <div>
+ 138:           <h2>Clientes registrados</h2>
+ 139:           <p>Lista completa de usuarios con rol de cliente.</p>
+ 140:         </div>
+ 141:       </div>
+ 142:       <div id="admin-clientes-list" class="admin-table-list"></div>
+ 143:     </section>
+ 144: 
+ 145:     <section class="admin-panel" data-admin-panel="barberos">
+ 146:       <div class="admin-panel-header">
+ 147:         <div>
+ 148:           <h2>Barberos registrados</h2>
+ 149:           <p>Incluye aprobados y pendientes, con sus servicios y lugar de trabajo.</p>
+ 150:         </div>
+ 151:       </div>
+ 152:       <div id="admin-barberos-list" class="admin-table-list"></div>
+ 153:     </section>
+ 154: 
+ 155:     <section class="admin-panel" data-admin-panel="pendientes">
+ 156:       <div class="admin-panel-header">
+ 157:         <div>
+ 158:           <h2>Solicitudes pendientes</h2>
+ 159:           <p>Aprueba cuentas de barbero para habilitar su acceso.</p>
+ 160:         </div>
+ 161:       </div>
+ 162:       <div id="admin-pendientes-list" class="admin-table-list"></div>
+ 163:     </section>
+ 164: 
+ 165:     <section class="admin-panel" data-admin-panel="admins">
+ 166:       <div class="admin-panel-header">
+ 167:         <div>
+ 168:           <h2>Administradores</h2>
+ 169:           <p>Usuarios con permisos administrativos.</p>
+ 170:         </div>
+ 171:       </div>
+ 172:       <div id="admin-admins-list" class="admin-table-list"></div>
+ 173:     </section>
+ 174:   </section>
+ 175: </main>
+ 176: 
+ 177: <div id="admin-edit-modal" class="admin-modal-backdrop" hidden>
+ 178:   <section class="admin-modal" role="dialog" aria-modal="true" aria-labelledby="admin-edit-title">
+ 179:     <div class="admin-modal-header">
+ 180:       <div>
+ 181:         <span class="admin-kicker">Editar usuario</span>
+ 182:         <h2 id="admin-edit-title">Actualizar datos</h2>
+ 183:       </div>
+ 184:       <button id="admin-edit-close" class="admin-modal-close" type="button" aria-label="Cerrar modal">×</button>
+ 185:     </div>
+ 186: 
+ 187:     <form id="admin-edit-form" class="admin-edit-form">
+ 188:       <input type="hidden" name="id" />
+ 189: 
+ 190:       <label>
+ 191:         <span>Nombre completo</span>
+ 192:         <input name="nombre" type="text" required maxlength="100" />
+ 193:       </label>
+ 194: 
+ 195:       <label>
+ 196:         <span>Email</span>
+ 197:         <input name="email" type="email" required maxlength="120" />
+ 198:       </label>
+ 199: 
+ 200:       <label>
+ 201:         <span>Teléfono</span>
+ 202:         <input name="telefono" type="tel" maxlength="30" />
+ 203:       </label>
+ 204: 
+ 205:       <label>
+ 206:         <span>Rol</span>
+ 207:         <select name="rol" required>
+ 208:           <option value="cliente">Cliente</option>
+ 209:           <option value="barbero">Barbero</option>
+ 210:           <option value="admin">Admin</option>
+ 211:         </select>
+ 212:       </label>
+ 213: 
+ 214:       <label id="admin-approved-field" class="admin-check-field">
+ 215:         <input name="aprobado" type="checkbox" />
+ 216:         <span>Cuenta aprobada</span>
+ 217:       </label>
+ 218: 
+ 219:       <label>
+ 220:         <span>Nueva contraseña <small>(opcional)</small></span>
+ 221:         <input name="password" type="password" minlength="6" placeholder="Dejar vacío para mantener la actual" />
+ 222:       </label>
+ 223: 
+ 224:       <p id="admin-edit-message" class="admin-edit-message" hidden></p>
+ 225: 
+ 226:       <div class="admin-modal-actions">
+ 227:         <button id="admin-edit-submit" class="admin-primary-button" type="submit">Guardar cambios</button>
+ 228:         <button id="admin-edit-cancel" class="admin-secondary-button" type="button">Cancelar</button>
+ 229:       </div>
+ 230:     </form>
+ 231:   </section>
+ 232: </div>
+ 233: 
+ 234: <script>
+ 235:   const API_URL = 'http://localhost:3001/api';
+ 236:   const token = localStorage.getItem('token');
+ 237:   const storedUser = localStorage.getItem('user');
+ 238: 
+ 239:   type AdminRole = 'cliente' | 'barbero' | 'admin';
+ 240: 
+ 241:   interface AdminUser {
+ 242:     id: number;
+ 243:     nombre: string;
+ 244:     email: string;
+ 245:     telefono?: string | null;
+ 246:     rol: AdminRole;
+ 247:     aprobado: boolean;
+ 248:     fecha_creacion: string;
+ 249:     perfilBarbero?: {
+ 250:       id: number;
+ 251:       biografia?: string | null;
+ 252:       lugarTrabajo?: {
+ 253:         nombre_barberia?: string | null;
+ 254:         direccion?: string | null;
+ 255:       } | null;
+ 256:       servicios?: Array<{
+ 257:         id: string;
+ 258:         nombre_servicio: string;
+ 259:         precio: number;
+ 260:         duracion_minutos: number;
+ 261:       }>;
+ 262:       _count?: {
+ 263:         citas: number;
+ 264:         servicios: number;
+ 265:       };
+ 266:     } | null;
+ 267:     _count?: {
+ 268:       citas: number;
+ 269:     };
+ 270:   }
+ 271: 
+ 272:   interface AdminDashboardResponse {
+ 273:     stats: {
+ 274:       totalUsuarios: number;
+ 275:       clientes: number;
+ 276:       barberos: number;
+ 277:       barberosAprobados: number;
+ 278:       barberosPendientes: number;
+ 279:       admins: number;
+ 280:     };
+ 281:     clientes: AdminUser[];
+ 282:     barberos: AdminUser[];
+ 283:     admins: AdminUser[];
+ 284:     barberosPendientes: AdminUser[];
+ 285:   }
+ 286: 
+ 287:   const message = document.querySelector<HTMLParagraphElement>('#admin-dashboard-message');
+ 288:   const refreshButton = document.querySelector<HTMLButtonElement>('#admin-refresh-button');
+ 289:   const logoutButton = document.querySelector<HTMLButtonElement>('#admin-logout-button');
+ 290:   const navButtons = document.querySelectorAll<HTMLButtonElement>('[data-admin-tab]');
+ 291:   const panels = document.querySelectorAll<HTMLElement>('[data-admin-panel]');
+ 292: 
+ 293:   const clientesList = document.querySelector<HTMLDivElement>('#admin-clientes-list');
+ 294:   const barberosList = document.querySelector<HTMLDivElement>('#admin-barberos-list');
+ 295:   const pendientesList = document.querySelector<HTMLDivElement>('#admin-pendientes-list');
+ 296:   const adminsList = document.querySelector<HTMLDivElement>('#admin-admins-list');
+ 297:   const editModal = document.querySelector<HTMLDivElement>('#admin-edit-modal');
+ 298:   const editForm = document.querySelector<HTMLFormElement>('#admin-edit-form');
+ 299:   const editCloseButton = document.querySelector<HTMLButtonElement>('#admin-edit-close');
+ 300:   const editCancelButton = document.querySelector<HTMLButtonElement>('#admin-edit-cancel');
+ 301:   const editSubmitButton = document.querySelector<HTMLButtonElement>('#admin-edit-submit');
+ 302:   const editMessage = document.querySelector<HTMLParagraphElement>('#admin-edit-message');
+ 303:   const approvedField = document.querySelector<HTMLLabelElement>('#admin-approved-field');
+ 304: 
+ 305:   let dashboardUsers: AdminUser[] = [];
+ 306: 
+ 307:   const getStoredUser = () => {
+ 308:     try {
+ 309:       return storedUser ? JSON.parse(storedUser) : null;
+ 310:     } catch {
+ 311:       return null;
+ 312:     }
+ 313:   };
+ 314: 
+ 315:   const escapeHtml = (value: unknown) =>
+ 316:     String(value ?? '')
+ 317:       .replace(/&/g, '&amp;')
+ 318:       .replace(/</g, '&lt;')
+ 319:       .replace(/>/g, '&gt;')
+ 320:       .replace(/"/g, '&quot;')
+ 321:       .replace(/'/g, '&#039;');
+ 322: 
+ 323:   const formatDate = (value: string) => {
+ 324:     if (!value) return '-';
+ 325:     return new Intl.DateTimeFormat('es-CL', {
+ 326:       day: '2-digit',
+ 327:       month: 'long',
+ 328:       year: 'numeric',
+ 329:     }).format(new Date(value));
+ 330:   };
+ 331: 
+ 332:   const showMessage = (text: string, type: 'success' | 'error') => {
+ 333:     if (!message) return;
+ 334:     message.textContent = text;
+ 335:     message.hidden = false;
+ 336:     message.className = `admin-message is-${type}`;
+ 337:   };
+ 338: 
+ 339:   const clearMessage = () => {
+ 340:     if (!message) return;
+ 341:     message.hidden = true;
+ 342:     message.textContent = '';
+ 343:   };
+ 344: 
+ 345:   const showEditMessage = (text: string, type: 'success' | 'error') => {
+ 346:     if (!editMessage) return;
+ 347:     editMessage.textContent = text;
+ 348:     editMessage.hidden = false;
+ 349:     editMessage.className = `admin-edit-message is-${type}`;
+ 350:   };
+ 351: 
+ 352:   const clearEditMessage = () => {
+ 353:     if (!editMessage) return;
+ 354:     editMessage.hidden = true;
+ 355:     editMessage.textContent = '';
+ 356:   };
+ 357: 
+ 358:   const toggleApprovedField = () => {
+ 359:     const role = editForm?.elements.namedItem('rol') as HTMLSelectElement | null;
+ 360:     approvedField?.classList.toggle('is-hidden', role?.value !== 'barbero');
+ 361:   };
+ 362: 
+ 363:   const closeEditModal = () => {
+ 364:     if (!editModal) return;
+ 365:     editModal.hidden = true;
+ 366:     document.body.classList.remove('admin-modal-open');
+ 367:     clearEditMessage();
+ 368:   };
+ 369: 
+ 370:   const openEditModal = (id: string) => {
+ 371:     const user = dashboardUsers.find((item) => String(item.id) === String(id));
+ 372:     if (!user || !editForm || !editModal) return;
+ 373: 
+ 374:     const idInput = editForm.elements.namedItem('id') as HTMLInputElement;
+ 375:     const nameInput = editForm.elements.namedItem('nombre') as HTMLInputElement;
+ 376:     const emailInput = editForm.elements.namedItem('email') as HTMLInputElement;
+ 377:     const phoneInput = editForm.elements.namedItem('telefono') as HTMLInputElement;
+ 378:     const roleInput = editForm.elements.namedItem('rol') as HTMLSelectElement;
+ 379:     const approvedInput = editForm.elements.namedItem('aprobado') as HTMLInputElement;
+ 380:     const passwordInput = editForm.elements.namedItem('password') as HTMLInputElement;
+ 381: 
+ 382:     idInput.value = String(user.id);
+ 383:     nameInput.value = user.nombre || '';
+ 384:     emailInput.value = user.email || '';
+ 385:     phoneInput.value = user.telefono || '';
+ 386:     roleInput.value = user.rol;
+ 387:     approvedInput.checked = user.rol !== 'barbero' ? true : Boolean(user.aprobado);
+ 388:     passwordInput.value = '';
+ 389: 
+ 390:     toggleApprovedField();
+ 391:     clearEditMessage();
+ 392:     editModal.hidden = false;
+ 393:     document.body.classList.add('admin-modal-open');
+ 394:     nameInput.focus();
+ 395:   };
+ 396: 
+ 397:   const setText = (selector: string, value: string | number) => {
+ 398:     const element = document.querySelector<HTMLElement>(selector);
+ 399:     if (element) element.textContent = String(value);
+ 400:   };
+ 401: 
+ 402:   const renderEmpty = (container: HTMLElement | null, text: string) => {
+ 403:     if (!container) return;
+ 404:     container.innerHTML = `<div class="admin-empty">${escapeHtml(text)}</div>`;
+ 405:   };
+ 406: 
+ 407:   const statusPill = (user: AdminUser) => {
+ 408:     if (user.rol !== 'barbero') return '<span class="admin-pill is-ok">Activo</span>';
+ 409:     return user.aprobado
+ 410:       ? '<span class="admin-pill is-ok">Aprobado</span>'
+ 411:       : '<span class="admin-pill is-warning">Pendiente</span>';
+ 412:   };
+ 413: 
+ 414:   const renderUserCard = (user: AdminUser, options: { showBarberInfo?: boolean; allowApprove?: boolean; allowDelete?: boolean; allowEdit?: boolean } = {}) => {
+ 415:     const profile = user.perfilBarbero;
+ 416:     const workplace = profile?.lugarTrabajo;
+ 417:     const services = profile?.servicios || [];
+ 418:     const citasCount = user.rol === 'barbero' ? profile?._count?.citas || 0 : user._count?.citas || 0;
+ 419:     const servicesCount = profile?._count?.servicios ?? services.length;
+ 420: 
+ 421:     return `
+ 422:       <article class="admin-user-card" data-user-id="${escapeHtml(user.id)}">
+ 423:         <div class="admin-user-avatar">${escapeHtml(user.nombre?.charAt(0).toUpperCase() || 'U')}</div>
+ 424:         <div class="admin-user-body">
+ 425:           <div class="admin-user-title-row">
+ 426:             <div>
+ 427:               <h3>${escapeHtml(user.nombre)}</h3>
+ 428:               <p>${escapeHtml(user.email)}</p>
+ 429:             </div>
+ 430:             ${statusPill(user)}
+ 431:           </div>
+ 432: 
+ 433:           <div class="admin-user-meta">
+ 434:             <span>Rol: ${escapeHtml(user.rol)}</span>
+ 435:             <span>Teléfono: ${escapeHtml(user.telefono || 'No registrado')}</span>
+ 436:             <span>Creado: ${escapeHtml(formatDate(user.fecha_creacion))}</span>
+ 437:             <span>Citas: ${escapeHtml(citasCount)}</span>
+ 438:           </div>
+ 439: 
+ 440:           ${options.showBarberInfo ? `
+ 441:             <div class="admin-barber-details">
+ 442:               <span>Barbería: ${escapeHtml(workplace?.nombre_barberia || 'Sin lugar registrado')}</span>
+ 443:               <span>Dirección: ${escapeHtml(workplace?.direccion || 'Sin dirección')}</span>
+ 444:               <span>Servicios: ${escapeHtml(servicesCount)}</span>
+ 445:             </div>
+ 446:             ${services.length > 0 ? `
+ 447:               <div class="admin-service-chips">
+ 448:                 ${services.map((service) => `
+ 449:                   <span>${escapeHtml(service.nombre_servicio)} · $${escapeHtml(service.precio)} · ${escapeHtml(service.duracion_minutos)} min</span>
+ 450:                 `).join('')}
+ 451:               </div>
+ 452:             ` : ''}
+ 453:           ` : ''}
+ 454:         </div>
+ 455: 
+ 456:         <div class="admin-user-actions">
+ 457:           ${options.allowEdit ? `
+ 458:             <button class="admin-edit-button" type="button" data-edit-id="${escapeHtml(user.id)}">
+ 459:               <span>Editar</span>
+ 460:             </button>
+ 461:           ` : ''}
+ 462:           ${options.allowApprove && user.rol === 'barbero' && !user.aprobado ? `
+ 463:             <button class="admin-approve-button" type="button" data-approve-id="${escapeHtml(user.id)}">
+ 464:               <span>Aprobar</span>
+ 465:             </button>
+ 466:           ` : ''}
+ 467:           ${options.allowDelete ? `
+ 468:             <button class="admin-delete-button" type="button" data-delete-id="${escapeHtml(user.id)}">
+ 469:               <span>Eliminar</span>
+ 470:             </button>
+ 471:           ` : ''}
+ 472:         </div>
+ 473:       </article>
+ 474:     `;
+ 475:   };
+ 476: 
+ 477:   const renderList = (container: HTMLElement | null, users: AdminUser[], emptyText: string, options = {}) => {
+ 478:     if (!container) return;
+ 479:     if (!users.length) {
+ 480:       renderEmpty(container, emptyText);
+ 481:       return;
+ 482:     }
+ 483:     container.innerHTML = users.map((user) => renderUserCard(user, options)).join('');
+ 484:   };
+ 485: 
+ 486:   const renderDashboard = (data: AdminDashboardResponse) => {
+ 487:     dashboardUsers = [
+ 488:       ...data.clientes,
+ 489:       ...data.barberos,
+ 490:       ...data.admins,
+ 491:     ];
+ 492: 
+ 493:     setText('#stat-total', data.stats.totalUsuarios);
+ 494:     setText('#stat-clientes', data.stats.clientes);
+ 495:     setText('#stat-barberos', data.stats.barberos);
+ 496:     setText('#stat-pendientes', data.stats.barberosPendientes);
+ 497:     setText('#summary-approved', `${data.stats.barberosAprobados} barberos aprobados`);
+ 498:     setText('#summary-pending', `${data.stats.barberosPendientes} solicitudes pendientes`);
+ 499:     setText('#summary-admins', `${data.stats.admins} administradores`);
+ 500: 
+ 501:     renderList(clientesList, data.clientes, 'No hay clientes registrados.', { allowEdit: true, allowDelete: true });
+ 502:     renderList(barberosList, data.barberos, 'No hay barberos registrados.', {
+ 503:       showBarberInfo: true,
+ 504:       allowEdit: true,
+ 505:       allowApprove: true,
+ 506:       allowDelete: true,
+ 507:     });
+ 508:     renderList(pendientesList, data.barberosPendientes, 'No hay solicitudes pendientes.', {
+ 509:       showBarberInfo: true,
+ 510:       allowEdit: true,
+ 511:       allowApprove: true,
+ 512:       allowDelete: true,
+ 513:     });
+ 514:     renderList(adminsList, data.admins, 'No hay administradores registrados.', { allowEdit: true, allowDelete: false });
+ 515:   };
+ 516: 
+ 517:   const loadDashboard = async () => {
+ 518:     clearMessage();
+ 519: 
+ 520:     if (!token) {
+ 521:       window.location.href = '/login?redirect=/admin';
+ 522:       return;
+ 523:     }
+ 524: 
+ 525:     const user = getStoredUser();
+ 526:     if (user?.rol !== 'admin') {
+ 527:       showMessage('Solo un usuario administrador puede entrar a este panel.', 'error');
+ 528:       renderEmpty(clientesList, 'Sin permisos.');
+ 529:       renderEmpty(barberosList, 'Sin permisos.');
+ 530:       renderEmpty(pendientesList, 'Sin permisos.');
+ 531:       renderEmpty(adminsList, 'Sin permisos.');
+ 532:       return;
+ 533:     }
+ 534: 
+ 535:     refreshButton?.setAttribute('disabled', 'true');
+ 536:     if (refreshButton) refreshButton.textContent = 'Actualizando...';
+ 537: 
+ 538:     try {
+ 539:       const response = await fetch(`${API_URL}/usuarios/admin/dashboard`, {
+ 540:         headers: {
+ 541:           Authorization: `Bearer ${token}`,
+ 542:         },
+ 543:       });
+ 544: 
+ 545:       const data = await response.json().catch(() => ({}));
+ 546:       if (!response.ok) {
+ 547:         throw new Error(data.message || 'No se pudo cargar el panel de administración.');
+ 548:       }
+ 549: 
+ 550:       renderDashboard(data);
+ 551:     } catch (error) {
+ 552:       const text = error instanceof Error ? error.message : 'Error al cargar el panel de administración.';
+ 553:       showMessage(text, 'error');
+ 554:     } finally {
+ 555:       refreshButton?.removeAttribute('disabled');
+ 556:       if (refreshButton) refreshButton.textContent = 'Actualizar datos';
+ 557:     }
+ 558:   };
+ 559: 
+ 560:   const approveBarber = async (id: string) => {
+ 561:     if (!token) return;
+ 562: 
+ 563:     try {
+ 564:       const response = await fetch(`${API_URL}/usuarios/${id}/aprobar-barbero`, {
+ 565:         method: 'PATCH',
+ 566:         headers: {
+ 567:           Authorization: `Bearer ${token}`,
+ 568:         },
+ 569:       });
+ 570: 
+ 571:       const data = await response.json().catch(() => ({}));
+ 572:       if (!response.ok) {
+ 573:         throw new Error(data.message || 'No se pudo aprobar el barbero.');
+ 574:       }
+ 575: 
+ 576:       showMessage('Barbero aprobado correctamente.', 'success');
+ 577:       await loadDashboard();
+ 578:     } catch (error) {
+ 579:       const text = error instanceof Error ? error.message : 'Error al aprobar barbero.';
+ 580:       showMessage(text, 'error');
+ 581:     }
+ 582:   };
+ 583: 
+ 584:   const deleteUser = async (id: string) => {
+ 585:     if (!token) return;
+ 586: 
+ 587:     const ok = window.confirm('¿Seguro que quieres eliminar este usuario? Esta acción no se puede deshacer.');
+ 588:     if (!ok) return;
+ 589: 
+ 590:     try {
+ 591:       const response = await fetch(`${API_URL}/usuarios/${id}`, {
+ 592:         method: 'DELETE',
+ 593:         headers: {
+ 594:           Authorization: `Bearer ${token}`,
+ 595:         },
+ 596:       });
+ 597: 
+ 598:       if (!response.ok) {
+ 599:         const data = await response.json().catch(() => ({}));
+ 600:         throw new Error(data.message || 'No se pudo eliminar el usuario.');
+ 601:       }
+ 602: 
+ 603:       showMessage('Usuario eliminado correctamente.', 'success');
+ 604:       await loadDashboard();
+ 605:     } catch (error) {
+ 606:       const text = error instanceof Error ? error.message : 'Error al eliminar usuario.';
+ 607:       showMessage(text, 'error');
+ 608:     }
+ 609:   };
+ 610: 
+ 611:   const updateUser = async () => {
+ 612:     if (!token || !editForm) return;
+ 613: 
+ 614:     const formData = new FormData(editForm);
+ 615:     const id = String(formData.get('id') || '');
+ 616:     const rol = String(formData.get('rol') || 'cliente') as AdminRole;
+ 617:     const password = String(formData.get('password') || '');
+ 618: 
+ 619:     const payload: {
+ 620:       nombre: string;
+ 621:       email: string;
+ 622:       telefono: string | null;
+ 623:       rol: AdminRole;
+ 624:       aprobado: boolean;
+ 625:       password?: string;
+ 626:     } = {
+ 627:       nombre: String(formData.get('nombre') || '').trim(),
+ 628:       email: String(formData.get('email') || '').trim(),
+ 629:       telefono: String(formData.get('telefono') || '').trim() || null,
+ 630:       rol,
+ 631:       aprobado: rol === 'barbero' ? Boolean(formData.get('aprobado')) : true,
+ 632:     };
+ 633: 
+ 634:     if (password.trim()) {
+ 635:       payload.password = password;
+ 636:     }
+ 637: 
+ 638:     if (!payload.nombre || !payload.email) {
+ 639:       showEditMessage('Nombre y email son obligatorios.', 'error');
+ 640:       return;
+ 641:     }
+ 642: 
+ 643:     editSubmitButton?.setAttribute('disabled', 'true');
+ 644:     if (editSubmitButton) editSubmitButton.textContent = 'Guardando...';
+ 645: 
+ 646:     try {
+ 647:       const response = await fetch(`${API_URL}/usuarios/${id}`, {
+ 648:         method: 'PUT',
+ 649:         headers: {
+ 650:           'Content-Type': 'application/json',
+ 651:           Authorization: `Bearer ${token}`,
+ 652:         },
+ 653:         body: JSON.stringify(payload),
+ 654:       });
+ 655: 
+ 656:       const data = await response.json().catch(() => ({}));
+ 657:       if (!response.ok) {
+ 658:         throw new Error(data.message || 'No se pudo actualizar el usuario.');
+ 659:       }
+ 660: 
+ 661:       closeEditModal();
+ 662:       showMessage('Usuario actualizado correctamente.', 'success');
+ 663:       await loadDashboard();
+ 664:     } catch (error) {
+ 665:       const text = error instanceof Error ? error.message : 'Error al actualizar usuario.';
+ 666:       showEditMessage(text, 'error');
+ 667:     } finally {
+ 668:       editSubmitButton?.removeAttribute('disabled');
+ 669:       if (editSubmitButton) editSubmitButton.textContent = 'Guardar cambios';
+ 670:     }
+ 671:   };
+ 672: 
+ 673:   document.addEventListener('click', (event) => {
+ 674:     const target = event.target as HTMLElement;
+ 675:     const editButton = target.closest<HTMLButtonElement>('[data-edit-id]');
+ 676:     const approveButton = target.closest<HTMLButtonElement>('[data-approve-id]');
+ 677:     const deleteButton = target.closest<HTMLButtonElement>('[data-delete-id]');
+ 678: 
+ 679:     if (editButton?.dataset.editId) {
+ 680:       openEditModal(editButton.dataset.editId);
+ 681:     }
+ 682: 
+ 683:     if (approveButton?.dataset.approveId) {
+ 684:       approveBarber(approveButton.dataset.approveId);
+ 685:     }
+ 686: 
+ 687:     if (deleteButton?.dataset.deleteId) {
+ 688:       deleteUser(deleteButton.dataset.deleteId);
+ 689:     }
+ 690:   });
+ 691: 
+ 692:   navButtons.forEach((button) => {
+ 693:     button.addEventListener('click', () => {
+ 694:       const tab = button.dataset.adminTab;
+ 695: 
+ 696:       navButtons.forEach((navButton) => navButton.classList.toggle('is-active', navButton === button));
+ 697:       panels.forEach((panel) => panel.classList.toggle('is-active', panel.dataset.adminPanel === tab));
+ 698:     });
+ 699:   });
+ 700: 
+ 701:   editForm?.addEventListener('submit', async (event) => {
+ 702:     event.preventDefault();
+ 703:     await updateUser();
+ 704:   });
+ 705: 
+ 706:   editForm?.elements.namedItem('rol')?.addEventListener('change', toggleApprovedField);
+ 707:   editCloseButton?.addEventListener('click', closeEditModal);
+ 708:   editCancelButton?.addEventListener('click', closeEditModal);
+ 709:   editModal?.addEventListener('mousedown', (event) => {
+ 710:     if (event.target === editModal) {
+ 711:       closeEditModal();
+ 712:     }
+ 713:   });
+ 714: 
+ 715:   document.addEventListener('keydown', (event) => {
+ 716:     if (event.key === 'Escape' && editModal && !editModal.hidden) {
+ 717:       closeEditModal();
+ 718:     }
+ 719:   });
+ 720: 
+ 721:   refreshButton?.addEventListener('click', loadDashboard);
+ 722:   logoutButton?.addEventListener('click', () => {
+ 723:     localStorage.removeItem('token');
+ 724:     localStorage.removeItem('user');
+ 725:     window.location.href = '/login';
+ 726:   });
+ 727: 
+ 728:   loadDashboard();
+ 729: </script>

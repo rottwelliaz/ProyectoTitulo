@@ -809,7 +809,7 @@
 .slot-modal {
   background: #061b33;
   border: 1px solid #0d47a1;
-  border-radius: 12px;
+  border-radius: 8px;
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.48);
   color: #ffffff;
   max-width: 430px;
@@ -988,7 +988,7 @@
 .service-modal {
   background: #071d37;
   border: 1px solid var(--pro-line);
-  border-radius: 12px;
+  border-radius: 8px;
   color: var(--pro-text);
   max-width: 560px;
   padding: 0;
@@ -1092,6 +1092,13 @@
 .service-form-actions .service-save-button {
   background: #0d5bd1;
   border-color: #1679ff;
+}
+
+.service-form-actions #cancel-service,
+.workplace-actions #cancel-workplace-edit,
+.workplace-actions #cancel-banking-edit {
+  border-color: rgba(228, 76, 76, 0.65);
+  color: #ff8585;
 }
 
 .service-form-actions button:disabled {
@@ -1211,13 +1218,14 @@
 }
 
 .appointment-actions .is-finish {
-  background: #0d5bd1;
-  border-color: #1679ff;
+  background: var(--pro-green);
+  border-color: rgba(37, 212, 93, 0.65);
+  color: #03111f;
 }
 
 .appointment-actions .is-proof {
-  border-color: rgba(255, 202, 34, 0.75);
-  color: var(--pro-yellow);
+  border-color: var(--pro-line);
+  color: #ffffff;
 }
 
 .appointment-actions button:disabled {

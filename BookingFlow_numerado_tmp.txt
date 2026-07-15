@@ -1,0 +1,572 @@
+   1: import { type ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
+   2: import { addDays, addWeeks, format, startOfDay } from 'date-fns';
+   3: import { es } from 'date-fns/locale';
+   4: 
+   5: interface Service {
+   6:   id: string;
+   7:   nombre_servicio: string;
+   8:   descripcion: string | null;
+   9:   precio: number;
+  10:   duracion_minutos: number;
+  11: }
+  12: 
+  13: interface Barber {
+  14:   id: number;
+  15:   biografia: string | null;
+  16:   foto_perfil: string | null;
+  17:   bancoNombre: string | null;
+  18:   bancoRut: string | null;
+  19:   bancoNombreBanco: string | null;
+  20:   bancoTipoCuenta: string | null;
+  21:   bancoNroCuenta: string | null;
+  22:   bancoCorreo: string | null;
+  23:   usuario: {
+  24:     id: number;
+  25:     nombre: string;
+  26:   };
+  27:   lugarTrabajo: {
+  28:     id: number;
+  29:     nombre_barberia: string | null;
+  30:     direccion: string | null;
+  31:   } | null;
+  32:   servicios: Service[];
+  33: }
+  34: 
+  35: interface AppointmentSlot {
+  36:   id: string;
+  37:   fecha_hora: string;
+  38: }
+  39: 
+  40: interface AvailabilityResponse {
+  41:   citas: AppointmentSlot[];
+  42:   servicios: Service[];
+  43:   message?: string;
+  44: }
+  45: 
+  46: const API_URL = 'http://localhost:3001/api';
+  47: 
+  48: const initials = (name: string) =>
+  49:   name.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'B';
+  50: 
+  51: const money = (value: number) =>
+  52:   new Intl.NumberFormat('es-CL', {
+  53:     style: 'currency',
+  54:     currency: 'CLP',
+  55:     maximumFractionDigits: 0,
+  56:   }).format(value);
+  57: 
+  58: const isFutureSlot = (slot: AppointmentSlot) => new Date(slot.fecha_hora).getTime() > Date.now();
+  59: 
+  60: export default function BookingFlow() {
+  61:   const servicesPanelRef = useRef<HTMLElement | null>(null);
+  62:   const schedulePanelRef = useRef<HTMLElement | null>(null);
+  63:   const summaryRef = useRef<HTMLDivElement | null>(null);
+  64:   const paymentPanelRef = useRef<HTMLDivElement | null>(null);
+  65:   const successMessageRef = useRef<HTMLParagraphElement | null>(null);
+  66:   const errorMessageRef = useRef<HTMLParagraphElement | null>(null);
+  67:   const [token, setToken] = useState<string | null>(null);
+  68:   const [authChecked, setAuthChecked] = useState(false);
+  69:   const [barbers, setBarbers] = useState<Barber[]>([]);
+  70:   const [selectedBarberId, setSelectedBarberId] = useState<number | null>(null);
+  71:   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
+  72:   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
+  73:   const [slots, setSlots] = useState<AppointmentSlot[]>([]);
+  74:   const [weekOffset, setWeekOffset] = useState(0);
+  75:   const [selectedDate, setSelectedDate] = useState(startOfDay(new Date()));
+  76:   const [loadingBarbers, setLoadingBarbers] = useState(true);
+  77:   const [loadingSlots, setLoadingSlots] = useState(false);
+  78:   const [booking, setBooking] = useState(false);
+  79:   const [showPayment, setShowPayment] = useState(false);
+  80:   const [proofData, setProofData] = useState('');
+  81:   const [proofName, setProofName] = useState('');
+  82:   const [message, setMessage] = useState('');
+  83:   const [error, setError] = useState('');
+  84: 
+  85:   const weekStart = useMemo(() => addWeeks(startOfDay(new Date()), weekOffset), [weekOffset]);
+  86:   const weekDays = useMemo(
+  87:     () => Array.from({ length: 7 }, (_, index) => addDays(weekStart, index)),
+  88:     [weekStart],
+  89:   );
+  90:   const selectedBarber = barbers.find((barber) => barber.id === selectedBarberId) ?? null;
+  91:   const selectedService = selectedBarber?.servicios.find((service) => service.id === selectedServiceId) ?? null;
+  92:   const selectedSlot = slots.find((slot) => slot.id === selectedSlotId) ?? null;
+  93:   const hasBankingData = Boolean(
+  94:     selectedBarber?.bancoNombre &&
+  95:     selectedBarber?.bancoRut &&
+  96:     selectedBarber?.bancoNombreBanco &&
+  97:     selectedBarber?.bancoTipoCuenta &&
+  98:     selectedBarber?.bancoNroCuenta &&
+  99:     selectedBarber?.bancoCorreo,
+ 100:   );
+ 101: 
+ 102:   const scrollToElement = (element: HTMLElement | null) => {
+ 103:     if (!element) return;
+ 104:     window.setTimeout(() => {
+ 105:       element.scrollIntoView({
+ 106:         behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+ 107:         block: 'start',
+ 108:       });
+ 109:     }, 0);
+ 110:   };
+ 111: 
+ 112:   useEffect(() => {
+ 113:     const savedToken = window.localStorage.getItem('token');
+ 114:     setToken(savedToken);
+ 115: 
+ 116:     if (!savedToken) {
+ 117:       setLoadingBarbers(false);
+ 118:       setAuthChecked(true);
+ 119:       return;
+ 120:     }
+ 121: 
+ 122:     const loadBarbers = async () => {
+ 123:       try {
+ 124:         const meResponse = await fetch(`${API_URL}/auth/me`, {
+ 125:           headers: { Authorization: `Bearer ${savedToken}` },
+ 126:         });
+ 127:         const user = await meResponse.json().catch(() => ({}));
+ 128:         if (!meResponse.ok) throw new Error('Tu sesión expiró. Inicia sesión nuevamente.');
+ 129:         if (user.rol !== 'cliente') throw new Error('Las reservas deben realizarse desde una cuenta de cliente.');
+ 130: 
+ 131:         const response = await fetch(`${API_URL}/citas/barberos`, {
+ 132:           headers: { Authorization: `Bearer ${savedToken}` },
+ 133:         });
+ 134:         const data = await response.json().catch(() => []);
+ 135:         if (!response.ok) throw new Error(data.message || 'No se pudieron cargar los barberos.');
+ 136: 
+ 137:         const availableBarbers = Array.isArray(data) ? data as Barber[] : [];
+ 138:         setBarbers(availableBarbers);
+ 139: 
+ 140:         const requestedId = Number(new URLSearchParams(window.location.search).get('barbero'));
+ 141:         if (requestedId && availableBarbers.some((barber) => barber.id === requestedId)) {
+ 142:           setSelectedBarberId(requestedId);
+ 143:         }
+ 144:       } catch (requestError) {
+ 145:         setError(requestError instanceof Error ? requestError.message : 'No se pudieron cargar los barberos.');
+ 146:       } finally {
+ 147:         setLoadingBarbers(false);
+ 148:         setAuthChecked(true);
+ 149:       }
+ 150:     };
+ 151: 
+ 152:     void loadBarbers();
+ 153:   }, []);
+ 154: 
+ 155:   useEffect(() => {
+ 156:     if (!token || !selectedBarberId) {
+ 157:       setSlots([]);
+ 158:       return;
+ 159:     }
+ 160: 
+ 161:     const loadAvailability = async () => {
+ 162:       setLoadingSlots(true);
+ 163:       setError('');
+ 164:       setSelectedSlotId(null);
+ 165: 
+ 166:       try {
+ 167:         const date = format(selectedDate, 'yyyy-MM-dd');
+ 168:         const response = await fetch(
+ 169:           `${API_URL}/citas/disponibilidad/${selectedBarberId}?fecha=${date}`,
+ 170:           { headers: { Authorization: `Bearer ${token}` } },
+ 171:         );
+ 172:         const data = await response.json().catch(() => ({})) as AvailabilityResponse;
+ 173:         if (!response.ok) throw new Error(data.message || 'No se pudo cargar la disponibilidad.');
+ 174:         setSlots(Array.isArray(data.citas) ? data.citas.filter(isFutureSlot) : []);
+ 175:       } catch (requestError) {
+ 176:         setSlots([]);
+ 177:         setError(requestError instanceof Error ? requestError.message : 'No se pudo cargar la disponibilidad.');
+ 178:       } finally {
+ 179:         setLoadingSlots(false);
+ 180:       }
+ 181:     };
+ 182: 
+ 183:     void loadAvailability();
+ 184:   }, [selectedBarberId, selectedDate, token]);
+ 185: 
+ 186:   useEffect(() => {
+ 187:     if (selectedBarber) {
+ 188:       scrollToElement(servicesPanelRef.current);
+ 189:     }
+ 190:   }, [selectedBarberId, selectedBarber]);
+ 191: 
+ 192:   useEffect(() => {
+ 193:     if (selectedService) {
+ 194:       scrollToElement(schedulePanelRef.current);
+ 195:     }
+ 196:   }, [selectedServiceId, selectedService]);
+ 197: 
+ 198:   useEffect(() => {
+ 199:     if (selectedSlot) {
+ 200:       scrollToElement(summaryRef.current);
+ 201:     }
+ 202:   }, [selectedSlotId, selectedSlot]);
+ 203: 
+ 204:   useEffect(() => {
+ 205:     if (showPayment) {
+ 206:       scrollToElement(paymentPanelRef.current);
+ 207:     }
+ 208:   }, [showPayment]);
+ 209: 
+ 210:   useEffect(() => {
+ 211:     if (message) {
+ 212:       scrollToElement(successMessageRef.current);
+ 213:     }
+ 214:   }, [message]);
+ 215: 
+ 216:   useEffect(() => {
+ 217:     if (error) {
+ 218:       scrollToElement(errorMessageRef.current);
+ 219:     }
+ 220:   }, [error]);
+ 221: 
+ 222:   const chooseBarber = (barber: Barber) => {
+ 223:     setSelectedBarberId(barber.id);
+ 224:     setSelectedServiceId(null);
+ 225:     setSelectedSlotId(null);
+ 226:     setShowPayment(false);
+ 227:     setProofData('');
+ 228:     setProofName('');
+ 229:     setMessage('');
+ 230:     setError('');
+ 231:   };
+ 232: 
+ 233:   const moveWeek = (direction: number) => {
+ 234:     const nextOffset = Math.max(0, weekOffset + direction);
+ 235:     const nextStart = addWeeks(startOfDay(new Date()), nextOffset);
+ 236:     setWeekOffset(nextOffset);
+ 237:     setSelectedDate(nextStart);
+ 238:   };
+ 239: 
+ 240:   const openPaymentStep = () => {
+ 241:     if (selectedSlot && !isFutureSlot(selectedSlot)) {
+ 242:       setSelectedSlotId(null);
+ 243:       setShowPayment(false);
+ 244:       setError('Esta hora ya pasó. Selecciona otro horario disponible.');
+ 245:       return;
+ 246:     }
+ 247: 
+ 248:     if (!hasBankingData) {
+ 249:       setError('Este barbero aun no tiene datos bancarios registrados. Intenta con otro barbero o contactalo directamente.');
+ 250:       return;
+ 251:     }
+ 252: 
+ 253:     setError('');
+ 254:     setMessage('');
+ 255:     setShowPayment(true);
+ 256:   };
+ 257: 
+ 258:   const handleProofChange = (event: ChangeEvent<HTMLInputElement>) => {
+ 259:     const file = event.target.files?.[0];
+ 260:     setProofData('');
+ 261:     setProofName('');
+ 262:     setError('');
+ 263: 
+ 264:     if (!file) return;
+ 265: 
+ 266:     const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'application/pdf'];
+ 267:     if (!allowedTypes.includes(file.type)) {
+ 268:       setError('El comprobante debe ser una imagen o PDF.');
+ 269:       event.target.value = '';
+ 270:       return;
+ 271:     }
+ 272: 
+ 273:     if (file.size > 4 * 1024 * 1024) {
+ 274:       setError('El comprobante no puede superar 4 MB.');
+ 275:       event.target.value = '';
+ 276:       return;
+ 277:     }
+ 278: 
+ 279:     const reader = new FileReader();
+ 280:     reader.addEventListener('load', () => {
+ 281:       setProofData(String(reader.result || ''));
+ 282:       setProofName(file.name);
+ 283:     });
+ 284:     reader.readAsDataURL(file);
+ 285:   };
+ 286: 
+ 287:   const confirmBooking = async () => {
+ 288:     if (!token || !selectedSlotId || !selectedServiceId) return;
+ 289:     if (selectedSlot && !isFutureSlot(selectedSlot)) {
+ 290:       setSelectedSlotId(null);
+ 291:       setShowPayment(false);
+ 292:       setError('Esta hora ya pasó. Selecciona otro horario disponible.');
+ 293:       return;
+ 294:     }
+ 295: 
+ 296:     if (!proofData) {
+ 297:       setError('Debes subir el comprobante de transferencia antes de reservar.');
+ 298:       return;
+ 299:     }
+ 300: 
+ 301:     setBooking(true);
+ 302:     setError('');
+ 303:     setMessage('');
+ 304: 
+ 305:     try {
+ 306:       const response = await fetch(`${API_URL}/citas/${selectedSlotId}/agendar`, {
+ 307:         method: 'PATCH',
+ 308:         headers: {
+ 309:           'Content-Type': 'application/json',
+ 310:           Authorization: `Bearer ${token}`,
+ 311:         },
+ 312:         body: JSON.stringify({
+ 313:           servicioId: selectedServiceId,
+ 314:           comprobanteTransferencia: proofData,
+ 315:           comprobanteNombre: proofName,
+ 316:         }),
+ 317:       });
+ 318:       const data = await response.json().catch(() => ({}));
+ 319:       if (!response.ok) throw new Error(data.message || 'No se pudo completar la reserva.');
+ 320: 
+ 321:       setSlots((current) => current.filter((slot) => slot.id !== selectedSlotId));
+ 322:       setSelectedSlotId(null);
+ 323:       setShowPayment(false);
+ 324:       setProofData('');
+ 325:       setProofName('');
+ 326:       setMessage('Hora reservada y confirmada correctamente.');
+ 327:     } catch (requestError) {
+ 328:       setError(requestError instanceof Error ? requestError.message : 'No se pudo completar la reserva.');
+ 329:     } finally {
+ 330:       setBooking(false);
+ 331:     }
+ 332:   };
+ 333: 
+ 334:   if (authChecked && !token) {
+ 335:     return (
+ 336:       <main className="booking-root booking-centered">
+ 337:         <section className="booking-auth-card">
+ 338:           <span>Reserva protegida</span>
+ 339:           <h1>Inicia sesión para reservar</h1>
+ 340:           <p>Necesitas una cuenta de cliente para elegir barbero, servicio y horario.</p>
+ 341:           <a href="/login?redirect=/booking">Iniciar sesión</a>
+ 342:         </section>
+ 343:       </main>
+ 344:     );
+ 345:   }
+ 346: 
+ 347:   return (
+ 348:     <main className="booking-root">
+ 349:       <header className="booking-header">
+ 350:         <div>
+ 351:           <a href="/home">← Volver al inicio</a>
+ 352:           <h1>Reservar hora</h1>
+ 353:           <p>Elige tu profesional, servicio y un horario disponible.</p>
+ 354:         </div>
+ 355:         <div className="booking-steps" aria-label="Pasos de la reserva">
+ 356:           <span className={selectedBarber ? 'is-complete' : 'is-current'}>1 Barbero</span>
+ 357:           <span className={selectedService ? 'is-complete' : selectedBarber ? 'is-current' : ''}>2 Servicio</span>
+ 358:           <span className={selectedSlot ? 'is-complete' : selectedService ? 'is-current' : ''}>3 Horario</span>
+ 359:         </div>
+ 360:       </header>
+ 361: 
+ 362:       <section className="booking-panel">
+ 363:         <div className="booking-section-title">
+ 364:           <span>01</span>
+ 365:           <div><h2>Selecciona un barbero</h2><p>Profesionales con lugar de trabajo registrado.</p></div>
+ 366:         </div>
+ 367: 
+ 368:         {loadingBarbers ? (
+ 369:           <p className="booking-empty">Cargando barberos...</p>
+ 370:         ) : barbers.length === 0 ? (
+ 371:           <p className="booking-empty">No hay barberos disponibles para reservar.</p>
+ 372:         ) : (
+ 373:           <div className="booking-barbers">
+ 374:             {barbers.map((barber) => (
+ 375:               <button
+ 376:                 key={barber.id}
+ 377:                 type="button"
+ 378:                 className={`booking-barber-card${selectedBarberId === barber.id ? ' is-selected' : ''}`}
+ 379:                 onClick={() => chooseBarber(barber)}
+ 380:               >
+ 381:                 <span className="booking-avatar">{initials(barber.usuario.nombre)}</span>
+ 382:                 <strong>{barber.usuario.nombre}</strong>
+ 383:                 <small>{barber.lugarTrabajo?.nombre_barberia || 'Barbería'}</small>
+ 384:                 <em>{barber.lugarTrabajo?.direccion || 'Dirección no informada'}</em>
+ 385:               </button>
+ 386:             ))}
+ 387:           </div>
+ 388:         )}
+ 389:       </section>
+ 390: 
+ 391:       {selectedBarber && (
+ 392:         <section className="booking-panel" ref={servicesPanelRef} id="servicios">
+ 393:           <div className="booking-section-title">
+ 394:             <span>02</span>
+ 395:             <div><h2>Selecciona un servicio</h2><p>Servicios ofrecidos por {selectedBarber.usuario.nombre}.</p></div>
+ 396:           </div>
+ 397: 
+ 398:           {selectedBarber.servicios.length === 0 ? (
+ 399:             <p className="booking-empty">Este barbero aun no tiene servicios registrados.</p>
+ 400:           ) : (
+ 401:             <div className="booking-services">
+ 402:               {selectedBarber.servicios.map((service) => (
+ 403:                 <button
+ 404:                   key={service.id}
+ 405:                   type="button"
+ 406:                   className={`booking-service-card${selectedServiceId === service.id ? ' is-selected' : ''}`}
+ 407:                   onClick={() => {
+ 408:                     setSelectedServiceId(service.id);
+ 409:                     setSelectedSlotId(null);
+ 410:                     setShowPayment(false);
+ 411:                     setProofData('');
+ 412:                     setProofName('');
+ 413:                   }}
+ 414:                 >
+ 415:                   <span><strong>{service.nombre_servicio}</strong><small>{service.descripcion || 'Servicio profesional'}</small></span>
+ 416:                   <span><b>{money(service.precio)}</b><em>{service.duracion_minutos} min</em></span>
+ 417:                 </button>
+ 418:               ))}
+ 419:             </div>
+ 420:           )}
+ 421:         </section>
+ 422:       )}
+ 423: 
+ 424:       {selectedBarber && selectedService && (
+ 425:         <section className="booking-panel" ref={schedulePanelRef} id="horarios">
+ 426:           <div className="booking-section-title">
+ 427:             <span>03</span>
+ 428:             <div><h2>Selecciona fecha y hora</h2><p>Solo se muestran bloques disponibles en la agenda.</p></div>
+ 429:           </div>
+ 430: 
+ 431:           <div className="booking-week-nav">
+ 432:             <button type="button" onClick={() => moveWeek(-1)} disabled={weekOffset === 0}>← Semana anterior</button>
+ 433:             <strong>{format(weekDays[0], 'd MMM', { locale: es })} – {format(weekDays[6], 'd MMM yyyy', { locale: es })}</strong>
+ 434:             <button type="button" onClick={() => moveWeek(1)}>Semana siguiente →</button>
+ 435:           </div>
+ 436: 
+ 437:           <div className="booking-days">
+ 438:             {weekDays.map((day) => {
+ 439:               const key = format(day, 'yyyy-MM-dd');
+ 440:               return (
+ 441:                 <button
+ 442:                   key={key}
+ 443:                   type="button"
+ 444:                   className={format(selectedDate, 'yyyy-MM-dd') === key ? 'is-selected' : ''}
+ 445:                   onClick={() => setSelectedDate(day)}
+ 446:                 >
+ 447:                   <span>{format(day, 'EEE', { locale: es })}</span>
+ 448:                   <strong>{format(day, 'd')}</strong>
+ 449:                   <small>{format(day, 'MMM', { locale: es })}</small>
+ 450:                 </button>
+ 451:               );
+ 452:             })}
+ 453:           </div>
+ 454: 
+ 455:           <div className="booking-slots">
+ 456:             {loadingSlots ? (
+ 457:               <p className="booking-empty">Consultando agenda...</p>
+ 458:             ) : slots.length === 0 ? (
+ 459:               <p className="booking-empty">No hay horas disponibles para esta fecha.</p>
+ 460:             ) : (
+ 461:               slots.map((slot) => (
+ 462:                 <button
+ 463:                   key={slot.id}
+ 464:                   type="button"
+ 465:                   className={selectedSlotId === slot.id ? 'is-selected' : ''}
+ 466:                   onClick={() => {
+ 467:                     setSelectedSlotId(slot.id);
+ 468:                     setShowPayment(false);
+ 469:                     setProofData('');
+ 470:                     setProofName('');
+ 471:                     setMessage('');
+ 472:                   }}
+ 473:                 >
+ 474:                   {format(new Date(slot.fecha_hora), 'HH:mm')}
+ 475:                 </button>
+ 476:               ))
+ 477:             )}
+ 478:           </div>
+ 479: 
+ 480:           {selectedSlot && (
+ 481:             <div className="booking-summary" ref={summaryRef} id="resumen-reserva">
+ 482:               <div>
+ 483:                 <span>Resumen</span>
+ 484:                 <strong>{selectedBarber.usuario.nombre} · {selectedService.nombre_servicio}</strong>
+ 485:                 <p>{format(new Date(selectedSlot.fecha_hora), "EEEE d 'de' MMMM, HH:mm", { locale: es })}</p>
+ 486:               </div>
+ 487:               <button type="button" disabled={booking} onClick={openPaymentStep}>
+ 488:                 Confirmar reserva
+ 489:               </button>
+ 490:             </div>
+ 491:           )}
+ 492: 
+ 493:           {selectedSlot && showPayment && (
+ 494:             <div className="booking-payment" ref={paymentPanelRef}>
+ 495:               <div className="booking-section-title">
+ 496:                 <span>04</span>
+ 497:                 <div>
+ 498:                   <h2>Transferencia y comprobante</h2>
+ 499:                   <p>Transfiere al barbero y sube el comprobante para confirmar tu reserva.</p>
+ 500:                 </div>
+ 501:               </div>
+ 502: 
+ 503:               {hasBankingData ? (
+ 504:                 <div className="booking-bank-grid">
+ 505:                   <div>
+ 506:                     <span>Nombre</span>
+ 507:                     <strong>{selectedBarber.bancoNombre}</strong>
+ 508:                   </div>
+ 509:                   <div>
+ 510:                     <span>RUT</span>
+ 511:                     <strong>{selectedBarber.bancoRut}</strong>
+ 512:                   </div>
+ 513:                   <div>
+ 514:                     <span>Banco</span>
+ 515:                     <strong>{selectedBarber.bancoNombreBanco}</strong>
+ 516:                   </div>
+ 517:                   <div>
+ 518:                     <span>Tipo de cuenta</span>
+ 519:                     <strong>{selectedBarber.bancoTipoCuenta}</strong>
+ 520:                   </div>
+ 521:                   <div>
+ 522:                     <span>N.º de cuenta</span>
+ 523:                     <strong>{selectedBarber.bancoNroCuenta}</strong>
+ 524:                   </div>
+ 525:                   <div>
+ 526:                     <span>Correo</span>
+ 527:                     <strong>{selectedBarber.bancoCorreo}</strong>
+ 528:                   </div>
+ 529:                 </div>
+ 530:               ) : (
+ 531:                 <p className="booking-empty">Este barbero aun no tiene datos bancarios registrados.</p>
+ 532:               )}
+ 533: 
+ 534:               <label className="booking-proof-field">
+ 535:                 Comprobante de transferencia
+ 536:                 <input
+ 537:                   type="file"
+ 538:                   accept="image/png,image/jpeg,image/webp,application/pdf"
+ 539:                   onChange={handleProofChange}
+ 540:                 />
+ 541:                 <small>Formatos permitidos: PNG, JPG, WEBP o PDF. Maximo 4 MB.</small>
+ 542:               </label>
+ 543: 
+ 544:               {proofName && <p className="booking-proof-name">Comprobante cargado: {proofName}</p>}
+ 545: 
+ 546:               <div className="booking-payment-actions">
+ 547:                 <button type="button" onClick={() => setShowPayment(false)} disabled={booking}>
+ 548:                   Volver
+ 549:                 </button>
+ 550:                 <button type="button" disabled={booking || !proofData || !hasBankingData} onClick={confirmBooking}>
+ 551:                   {booking ? 'Reservando...' : 'Reservar con comprobante'}
+ 552:                 </button>
+ 553:               </div>
+ 554:             </div>
+ 555:           )}
+ 556: 
+ 557:           {message && (
+ 558:             <p className="booking-alert booking-alert-bottom is-success" role="status" ref={successMessageRef}>
+ 559:               {message}
+ 560:             </p>
+ 561:           )}
+ 562:         </section>
+ 563:       )}
+ 564: 
+ 565:       {error && (
+ 566:         <p className="booking-alert booking-alert-bottom is-error" role="alert" ref={errorMessageRef}>
+ 567:           {error}
+ 568:         </p>
+ 569:       )}
+ 570:     </main>
+ 571:   );
+ 572: }

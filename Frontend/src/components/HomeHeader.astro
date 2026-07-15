@@ -13,10 +13,10 @@ const { logoSrc } = Astro.props;
     <img src={logoSrc} alt="Conce Barber Club" />
   </a>
 
-  <label class="search-pill">
+  <form id="home-search-form" class="search-pill" action="/barberos" method="get">
     <Search class="search-lucide-icon" size={20} aria-hidden="true" />
-    <input type="search" placeholder="Buscar barberías o barberos..." />
-  </label>
+    <input id="home-search-input" name="buscar" type="search" placeholder="Buscar barberías o barberos..." />
+  </form>
 
   <nav class="home-nav" aria-label="Navegación principal">
     <a class="nav-link active" href="/home#inicio">Inicio</a>
@@ -72,6 +72,8 @@ const { logoSrc } = Astro.props;
   const professionalProfileLink = document.querySelector<HTMLAnchorElement>('#professional-profile-link');
   const adminBarbersLink = document.querySelector<HTMLAnchorElement>('#admin-barbers-link');
   const logoutButton = document.querySelector<HTMLButtonElement>('#logout-button');
+  const homeSearchForm = document.querySelector<HTMLFormElement>('#home-search-form');
+  const homeSearchInput = document.querySelector<HTMLInputElement>('#home-search-input');
   const token = localStorage.getItem('token');
 
   const getStoredUser = () => {
@@ -147,5 +149,13 @@ const { logoSrc } = Astro.props;
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     window.location.href = '/login';
+  });
+
+  homeSearchForm?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const search = homeSearchInput?.value.trim() || '';
+    const params = new URLSearchParams();
+    if (search) params.set('buscar', search);
+    window.location.href = `/barberos${params.toString() ? `?${params.toString()}` : ''}`;
   });
 </script>
