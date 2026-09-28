@@ -81,6 +81,10 @@ export default function BookingFlow() {
   const [proofName, setProofName] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const requestedBarberId = useMemo(() => {
+    if (typeof window === 'undefined') return null;
+    return Number(new URLSearchParams(window.location.search).get('barbero')) || null;
+  }, []);
 
   const weekStart = useMemo(() => addWeeks(startOfDay(new Date()), weekOffset), [weekOffset]);
   const weekDays = useMemo(
@@ -135,11 +139,18 @@ export default function BookingFlow() {
         if (!response.ok) throw new Error(data.message || 'No se pudieron cargar los barberos.');
 
         const availableBarbers = Array.isArray(data) ? data as Barber[] : [];
-        setBarbers(availableBarbers);
+        const requestedBarber = requestedBarberId
+          ? availableBarbers.find((barber) => barber.id === requestedBarberId)
+          : null;
 
-        const requestedId = Number(new URLSearchParams(window.location.search).get('barbero'));
-        if (requestedId && availableBarbers.some((barber) => barber.id === requestedId)) {
-          setSelectedBarberId(requestedId);
+        if (requestedBarberId && requestedBarber) {
+          setBarbers([requestedBarber]);
+          setSelectedBarberId(requestedBarberId);
+        } else {
+          setBarbers(availableBarbers);
+          if (requestedBarberId) {
+            setError('El barbero seleccionado no está disponible para reservar.');
+          }
         }
       } catch (requestError) {
         setError(requestError instanceof Error ? requestError.message : 'No se pudieron cargar los barberos.');
@@ -150,7 +161,7 @@ export default function BookingFlow() {
     };
 
     void loadBarbers();
-  }, []);
+  }, [requestedBarberId]);
 
   useEffect(() => {
     if (!token || !selectedBarberId) {
@@ -362,7 +373,10 @@ export default function BookingFlow() {
       <section className="booking-panel">
         <div className="booking-section-title">
           <span>01</span>
-          <div><h2>Selecciona un barbero</h2><p>Profesionales con lugar de trabajo registrado.</p></div>
+          <div>
+            <h2>{requestedBarberId ? 'Barbero seleccionado' : 'Selecciona un barbero'}</h2>
+            <p>{requestedBarberId ? 'Perfil elegido desde la página de barberos.' : 'Profesionales con lugar de trabajo registrado.'}</p>
+          </div>
         </div>
 
         {loadingBarbers ? (
@@ -378,7 +392,12 @@ export default function BookingFlow() {
                 className={`booking-barber-card${selectedBarberId === barber.id ? ' is-selected' : ''}`}
                 onClick={() => chooseBarber(barber)}
               >
-                <span className="booking-avatar">{initials(barber.usuario.nombre)}</span>
+                <span
+                  className={`booking-avatar${barber.foto_perfil ? ' has-photo' : ''}`}
+                  style={barber.foto_perfil ? { backgroundImage: `url(${JSON.stringify(barber.foto_perfil)})` } : undefined}
+                >
+                  {!barber.foto_perfil && initials(barber.usuario.nombre)}
+                </span>
                 <strong>{barber.usuario.nombre}</strong>
                 <small>{barber.lugarTrabajo?.nombre_barberia || 'Barbería'}</small>
                 <em>{barber.lugarTrabajo?.direccion || 'Dirección no informada'}</em>

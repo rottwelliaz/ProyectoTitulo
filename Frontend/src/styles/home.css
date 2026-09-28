@@ -485,6 +485,20 @@
   font-weight: 950;
 }
 
+.barber-avatar.has-photo {
+  background-position: center;
+  background-size: cover;
+}
+
+.barber-avatar.has-photo span {
+  display: none;
+}
+
+.profile-circle.has-photo {
+  background-position: center;
+  background-size: cover;
+}
+
 .barber-card h3 {
   font-size: 1.4rem;
   margin: 0 0 0.25rem;
@@ -712,6 +726,125 @@
   font-size: 0.82rem;
   margin: 1.5rem 0 0;
   text-align: center;
+}
+
+html[data-theme='light'] .home-hero-shell {
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.99) 0%, rgba(248, 250, 252, 0.97) 50%, rgba(248, 250, 252, 0.88) 100%),
+    var(--conce-bg) !important;
+  background-position: center !important;
+  background-size: cover !important;
+}
+
+html[data-theme='light'] .home-hero-shell :is(.hero-title, .benefit-strip h2, .nav-link, .profile-name) {
+  color: #0f172a !important;
+}
+
+html[data-theme='light'] .home-hero-shell :is(.hero-sub, .benefit-strip p) {
+  color: #526175 !important;
+}
+
+html[data-theme='light'] .search-pill {
+  background: #ffffff;
+  border-color: #cbd8eb;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+}
+
+html[data-theme='light'] .search-pill input {
+  color: #0f172a;
+}
+
+html[data-theme='light'] .search-pill input::placeholder {
+  color: #64748b;
+}
+
+html[data-theme='light'] .profile-circle {
+  border-color: #cbd8eb;
+}
+
+html[data-theme='light'] .btn-secondary {
+  background: #ffffff;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+html[data-theme='light'] .benefit-strip {
+  background: rgba(255, 255, 255, 0.94);
+  border-color: #cbd8eb;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+}
+
+html[data-theme='light'] .benefit-icon {
+  background: #e5efff;
+  color: #1261d8;
+}
+
+html[data-theme='light'] .home-main {
+  background: transparent !important;
+}
+
+html[data-theme='light'] :is(.barber-card, .how-card, .barber-invite) {
+  background: #ffffff !important;
+  border-color: #d5deea !important;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+}
+
+html[data-theme='light'] :is(.barber-card h3, .how-card h3, .barber-invite h2, .section-heading h2) {
+  color: #0f172a !important;
+}
+
+html[data-theme='light'] :is(.how-card p, .barber-invite p, .barber-invite-action span, .barbers-message) {
+  color: #526175 !important;
+}
+
+html[data-theme='light'] .barber-card .barber-specialty {
+  color: #1d5fbe !important;
+}
+
+html[data-theme='light'] .tone-verde .barber-specialty {
+  color: #137a35 !important;
+}
+
+html[data-theme='light'] .tone-amarillo .barber-specialty {
+  color: #8a6500 !important;
+}
+
+html[data-theme='light'] .home-cta {
+  box-shadow: 0 12px 28px rgba(18, 97, 216, 0.2);
+}
+
+html[data-theme='light'] .home-cta :is(h2, p) {
+  color: #ffffff !important;
+}
+
+html[data-theme='light'] .home-footer {
+  border-top: 1px solid #d5deea;
+}
+
+html[data-theme='light'] .home-footer :is(h2, a, p) {
+  color: #526175 !important;
+}
+
+html[data-theme='light'] .home-footer h2 {
+  color: #0f172a !important;
+}
+
+html[data-theme='light'] .home-footer a:hover {
+  color: #1261d8 !important;
+}
+
+html[data-theme='light'] .social-links a {
+  background: #ffffff;
+  border-color: #cbd8eb;
+}
+
+html[data-theme='dark'] :is(.barber-card, .how-card, .barber-invite) {
+  background: #15171c !important;
+  border-color: #343842 !important;
+}
+
+html[data-theme='dark'] .home-footer {
+  border-top: 1px solid #282c34;
 }
 
 @media (max-width: 980px) {

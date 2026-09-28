@@ -9,13 +9,178 @@
 }
 
 html {
+  color-scheme: dark;
   scroll-behavior: smooth;
 }
 
+html[data-theme='light'] {
+  color-scheme: light;
+}
+
+html[data-theme='dark'] {
+  color-scheme: dark;
+}
+
 body {
+  background: #020b18;
   margin: 0;
   min-width: 320px;
   overflow-x: hidden;
+}
+
+html[data-theme='light'] body {
+  background: #f4f7fb;
+}
+
+html[data-theme='dark'] body {
+  background: #08090c;
+}
+
+/* Temas globales. "Original" conserva la identidad azul existente. */
+html[data-theme='light'] :is(.profile-root, .booking-root, .admin-root, .pro-root, .barbers-page, .home-root) {
+  --ink: #0f172a;
+  --muted: #526175;
+  --line: rgba(37, 99, 235, 0.2);
+  --booking-bg: #f4f7fb;
+  --booking-card: #ffffff;
+  --booking-line: #cbd8eb;
+  --booking-text: #0f172a;
+  --booking-muted: #526175;
+  --admin-bg: #f4f7fb;
+  --admin-card: #ffffff;
+  --admin-card-soft: rgba(255, 255, 255, 0.9);
+  --admin-border: #cbd8eb;
+  --admin-text: #0f172a;
+  --admin-muted: #526175;
+  --pro-bg: #f4f7fb;
+  --pro-panel: rgba(255, 255, 255, 0.96);
+  --pro-panel-soft: rgba(241, 245, 249, 0.96);
+  --pro-line: #cbd8eb;
+  --pro-text: #0f172a;
+  --pro-muted: #526175;
+}
+
+html[data-theme='light'] :is(.profile-root, .booking-root, .admin-root, .pro-root, .barbers-page, .home-root) {
+  background: radial-gradient(circle at 75% 8%, rgba(37, 99, 235, 0.1), transparent 28rem), #f4f7fb !important;
+  color: #0f172a;
+}
+
+html[data-theme='light'] :is(.profile-main, .profile-topbar, .profile-sidebar, .admin-sidebar, .pro-sidebar, .barbers-header, .home-main) {
+  background-color: #f8fafc !important;
+  color: #0f172a;
+}
+
+html[data-theme='light'] :is(.profile-card, .booking-auth-card, .booking-panel, .admin-panel, .admin-sidebar-card, .pro-panel, .pro-hero, .barber-profile-card, .barbers-filters) {
+  background: #ffffff !important;
+  border-color: #cbd8eb !important;
+  box-shadow: 0 14px 36px rgba(15, 23, 42, 0.09) !important;
+}
+
+html[data-theme='light'] :is(.profile-card-title, .profile-summary h1, .profile-field-label, .profile-pill, .profile-date, .client-appointment-detail strong, .barbers-page h1, .barbers-page h2, .barbers-nav a, .barbers-profile, .filter-select strong, .filter-select select, .barbers-results-row p, .barber-meta, .home-root h2, .home-root h3, .admin-root h1, .admin-root h2, .pro-root h1, .pro-root h2, .booking-root h1, .booking-root h2) {
+  color: #0f172a !important;
+}
+
+html[data-theme='light'] :is(.barbers-hero p, .barber-service-summary span, .home-root p, .admin-root p, .pro-root p, .booking-root p) {
+  color: #526175 !important;
+}
+
+html[data-theme='light'] :is(.barbers-search-field, .barbers-top-search, .filter-select, .client-appointment-item) {
+  background: #ffffff !important;
+  border-color: #cbd8eb !important;
+  color: #0f172a !important;
+}
+
+html[data-theme='light'] :is(.barbers-search-field input, .barbers-top-search input, .profile-field input) {
+  color: #0f172a !important;
+}
+
+html[data-theme='light'] :is(.barbers-search-field input, .barbers-top-search input)::placeholder {
+  color: #64748b !important;
+}
+
+html[data-theme='light'] .profile-sidebar-link:not(.is-active) {
+  color: #334155;
+}
+
+html[data-theme='light'] .settings-home-link {
+  color: #0f172a;
+}
+
+html[data-theme='light'] body > main.min-h-screen:not([style]) {
+  background: #f4f7fb !important;
+  color: #0f172a !important;
+}
+
+html[data-theme='light'] body > main.min-h-screen:not([style]) section > div > div.rounded-lg {
+  background: #ffffff !important;
+  border-color: #cbd8eb !important;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.1) !important;
+}
+
+html[data-theme='light'] body > main.min-h-screen:not([style]) :is(h1, label, legend, .text-white) {
+  color: #0f172a !important;
+}
+
+html[data-theme='light'] body > main.min-h-screen:not([style]) :is(input, label.rounded-lg) {
+  background: #ffffff !important;
+  border-color: #cbd8eb !important;
+  color: #0f172a !important;
+}
+
+html[data-theme='light'] body > main.min-h-screen:not([style]) :is(.text-\[\#C7D2E1\], .placeholder\:text-\[\#8798B3\]) {
+  color: #526175 !important;
+}
+
+html[data-theme='dark'] :is(.profile-root, .booking-root, .admin-root, .pro-root, .barbers-page, .home-root) {
+  --navy: #08090c;
+  --navy-2: #111318;
+  --ink: #f8fafc;
+  --muted: #aeb6c2;
+  --line: rgba(148, 163, 184, 0.2);
+  --booking-bg: #08090c;
+  --booking-card: #15171c;
+  --booking-line: #343842;
+  --booking-text: #f8fafc;
+  --booking-muted: #aeb6c2;
+  --admin-bg: #08090c;
+  --admin-card: #15171c;
+  --admin-card-soft: rgba(21, 23, 28, 0.9);
+  --admin-border: #343842;
+  --admin-text: #f8fafc;
+  --admin-muted: #aeb6c2;
+  --pro-bg: #08090c;
+  --pro-panel: rgba(21, 23, 28, 0.96);
+  --pro-panel-soft: rgba(27, 30, 36, 0.96);
+  --pro-line: #343842;
+  --pro-text: #f8fafc;
+  --pro-muted: #aeb6c2;
+}
+
+html[data-theme='dark'] :is(.profile-root, .booking-root, .admin-root, .pro-root, .barbers-page, .home-root) {
+  background: radial-gradient(circle at 75% 8%, rgba(37, 99, 235, 0.08), transparent 26rem), #08090c !important;
+}
+
+html[data-theme='dark'] :is(.profile-main, .profile-topbar, .profile-sidebar, .admin-sidebar, .pro-sidebar) {
+  background: #0c0e12 !important;
+}
+
+html[data-theme='dark'] :is(.profile-card, .booking-auth-card, .booking-panel, .admin-panel, .admin-sidebar-card, .pro-panel, .pro-hero, .barber-profile-card, .barbers-filters) {
+  background: #15171c !important;
+  border-color: #343842 !important;
+}
+
+html[data-theme='dark'] body > main.min-h-screen:not([style]) {
+  background: #08090c !important;
+}
+
+html[data-theme='dark'] body > main.min-h-screen:not([style]) section > div > div.rounded-lg {
+  background: #15171c !important;
+  border-color: #343842 !important;
+}
+
+html[data-theme='dark'] body > main.min-h-screen:not([style]) :is(input, label.rounded-lg) {
+  background: #0c0e12 !important;
+  border-color: #343842 !important;
 }
 
 img,

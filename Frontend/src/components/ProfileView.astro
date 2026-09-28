@@ -48,7 +48,7 @@ import logoConce from '../assets/logotesis.png';
           aria-expanded="false"
           aria-controls="profile-dropdown"
         >
-          <span class="profile-mini-avatar" aria-hidden="true"></span>
+          <span class="profile-mini-avatar" data-user-avatar aria-hidden="true"></span>
           <span class="profile-chip-text">
             <strong id="profile-header-name">Cargando...</strong>
             <span id="profile-header-role">-</span>
@@ -75,7 +75,7 @@ import logoConce from '../assets/logotesis.png';
     <div class="profile-content">
       <article class="profile-card profile-identity">
         <div class="profile-photo-wrap">
-          <div class="profile-photo" aria-hidden="true"></div>
+          <div class="profile-photo" data-user-avatar aria-hidden="true"></div>
           <input id="profile-photo-input" class="profile-photo-input" type="file" accept="image/*" />
           <button id="profile-camera-button" class="profile-camera-button" type="button" aria-label="Cambiar foto">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4h-5L8 6H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3l-1.5-2Z"/><circle cx="12" cy="13" r="3"/></svg>
@@ -219,6 +219,9 @@ import logoConce from '../assets/logotesis.png';
     telefono: string | null;
     rol: string;
     fecha_creacion: string;
+    perfilBarbero?: {
+      foto_perfil?: string | null;
+    } | null;
   } | null = null;
 
   const showMessage = (text: string, type: 'success' | 'error' | 'info' = 'info') => {
@@ -243,10 +246,13 @@ import logoConce from '../assets/logotesis.png';
         element.classList.remove('has-photo');
       }
     });
+    window.dispatchEvent(new CustomEvent('profile-photo-change', { detail: imageData }));
   };
 
   const loadSavedPhoto = () => {
-    setProfilePhoto(localStorage.getItem(getPhotoStorageKey()));
+    setProfilePhoto(
+      localStorage.getItem(getPhotoStorageKey()) || currentUser?.perfilBarbero?.foto_perfil || null,
+    );
   };
 
   const closeProfileMenu = () => {
@@ -456,7 +462,10 @@ import logoConce from '../assets/logotesis.png';
       }
 
       currentUser = data;
-      localStorage.setItem('user', JSON.stringify(data));
+      const cachedUser = data?.perfilBarbero
+        ? { ...data, perfilBarbero: { ...data.perfilBarbero, foto_perfil: null } }
+        : data;
+      localStorage.setItem('user', JSON.stringify(cachedUser));
       renderUser(currentUser);
       loadSavedPhoto();
       if (data.rol === 'cliente') await loadClientAppointments();
@@ -484,12 +493,38 @@ import logoConce from '../assets/logotesis.png';
       return;
     }
 
+    if (file.size > 4 * 1024 * 1024) {
+      showMessage('La imagen no puede superar 4 MB.', 'error');
+      photoInput.value = '';
+      return;
+    }
+
     const reader = new FileReader();
-    reader.addEventListener('load', () => {
+    reader.addEventListener('load', async () => {
       const imageData = String(reader.result || '');
       localStorage.setItem(getPhotoStorageKey(), imageData);
       setProfilePhoto(imageData);
-      showMessage('Foto actualizada correctamente.', 'success');
+
+      if (currentUser?.rol === 'barbero' && token) {
+        try {
+          const response = await fetch(`${API_URL}/auth/me/photo`, {
+            method: 'PUT',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ foto_perfil: imageData }),
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(data.message || 'No se pudo publicar la foto.');
+
+          showMessage('Foto actualizada en todo tu perfil.', 'success');
+        } catch (error) {
+          showMessage(error instanceof Error ? error.message : 'La foto se guardó solo en este dispositivo.', 'error');
+        }
+      } else {
+        showMessage('Foto actualizada en todo tu perfil.', 'success');
+      }
     });
     reader.readAsDataURL(file);
   });

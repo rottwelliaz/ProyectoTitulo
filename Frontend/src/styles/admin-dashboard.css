@@ -399,6 +399,11 @@
   width: 54px;
 }
 
+.admin-user-avatar.has-photo {
+  background-position: center;
+  background-size: cover;
+}
+
 .admin-user-title-row {
   align-items: flex-start;
   display: flex;

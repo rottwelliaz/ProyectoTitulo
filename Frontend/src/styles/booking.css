@@ -248,6 +248,11 @@
   width: 46px;
 }
 
+.booking-avatar.has-photo {
+  background-position: center;
+  background-size: cover;
+}
+
 .booking-barber-card strong {
   font-size: 1rem;
 }

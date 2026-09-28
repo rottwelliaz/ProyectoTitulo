@@ -249,6 +249,7 @@ import {
     perfilBarbero?: {
       id: number;
       biografia?: string | null;
+      foto_perfil?: string | null;
       lugarTrabajo?: {
         nombre_barberia?: string | null;
         direccion?: string | null;
@@ -415,12 +416,15 @@ import {
     const profile = user.perfilBarbero;
     const workplace = profile?.lugarTrabajo;
     const services = profile?.servicios || [];
+    const photo = profile?.foto_perfil || '';
     const citasCount = user.rol === 'barbero' ? profile?._count?.citas || 0 : user._count?.citas || 0;
     const servicesCount = profile?._count?.servicios ?? services.length;
 
     return `
       <article class="admin-user-card" data-user-id="${escapeHtml(user.id)}">
-        <div class="admin-user-avatar">${escapeHtml(user.nombre?.charAt(0).toUpperCase() || 'U')}</div>
+        <div class="admin-user-avatar ${photo ? 'has-photo' : ''}"${photo ? ` style="background-image: url('${photo}')"` : ''}>
+          ${photo ? '' : escapeHtml(user.nombre?.charAt(0).toUpperCase() || 'U')}
+        </div>
         <div class="admin-user-body">
           <div class="admin-user-title-row">
             <div>

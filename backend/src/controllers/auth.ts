@@ -133,6 +133,40 @@ export const updateMe = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const updateProfilePhoto = async (req: AuthRequest, res: Response) => {
+  try {
+    if (req.user?.rol !== 'barbero') {
+      return res.status(403).json({ message: 'Solo los barberos tienen una foto profesional pública' });
+    }
+
+    const fotoPerfil = req.body?.foto_perfil;
+    if (typeof fotoPerfil !== 'string' || !/^data:image\/(png|jpeg|jpg|webp);base64,/.test(fotoPerfil)) {
+      return res.status(400).json({ message: 'La foto de perfil debe ser una imagen válida' });
+    }
+    if (fotoPerfil.length > 5_500_000) {
+      return res.status(400).json({ message: 'La foto de perfil no puede superar 4 MB' });
+    }
+
+    const profile = await prisma.barberProfile.findUnique({
+      where: { usuarioId: req.user.id },
+    });
+    if (!profile) {
+      return res.status(404).json({ message: 'No tienes perfil profesional creado' });
+    }
+
+    const updated = await prisma.barberProfile.update({
+      where: { id: profile.id },
+      data: { foto_perfil: fotoPerfil },
+      select: { id: true, foto_perfil: true },
+    });
+
+    return res.json(updated);
+  } catch (error) {
+    console.error('updateProfilePhoto error', error);
+    return res.status(500).json({ message: 'Error al actualizar la foto de perfil' });
+  }
+};
+
 export const updateBankingData = async (req: AuthRequest, res: Response) => {
   try {
     if (req.user?.rol !== 'barbero') {
@@ -181,4 +215,4 @@ export const updateBankingData = async (req: AuthRequest, res: Response) => {
     return res.status(500).json({ message: 'Error al actualizar datos bancarios' });
   }
 };
-export default { login, getMe, updateMe, updateBankingData };
+export default { login, getMe, updateMe, updateProfilePhoto, updateBankingData };

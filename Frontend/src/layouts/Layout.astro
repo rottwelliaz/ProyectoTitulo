@@ -13,12 +13,71 @@ const { title } = Astro.props;
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
+    <meta id="theme-color" name="theme-color" content="#020b18" />
+    <script is:inline>
+      (() => {
+        const savedTheme = localStorage.getItem('ui-theme');
+        const theme = ['original', 'light', 'dark'].includes(savedTheme) ? savedTheme : 'original';
+        document.documentElement.dataset.theme = theme;
+      })();
+    </script>
     <title>{title}</title>
   </head>
   <body>
     <slot />
 
     <script>
+      const updateThemeColor = () => {
+        const colors: Record<string, string> = {
+          original: '#020b18',
+          light: '#f4f7fb',
+          dark: '#08090c',
+        };
+        const theme = document.documentElement.dataset.theme || 'original';
+        document.querySelector<HTMLMetaElement>('#theme-color')?.setAttribute('content', colors[theme] || colors.original);
+      };
+
+      updateThemeColor();
+      window.addEventListener('ui-theme-change', updateThemeColor);
+      window.addEventListener('storage', (event) => {
+        if (event.key !== 'ui-theme') return;
+        const theme = ['original', 'light', 'dark'].includes(event.newValue || '') ? event.newValue! : 'original';
+        document.documentElement.dataset.theme = theme;
+        updateThemeColor();
+      });
+
+      const getSavedUser = () => {
+        try {
+          return JSON.parse(localStorage.getItem('user') || 'null');
+        } catch {
+          return null;
+        }
+      };
+
+      const getCurrentProfilePhoto = () => {
+        const user = getSavedUser();
+        if (!user?.id) return user?.perfilBarbero?.foto_perfil || null;
+        return localStorage.getItem(`profile-photo-${user.id}`) || user?.perfilBarbero?.foto_perfil || null;
+      };
+
+      const applyCurrentProfilePhoto = (photo = getCurrentProfilePhoto()) => {
+        document.querySelectorAll<HTMLElement>('[data-user-avatar]').forEach((avatar) => {
+          avatar.classList.toggle('has-photo', Boolean(photo));
+          avatar.style.backgroundImage = photo ? `url(${JSON.stringify(photo)})` : '';
+          avatar.querySelector<HTMLElement>('[data-avatar-fallback]')?.classList.toggle('hidden', Boolean(photo));
+        });
+      };
+
+      applyCurrentProfilePhoto();
+      window.addEventListener('profile-photo-change', (event) => {
+        applyCurrentProfilePhoto((event as CustomEvent<string | null>).detail || null);
+      });
+      window.addEventListener('storage', (event) => {
+        if (event.key === 'user' || event.key?.startsWith('profile-photo-')) {
+          applyCurrentProfilePhoto();
+        }
+      });
+
       const prefersReducedMotion = () =>
         window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 

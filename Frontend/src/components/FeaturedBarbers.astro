@@ -22,6 +22,7 @@
     perfilBarbero?: {
       id?: number;
       biografia?: string | null;
+      foto_perfil?: string | null;
       lugarTrabajo?: {
         nombre_barberia?: string | null;
       } | null;
@@ -37,6 +38,20 @@
       .join('') || 'B';
 
   const getTone = (index: number) => ['azul', 'verde', 'amarillo'][index % 3];
+
+  const getDisplayedPhoto = (barber: BarberUser) => {
+    try {
+      const currentUser = JSON.parse(localStorage.getItem('user') || 'null');
+      if (currentUser?.id === barber.id) {
+        const localPhoto = localStorage.getItem(`profile-photo-${barber.id}`);
+        if (localPhoto) return localPhoto;
+      }
+    } catch {
+      // Si la sesión local está dañada, se utiliza la foto pública del backend.
+    }
+
+    return barber.perfilBarbero?.foto_perfil || '';
+  };
 
   const getRandomBarbers = (barbers: BarberUser[], limit = 4) =>
     [...barbers]
@@ -72,10 +87,11 @@
         const initials = getInitials(barber.nombre);
         const workplace = barber.perfilBarbero?.lugarTrabajo?.nombre_barberia || 'Barbero disponible';
         const bookingUrl = barber.perfilBarbero?.id ? `/booking?barbero=${barber.perfilBarbero.id}#servicios` : '/booking';
+        const photo = getDisplayedPhoto(barber);
 
         return `
           <article class="barber-card tone-${tone}">
-            <div class="barber-avatar">
+            <div class="barber-avatar ${photo ? 'has-photo' : ''}"${photo ? ` style="background-image: url('${photo}')"` : ''}>
               <span>${escapeHtml(initials)}</span>
             </div>
             <h3>${escapeHtml(barber.nombre)}</h3>

@@ -11,8 +11,8 @@ const getOwnBarberProfile = async (userId: number) => {
   });
 };
 
-const isExactHourBlock = (date: Date): boolean =>
-  date.getMinutes() === 0 && date.getSeconds() === 0 && date.getMilliseconds() === 0;
+const isValidAvailabilityBlock = (date: Date): boolean =>
+  date.getMinutes() % 5 === 0 && date.getSeconds() === 0 && date.getMilliseconds() === 0;
 
 const isFutureDate = (date: Date): boolean => date.getTime() > Date.now();
 
@@ -31,9 +31,9 @@ export const createCita = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: 'fecha_hora no es una fecha válida' });
     }
 
-    if (!isExactHourBlock(fechaDate)) {
+    if (!isValidAvailabilityBlock(fechaDate)) {
       return res.status(400).json({
-        message: 'fecha_hora debe ser un bloque de hora exacta (ej. 14:00:00)',
+        message: 'fecha_hora debe ser un bloque válido (ej. 14:00:00 o 14:30:00)',
       });
     }
 
@@ -86,9 +86,9 @@ export const updateCita = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: 'fecha_hora no es una fecha válida' });
     }
 
-    if (!isExactHourBlock(fechaDate)) {
+    if (!isValidAvailabilityBlock(fechaDate)) {
       return res.status(400).json({
-        message: 'fecha_hora debe ser un bloque de hora exacta (ej. 14:00:00)',
+        message: 'fecha_hora debe ser un bloque válido (ej. 14:00:00 o 14:30:00)',
       });
     }
 
@@ -169,8 +169,8 @@ export const saveWeekAvailability = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: 'fechaInicio y bloques son requeridos' });
     }
 
-    if (bloques.length > 77) {
-      return res.status(400).json({ message: 'Una semana no puede superar 77 bloques' });
+    if (bloques.length > 1008) {
+      return res.status(400).json({ message: 'Una semana no puede superar 1008 bloques' });
     }
 
     const weekStart = new Date(`${fechaInicio}T00:00:00.000Z`);
@@ -181,10 +181,10 @@ export const saveWeekAvailability = async (req: AuthRequest, res: Response) => {
 
     const uniqueDates = [...new Set(bloques.map((value: unknown) => String(value)))].map((value) => new Date(value));
     const invalidBlock = uniqueDates.some((date) =>
-      Number.isNaN(date.getTime()) || !isExactHourBlock(date) || date < weekStart || date >= weekEnd || !isFutureDate(date),
+      Number.isNaN(date.getTime()) || !isValidAvailabilityBlock(date) || date < weekStart || date >= weekEnd || !isFutureDate(date),
     );
     if (invalidBlock) {
-      return res.status(400).json({ message: 'Los bloques deben pertenecer a la semana, usar horas exactas y ser futuros' });
+      return res.status(400).json({ message: 'Los bloques deben pertenecer a la semana, usar minutos válidos y ser futuros' });
     }
 
     const barberProfile = await getOwnBarberProfile(req.user!.id);

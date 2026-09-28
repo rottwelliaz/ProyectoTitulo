@@ -6,7 +6,7 @@ import EditSlotModal from './EditSlotModal';
 
 interface SelectedSlot {
   date: Date;
-  hour: number;
+  slotTime: number;
   key: string;
   status: SlotStatus;
 }
@@ -14,6 +14,12 @@ interface SelectedSlot {
 interface CopiedWeek {
   label: string;
   slots: Record<string, SlotStatus>;
+}
+
+interface CalendarSettings {
+  startTime: string;
+  endTime: string;
+  blockMinutes: number;
 }
 
 interface AppointmentSlot {
@@ -35,31 +41,73 @@ interface AppointmentSlot {
 type StoredSlots = Record<string, SlotStatus>;
 type ReservedSlots = Record<string, AppointmentSlot>;
 
-const HOURS = Array.from({ length: 11 }, (_, index) => index + 9);
-const STORAGE_KEY = 'barber-calendar-slots';
 const API_URL = 'http://localhost:3001/api';
-
-const getDefaultStatus = (hour: number): SlotStatus => {
-  if (hour === 10) return 'booking';
-  if (hour === 13) return 'break';
-  if (hour === 15) return 'reserved';
-  return 'available';
+const SLOT_STORAGE_PREFIX = 'barber-calendar-slots';
+const SETTINGS_STORAGE_PREFIX = 'barber-calendar-settings';
+const DEFAULT_SETTINGS: CalendarSettings = {
+  startTime: '09:00',
+  endTime: '19:00',
+  blockMinutes: 60,
 };
+const BLOCK_OPTIONS = [10, 15, 20, 30, 45, 60];
+const TIME_OPTIONS = Array.from({ length: 33 }, (_, index) => {
+  const minutes = 6 * 60 + index * 30;
+  const hour = Math.floor(minutes / 60);
+  const minute = minutes % 60;
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+});
 
 const capitalize = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
 
-const buildSlotDate = (date: Date, hour: number) => {
+const getStoredUserId = () => {
+  try {
+    const storedUser = window.localStorage.getItem('user');
+    const user = storedUser ? JSON.parse(storedUser) : null;
+    return user?.id ? String(user.id) : 'sin-usuario';
+  } catch {
+    return 'sin-usuario';
+  }
+};
+
+const getStorageKey = (prefix: string) => `${prefix}-${getStoredUserId()}`;
+
+const parseTime = (value: string) => {
+  const [hour = '0', minute = '0'] = value.split(':');
+  return Number(hour) * 60 + Number(minute);
+};
+
+const formatSlotTime = (slotTime: number) => {
+  const hour = Math.floor(slotTime / 60);
+  const minute = slotTime % 60;
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+};
+
+const buildSlotTimes = (settings: CalendarSettings) => {
+  const start = parseTime(settings.startTime);
+  const end = parseTime(settings.endTime);
+  if (end < start) return [];
+
+  const times: number[] = [];
+  for (let value = start; value <= end; value += settings.blockMinutes) {
+    times.push(value);
+  }
+  return times;
+};
+
+const buildSlotDate = (date: Date, slotTime: number) => {
   const blockDate = new Date(date);
-  blockDate.setHours(hour, 0, 0, 0);
+  blockDate.setHours(Math.floor(slotTime / 60), slotTime % 60, 0, 0);
   return blockDate;
 };
 
-const isPastSlot = (date: Date, hour: number) => buildSlotDate(date, hour).getTime() <= Date.now();
+const getDefaultStatus = () => 'available' as SlotStatus;
+const isPastSlot = (date: Date, slotTime: number) => buildSlotDate(date, slotTime).getTime() <= Date.now();
 
 export default function BarberCalendar() {
   const today = useMemo(() => new Date(), []);
   const currentWeek = useMemo(() => startOfWeek(today, { weekStartsOn: 1 }), [today]);
   const [weekStart, setWeekStart] = useState(currentWeek);
+  const [settings, setSettings] = useState<CalendarSettings>(DEFAULT_SETTINGS);
   const [slots, setSlots] = useState<StoredSlots>({});
   const [selectedSlot, setSelectedSlot] = useState<SelectedSlot | null>(null);
   const [highlightToday, setHighlightToday] = useState(true);
@@ -74,23 +122,45 @@ export default function BarberCalendar() {
     () => Array.from({ length: 7 }, (_, index) => addDays(weekStart, index)),
     [weekStart],
   );
+  const slotTimes = useMemo(() => buildSlotTimes(settings), [settings]);
+
+  const getSlotKey = useCallback((date: Date, slotTime: number) => `${format(date, 'yyyy-MM-dd')}-${formatSlotTime(slotTime)}`, []);
+  const getSlotKeyFromDate = useCallback((date: Date) => getSlotKey(date, date.getHours() * 60 + date.getMinutes()), [getSlotKey]);
 
   useEffect(() => {
+    const slotsKey = getStorageKey(SLOT_STORAGE_PREFIX);
+    const settingsKey = getStorageKey(SETTINGS_STORAGE_PREFIX);
+
     try {
-      const savedSlots = window.localStorage.getItem(STORAGE_KEY);
+      const savedSlots = window.localStorage.getItem(slotsKey);
+      const savedSettings = window.localStorage.getItem(settingsKey);
+
       if (savedSlots) setSlots(JSON.parse(savedSlots) as StoredSlots);
+      if (savedSettings) {
+        const parsedSettings = JSON.parse(savedSettings) as CalendarSettings;
+        setSettings({
+          startTime: parsedSettings.startTime || DEFAULT_SETTINGS.startTime,
+          endTime: parsedSettings.endTime || DEFAULT_SETTINGS.endTime,
+          blockMinutes: Number(parsedSettings.blockMinutes) || DEFAULT_SETTINGS.blockMinutes,
+        });
+      }
     } catch {
-      window.localStorage.removeItem(STORAGE_KEY);
+      window.localStorage.removeItem(slotsKey);
+      window.localStorage.removeItem(settingsKey);
     } finally {
       setHydrated(true);
     }
   }, []);
 
   useEffect(() => {
-    if (hydrated) window.localStorage.setItem(STORAGE_KEY, JSON.stringify(slots));
+    if (!hydrated) return;
+    window.localStorage.setItem(getStorageKey(SLOT_STORAGE_PREFIX), JSON.stringify(slots));
   }, [hydrated, slots]);
 
-  const getSlotKey = (date: Date, hour: number) => `${format(date, 'yyyy-MM-dd')}-${hour}`;
+  useEffect(() => {
+    if (!hydrated) return;
+    window.localStorage.setItem(getStorageKey(SETTINGS_STORAGE_PREFIX), JSON.stringify(settings));
+  }, [hydrated, settings]);
 
   const loadReservations = useCallback(async () => {
     const token = window.localStorage.getItem('token');
@@ -116,7 +186,7 @@ export default function BarberCalendar() {
         })
         .forEach((slot) => {
           const date = new Date(slot.fecha_hora);
-          nextReservedSlots[getSlotKey(date, date.getHours())] = slot;
+          nextReservedSlots[getSlotKeyFromDate(date)] = slot;
         });
 
       setReservedSlots(nextReservedSlots);
@@ -126,16 +196,18 @@ export default function BarberCalendar() {
     } finally {
       setLoadingReservations(false);
     }
-  }, [weekStart]);
+  }, [getSlotKeyFromDate, weekStart]);
 
   useEffect(() => {
     void loadReservations();
   }, [loadReservations]);
 
-  const openSlot = (date: Date, hour: number) => {
-    const key = getSlotKey(date, hour);
+  const openSlot = (date: Date, slotTime: number) => {
+    const key = getSlotKey(date, slotTime);
     const reservedSlot = reservedSlots[key];
-    if (isPastSlot(date, hour)) {
+    const timeLabel = formatSlotTime(slotTime);
+
+    if (isPastSlot(date, slotTime)) {
       setCopyFeedback('No puedes editar bloques de horas pasadas.');
       return;
     }
@@ -143,27 +215,33 @@ export default function BarberCalendar() {
     if (reservedSlot) {
       const client = reservedSlot.cliente?.nombre || 'Cliente';
       const service = reservedSlot.servicio?.nombre_servicio || 'Servicio';
-      setCopyFeedback(`La hora ${String(hour).padStart(2, '0')}:00 ya está reservada por ${client} (${service}).`);
+      setCopyFeedback(`La hora ${timeLabel} ya está reservada por ${client} (${service}).`);
       return;
     }
-    setSelectedSlot({ date, hour, key, status: slots[key] ?? getDefaultStatus(hour) });
+
+    setSelectedSlot({ date, slotTime, key, status: slots[key] ?? getDefaultStatus() });
   };
 
   const closeModal = useCallback(() => setSelectedSlot(null), []);
 
-  const syncWeekAvailability = async (weekSlots: StoredSlots, days = weekDays) => {
+  const syncWeekAvailability = async (weekSlots: StoredSlots, days = weekDays, times = slotTimes) => {
     const token = window.localStorage.getItem('token');
     if (!token) {
       setCopyFeedback('Inicia sesión para guardar la agenda en el sistema.');
       return;
     }
 
+    if (times.length === 0) {
+      setCopyFeedback('La hora de cierre no puede ser anterior a la hora de entrada.');
+      return;
+    }
+
     const availableBlocks: string[] = [];
     days.forEach((date) => {
-      HOURS.forEach((hour) => {
-        const key = getSlotKey(date, hour);
-        if ((weekSlots[key] ?? getDefaultStatus(hour)) === 'available') {
-          const blockDate = buildSlotDate(date, hour);
+      times.forEach((slotTime) => {
+        const key = getSlotKey(date, slotTime);
+        if ((weekSlots[key] ?? getDefaultStatus()) === 'available') {
+          const blockDate = buildSlotDate(date, slotTime);
           if (blockDate.getTime() > Date.now()) {
             availableBlocks.push(blockDate.toISOString());
           }
@@ -209,6 +287,12 @@ export default function BarberCalendar() {
     void syncWeekAvailability(updatedSlots);
   };
 
+  const updateSettings = (nextSettings: CalendarSettings) => {
+    setSettings(nextSettings);
+    setCopiedWeek(null);
+    setCopyFeedback('Configuración actualizada. Revisa los bloques y guarda la agenda.');
+  };
+
   const goToCurrentWeek = (markToday: boolean) => {
     setWeekStart(currentWeek);
     setHighlightToday(markToday);
@@ -218,9 +302,9 @@ export default function BarberCalendar() {
     const copiedSlots: Record<string, SlotStatus> = {};
 
     weekDays.forEach((date, dayIndex) => {
-      HOURS.forEach((hour) => {
-        const slotKey = getSlotKey(date, hour);
-        copiedSlots[`${dayIndex}-${hour}`] = slots[slotKey] ?? getDefaultStatus(hour);
+      slotTimes.forEach((slotTime) => {
+        const slotKey = getSlotKey(date, slotTime);
+        copiedSlots[`${dayIndex}-${formatSlotTime(slotTime)}`] = slots[slotKey] ?? getDefaultStatus();
       });
     });
 
@@ -240,8 +324,8 @@ export default function BarberCalendar() {
 
     const updatedSlots = { ...slots };
     weekDays.forEach((date, dayIndex) => {
-      HOURS.forEach((hour) => {
-        updatedSlots[getSlotKey(date, hour)] = copiedWeek.slots[`${dayIndex}-${hour}`];
+      slotTimes.forEach((slotTime) => {
+        updatedSlots[getSlotKey(date, slotTime)] = copiedWeek.slots[`${dayIndex}-${formatSlotTime(slotTime)}`] ?? getDefaultStatus();
       });
     });
     setSlots(updatedSlots);
@@ -311,6 +395,36 @@ export default function BarberCalendar() {
         </div>
       </div>
 
+      <section className="calendar-settings" aria-label="Configuración de bloques de agenda">
+        <label>
+          Hora de entrada
+          <select
+            value={settings.startTime}
+            onChange={(event) => updateSettings({ ...settings, startTime: event.target.value })}
+          >
+            {TIME_OPTIONS.map((time) => <option key={time} value={time}>{time}</option>)}
+          </select>
+        </label>
+        <label>
+          Hora de cierre
+          <select
+            value={settings.endTime}
+            onChange={(event) => updateSettings({ ...settings, endTime: event.target.value })}
+          >
+            {TIME_OPTIONS.map((time) => <option key={time} value={time}>{time}</option>)}
+          </select>
+        </label>
+        <label>
+          Duración de cada bloque
+          <select
+            value={settings.blockMinutes}
+            onChange={(event) => updateSettings({ ...settings, blockMinutes: Number(event.target.value) })}
+          >
+            {BLOCK_OPTIONS.map((minutes) => <option key={minutes} value={minutes}>{minutes} min</option>)}
+          </select>
+        </label>
+      </section>
+
       {copyFeedback && <p className="calendar-copy-feedback" role="status">{copyFeedback}</p>}
       {loadingReservations && <p className="calendar-copy-feedback is-loading" role="status">Actualizando reservas...</p>}
 
@@ -318,8 +432,8 @@ export default function BarberCalendar() {
         <div className="calendar-grid">
           <div className="calendar-time-column">
             <span className="calendar-corner">Hora</span>
-            {HOURS.map((hour) => (
-              <time key={hour}>{String(hour).padStart(2, '0')}:00</time>
+            {slotTimes.map((slotTime) => (
+              <time key={slotTime}>{formatSlotTime(slotTime)}</time>
             ))}
           </div>
 
@@ -333,10 +447,10 @@ export default function BarberCalendar() {
                   <strong>{capitalize(format(date, 'EEEE', { locale: es }))}</strong>
                   <span>{format(date, 'd')}</span>
                 </div>
-                {HOURS.map((hour) => {
-                  const key = getSlotKey(date, hour);
+                {slotTimes.map((slotTime) => {
+                  const key = getSlotKey(date, slotTime);
                   const reservedSlot = reservedSlots[key];
-                  const pastSlot = isPastSlot(date, hour);
+                  const pastSlot = isPastSlot(date, slotTime);
                   const detail = reservedSlot
                     ? `${reservedSlot.cliente?.nombre || 'Cliente'} · ${reservedSlot.servicio?.nombre_servicio || 'Servicio'}`
                     : undefined;
@@ -344,11 +458,11 @@ export default function BarberCalendar() {
                     <CalendarSlot
                       key={key}
                       dateLabel={dateLabel}
-                      hour={hour}
-                      status={reservedSlot ? 'reserved' : slots[key] ?? getDefaultStatus(hour)}
+                      timeLabel={formatSlotTime(slotTime)}
+                      status={reservedSlot ? 'reserved' : slots[key] ?? getDefaultStatus()}
                       disabled={Boolean(reservedSlot) || pastSlot}
                       detail={detail}
-                      onClick={() => openSlot(date, hour)}
+                      onClick={() => openSlot(date, slotTime)}
                     />
                   );
                 })}
@@ -367,7 +481,7 @@ export default function BarberCalendar() {
       {selectedSlot && (
         <EditSlotModal
           dateLabel={capitalize(format(selectedSlot.date, "EEEE d 'de' MMMM", { locale: es }))}
-          hourLabel={`${String(selectedSlot.hour).padStart(2, '0')}:00`}
+          hourLabel={formatSlotTime(selectedSlot.slotTime)}
           status={selectedSlot.status}
           onClose={closeModal}
           onChange={updateSlot}

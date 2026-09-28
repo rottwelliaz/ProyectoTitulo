@@ -9,16 +9,14 @@ export const SLOT_LABELS: Record<SlotStatus, string> = {
 
 interface CalendarSlotProps {
   dateLabel: string;
-  hour: number;
+  timeLabel: string;
   status: SlotStatus;
   onClick: () => void;
   disabled?: boolean;
   detail?: string;
 }
 
-export default function CalendarSlot({ dateLabel, hour, status, onClick, disabled = false, detail }: CalendarSlotProps) {
-  const hourLabel = `${String(hour).padStart(2, '0')}:00`;
-
+export default function CalendarSlot({ dateLabel, timeLabel, status, onClick, disabled = false, detail }: CalendarSlotProps) {
   return (
     <button
       type="button"
@@ -26,7 +24,7 @@ export default function CalendarSlot({ dateLabel, hour, status, onClick, disable
       onClick={onClick}
       disabled={disabled}
       title={detail}
-      aria-label={`${dateLabel}, ${hourLabel}: ${SLOT_LABELS[status]}${detail ? `, ${detail}` : ''}${disabled ? '' : '. Cambiar estado.'}`}
+      aria-label={`${dateLabel}, ${timeLabel}: ${SLOT_LABELS[status]}${detail ? `, ${detail}` : ''}${disabled ? '' : '. Cambiar estado.'}`}
     >
       <span>{SLOT_LABELS[status]}</span>
       {detail && <small>{detail}</small>}

@@ -49,7 +49,7 @@ import {
     </nav>
 
     <div class="pro-sidebar-user">
-      <div class="pro-mini-avatar" aria-hidden="true"></div>
+      <div class="pro-mini-avatar" data-user-avatar aria-hidden="true"></div>
       <div>
         <strong id="sidebar-name">Barbero</strong>
         <span id="sidebar-specialty">Perfil profesional</span>
@@ -75,7 +75,7 @@ import {
 
     <section id="resumen-profesional" class="pro-hero-card is-minimal">
       <div class="pro-avatar-wrap">
-        <div class="pro-avatar" aria-hidden="true"></div>
+        <div class="pro-avatar" data-user-avatar aria-hidden="true"></div>
         <button class="pro-camera" type="button" aria-label="Cambiar foto"></button>
       </div>
 
@@ -400,8 +400,14 @@ import {
         return;
       }
 
-      localStorage.setItem('user', JSON.stringify(user));
+      const cachedUser = user?.perfilBarbero
+        ? { ...user, perfilBarbero: { ...user.perfilBarbero, foto_perfil: null } }
+        : user;
+      localStorage.setItem('user', JSON.stringify(cachedUser));
       renderUser(user);
+      window.dispatchEvent(new CustomEvent('profile-photo-change', {
+        detail: localStorage.getItem(`profile-photo-${user.id}`) || user?.perfilBarbero?.foto_perfil || null,
+      }));
     } catch {
       window.location.href = '/login';
     }

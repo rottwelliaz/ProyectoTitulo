@@ -137,6 +137,15 @@
   width: 48px;
 }
 
+.barbers-profile span.has-photo {
+  background-position: center;
+  background-size: cover;
+}
+
+.barbers-profile span i {
+  font-style: normal;
+}
+
 .barbers-profile strong {
   font-size: 0.94rem;
 }
@@ -349,7 +358,7 @@
     linear-gradient(180deg, rgba(0, 0, 0, 0.04), rgba(1, 13, 28, 0.45)),
     var(--photo);
   background-position: center top;
-  background-size: 170%;
+  background-size: cover;
   height: 122px;
   position: relative;
 }
@@ -450,6 +459,27 @@
   stroke-linejoin: round;
   stroke-width: 2;
   width: 16px;
+}
+
+.barber-service-summary {
+  align-items: center;
+  border-top: 1px solid rgba(83, 128, 184, 0.3);
+  display: flex;
+  gap: 0.7rem;
+  justify-content: space-between;
+  margin: 0.85rem 0 0;
+  padding-top: 0.75rem;
+}
+
+.barber-service-summary strong {
+  color: #ffd226;
+  font-size: 0.92rem;
+}
+
+.barber-service-summary span {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.82rem;
+  white-space: nowrap;
 }
 
 .profile-button {

@@ -28,12 +28,13 @@ const { logoSrc } = Astro.props;
       <button
         id="profile-button"
         class="profile-circle"
+        data-user-avatar
         type="button"
         aria-label="Abrir menu de usuario"
         aria-expanded="false"
         aria-controls="profile-dropdown"
       >
-        <span>F</span>
+        <span data-avatar-fallback>F</span>
       </button>
       <button
         id="profile-name-button"
@@ -128,6 +129,37 @@ const { logoSrc } = Astro.props;
     loginLink?.classList.add('hidden');
     profileMenu?.classList.add('is-visible');
     setProfileIdentity();
+
+    void fetch('http://localhost:3001/api/auth/me', {
+      headers: { Authorization: `Bearer ${token}` },
+    }).then(async (response) => {
+      if (!response.ok) return;
+      const user = await response.json();
+      const cachedUser = user?.perfilBarbero
+        ? { ...user, perfilBarbero: { ...user.perfilBarbero, foto_perfil: null } }
+        : user;
+      localStorage.setItem('user', JSON.stringify(cachedUser));
+      setProfileIdentity();
+      const localPhoto = localStorage.getItem(`profile-photo-${user.id}`);
+      window.dispatchEvent(new CustomEvent('profile-photo-change', {
+        detail: localPhoto || user?.perfilBarbero?.foto_perfil || null,
+      }));
+
+      if (user.rol === 'barbero' && localPhoto && localPhoto !== user?.perfilBarbero?.foto_perfil) {
+        const photoResponse = await fetch('http://localhost:3001/api/auth/me/photo', {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ foto_perfil: localPhoto }),
+        });
+
+        if (photoResponse.ok) {
+          window.dispatchEvent(new CustomEvent('profile-photo-change', { detail: localPhoto }));
+        }
+      }
+    }).catch(() => undefined);
   }
 
   profileButton?.addEventListener('click', toggleProfileMenu);

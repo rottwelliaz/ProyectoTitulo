@@ -136,6 +136,12 @@
   width: 48px;
 }
 
+.pro-mini-avatar.has-photo,
+.pro-avatar.has-photo {
+  background-position: center;
+  background-size: cover;
+}
+
 .pro-sidebar-user strong,
 .pro-sidebar-user span {
   display: block;
@@ -630,6 +636,42 @@
   color: rgba(199, 210, 225, 0.5);
   cursor: not-allowed;
   transform: none;
+}
+
+.calendar-settings {
+  background: rgba(2, 13, 29, 0.48);
+  border: 1px solid var(--pro-line);
+  border-radius: 8px;
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 1rem 0;
+  padding: 1rem;
+}
+
+.calendar-settings label {
+  color: #ffffff;
+  display: grid;
+  font-size: 0.82rem;
+  font-weight: 850;
+  gap: 0.45rem;
+}
+
+.calendar-settings select {
+  appearance: none;
+  background: #020b18;
+  border: 1px solid var(--pro-line);
+  border-radius: 8px;
+  color: #ffffff;
+  font: inherit;
+  min-height: 42px;
+  outline: none;
+  padding: 0 0.85rem;
+}
+
+.calendar-settings select:focus {
+  border-color: var(--pro-blue);
+  box-shadow: 0 0 0 3px rgba(22, 121, 255, 0.15);
 }
 
 .calendar-copy-feedback {
@@ -1396,6 +1438,10 @@
 
   .calendar-actions button {
     flex: 1 1 calc(50% - 0.5rem);
+  }
+
+  .calendar-settings {
+    grid-template-columns: 1fr;
   }
 
   .slot-status-options {

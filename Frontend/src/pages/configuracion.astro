@@ -43,11 +43,59 @@ import '../styles/profile.css';
       </header>
 
       <div class="profile-content">
-        <article class="profile-card settings-dev-card">
+        <article class="profile-card settings-card">
           <p class="profile-card-title">Configuración</p>
-          <h1>Sección en desarrollo</h1>
-          <p>Esta opción todavía no está disponible. Pronto podrás administrar tus preferencias desde aquí.</p>
-          <a class="profile-primary-button" href="/perfil">Volver a mi perfil</a>
+          <div class="settings-heading">
+            <span class="settings-heading-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41"/></svg>
+            </span>
+            <div>
+              <h1>Tema de la interfaz</h1>
+              <p>Elige cómo quieres ver Conce Barber Club. Tu preferencia se guardará en este dispositivo.</p>
+            </div>
+          </div>
+
+          <fieldset class="theme-options">
+            <legend class="sr-only">Seleccionar tema de la interfaz</legend>
+
+            <label class="theme-option" data-theme-option="original">
+              <input type="radio" name="interface-theme" value="original" />
+              <span class="theme-preview theme-preview-original" aria-hidden="true">
+                <i></i><b></b><em></em>
+              </span>
+              <span class="theme-option-copy">
+                <strong>Original</strong>
+                <small>Azul característico de la aplicación</small>
+              </span>
+              <span class="theme-check" aria-hidden="true">✓</span>
+            </label>
+
+            <label class="theme-option" data-theme-option="light">
+              <input type="radio" name="interface-theme" value="light" />
+              <span class="theme-preview theme-preview-light" aria-hidden="true">
+                <i></i><b></b><em></em>
+              </span>
+              <span class="theme-option-copy">
+                <strong>Claro</strong>
+                <small>Fondos claros y texto oscuro</small>
+              </span>
+              <span class="theme-check" aria-hidden="true">✓</span>
+            </label>
+
+            <label class="theme-option" data-theme-option="dark">
+              <input type="radio" name="interface-theme" value="dark" />
+              <span class="theme-preview theme-preview-dark" aria-hidden="true">
+                <i></i><b></b><em></em>
+              </span>
+              <span class="theme-option-copy">
+                <strong>Oscuro</strong>
+                <small>Negro profundo con menor luminosidad</small>
+              </span>
+              <span class="theme-check" aria-hidden="true">✓</span>
+            </label>
+          </fieldset>
+
+          <p id="theme-feedback" class="theme-feedback" aria-live="polite"></p>
         </article>
       </div>
     </section>
@@ -56,34 +104,242 @@ import '../styles/profile.css';
 
 <style>
   .settings-home-link {
-    color: #ffffff;
+    color: var(--ink);
     font-weight: 900;
     text-decoration: none;
   }
 
-  .settings-dev-card {
+  .settings-card {
     margin: 0 auto;
-    max-width: 760px;
-    min-height: 320px;
+    max-width: 920px;
+    padding: 34px 40px 40px;
+    width: 100%;
   }
 
-  .settings-dev-card h1 {
-    color: var(--ink);
-    font-size: clamp(2rem, 4vw, 3.2rem);
-    margin: 1.8rem 0 1rem;
+  .settings-heading {
+    align-items: center;
+    display: flex;
+    gap: 18px;
+    margin-bottom: 30px;
   }
 
-  .settings-dev-card > p:not(.profile-card-title) {
-    color: var(--muted);
-    font-size: 1rem;
-    line-height: 1.65;
-    margin: 0 0 2rem;
-    max-width: 540px;
-  }
-
-  .settings-dev-card .profile-primary-button {
+  .settings-heading-icon {
+    align-items: center;
+    background: rgba(18, 97, 216, 0.2);
+    border-radius: 12px;
+    color: #4aa3ff;
     display: inline-flex;
-    text-decoration: none;
-    width: auto;
+    flex: 0 0 auto;
+    height: 58px;
+    justify-content: center;
+    width: 58px;
+  }
+
+  .settings-heading-icon svg {
+    height: 29px;
+    width: 29px;
+  }
+
+  .settings-heading h1 {
+    color: var(--ink);
+    font-size: clamp(1.55rem, 3vw, 2.1rem);
+    margin: 0 0 6px;
+  }
+
+  .settings-heading p {
+    color: var(--muted);
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  .theme-options {
+    border: 0;
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin: 0;
+    padding: 0;
+  }
+
+  .sr-only {
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    padding: 0;
+    position: absolute;
+    width: 1px;
+    clip: rect(0, 0, 0, 0);
+  }
+
+  .theme-option {
+    background: rgba(255, 255, 255, 0.045);
+    border: 2px solid var(--line);
+    border-radius: 12px;
+    cursor: pointer;
+    display: grid;
+    gap: 14px;
+    padding: 14px;
+    position: relative;
+    transition: border-color 160ms ease, transform 160ms ease, background-color 160ms ease;
+  }
+
+  .theme-option:hover {
+    border-color: #4aa3ff;
+    transform: translateY(-2px);
+  }
+
+  .theme-option:has(input:focus-visible) {
+    outline: 3px solid rgba(74, 163, 255, 0.35);
+    outline-offset: 2px;
+  }
+
+  .theme-option.is-selected {
+    background: rgba(18, 97, 216, 0.14);
+    border-color: #4aa3ff;
+  }
+
+  .theme-option input {
+    height: 1px;
+    opacity: 0;
+    position: absolute;
+    width: 1px;
+  }
+
+  .theme-preview {
+    border: 1px solid rgba(148, 163, 184, 0.45);
+    border-radius: 8px;
+    display: grid;
+    gap: 7px;
+    grid-template-columns: 28% 1fr;
+    grid-template-rows: 15px 28px 28px;
+    min-height: 100px;
+    overflow: hidden;
+    padding: 10px;
+  }
+
+  .theme-preview i {
+    border-radius: 4px;
+    grid-row: 1 / -1;
+  }
+
+  .theme-preview b,
+  .theme-preview em {
+    border-radius: 4px;
+    display: block;
+  }
+
+  .theme-preview b {
+    grid-row: 2;
+  }
+
+  .theme-preview em {
+    grid-row: 3;
+  }
+
+  .theme-preview-original { background: #020b18; }
+  .theme-preview-original i { background: #0d3a78; }
+  .theme-preview-original b { background: #1261d8; }
+  .theme-preview-original em { background: #07305d; }
+  .theme-preview-light { background: #f4f7fb; }
+  .theme-preview-light i { background: #e2e8f0; }
+  .theme-preview-light b { background: #2563eb; }
+  .theme-preview-light em { background: #ffffff; }
+  .theme-preview-dark { background: #08090c; }
+  .theme-preview-dark i { background: #15171c; }
+  .theme-preview-dark b { background: #2563eb; }
+  .theme-preview-dark em { background: #20232a; }
+
+  .theme-option-copy strong,
+  .theme-option-copy small {
+    display: block;
+  }
+
+  .theme-option-copy strong {
+    color: var(--ink);
+    font-size: 1rem;
+    margin-bottom: 4px;
+  }
+
+  .theme-option-copy small {
+    color: var(--muted);
+    line-height: 1.35;
+  }
+
+  .theme-check {
+    align-items: center;
+    background: #1261d8;
+    border-radius: 999px;
+    color: #fff;
+    display: none;
+    font-size: 13px;
+    font-weight: 950;
+    height: 25px;
+    justify-content: center;
+    position: absolute;
+    right: 9px;
+    top: 9px;
+    width: 25px;
+  }
+
+  .theme-option.is-selected .theme-check {
+    display: flex;
+  }
+
+  .theme-feedback {
+    color: var(--muted);
+    font-size: 0.9rem;
+    font-weight: 750;
+    margin: 20px 0 0;
+    min-height: 22px;
+  }
+
+  @media (max-width: 780px) {
+    .settings-card {
+      padding: 28px 22px;
+    }
+
+    .theme-options {
+      grid-template-columns: 1fr;
+    }
   }
 </style>
+
+<script>
+  type InterfaceTheme = 'original' | 'light' | 'dark';
+
+  const themeNames: Record<InterfaceTheme, string> = {
+    original: 'Original',
+    light: 'Claro',
+    dark: 'Oscuro',
+  };
+  const validThemes: InterfaceTheme[] = ['original', 'light', 'dark'];
+  const themeInputs = Array.from(document.querySelectorAll<HTMLInputElement>('input[name="interface-theme"]'));
+  const themeFeedback = document.querySelector<HTMLParagraphElement>('#theme-feedback');
+
+  const selectTheme = (theme: InterfaceTheme, announce = false) => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem('ui-theme', theme);
+
+    themeInputs.forEach((input) => {
+      const selected = input.value === theme;
+      input.checked = selected;
+      input.closest('.theme-option')?.classList.toggle('is-selected', selected);
+    });
+
+    if (themeFeedback) {
+      themeFeedback.textContent = announce ? `Tema ${themeNames[theme]} aplicado y guardado.` : '';
+    }
+
+    window.dispatchEvent(new Event('ui-theme-change'));
+  };
+
+  const savedTheme = localStorage.getItem('ui-theme');
+  const initialTheme = validThemes.includes(savedTheme as InterfaceTheme)
+    ? savedTheme as InterfaceTheme
+    : 'original';
+  selectTheme(initialTheme);
+
+  themeInputs.forEach((input) => {
+    input.addEventListener('change', () => selectTheme(input.value as InterfaceTheme, true));
+  });
+</script>

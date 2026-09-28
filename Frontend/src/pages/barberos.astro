@@ -41,7 +41,7 @@ import '../styles/barberos.css';
             aria-expanded="false"
             aria-controls="barbers-profile-dropdown"
           >
-            <span id="profile-initials">U</span>
+            <span id="profile-initials" data-user-avatar><i data-avatar-fallback>U</i></span>
             <strong id="profile-name">Usuario</strong>
             <ChevronDown size={17} aria-hidden="true" />
           </button>
@@ -74,8 +74,14 @@ import '../styles/barberos.css';
         <label class="filter-select sort-select">
           <span><strong>Ordenar por</strong></span>
           <select id="sort-filter" aria-label="Ordenar barberos">
-            <option value="name">Nombre</option>
-            <option value="services">Mas servicios</option>
+            <option value="name-asc">Nombre: A a Z</option>
+            <option value="name-desc">Nombre: Z a A</option>
+            <option value="price-asc">Precio: menor a mayor</option>
+            <option value="price-desc">Precio: mayor a menor</option>
+            <option value="services-desc">Más servicios</option>
+            <option value="services-asc">Menos servicios</option>
+            <option value="duration-asc">Duración: menor a mayor</option>
+            <option value="duration-desc">Duración: mayor a menor</option>
           </select>
           <SlidersHorizontal size={17} aria-hidden="true" />
         </label>
@@ -200,6 +206,54 @@ import '../styles/barberos.css';
 
   const getServices = (barber: BarberUser) => barber.perfilBarbero?.servicios || [];
 
+  const getDisplayedPhoto = (barber: BarberUser) => {
+    try {
+      const currentUser = getStoredUser();
+      if (currentUser?.id === barber.id) {
+        const localPhoto = localStorage.getItem(`profile-photo-${barber.id}`);
+        if (localPhoto) return localPhoto;
+      }
+    } catch {
+      // Se utiliza la imagen pública o la imagen predeterminada.
+    }
+
+    return barber.perfilBarbero?.foto_perfil || barberPhotoSrc;
+  };
+
+  const getLowestPrice = (barber: BarberUser) => {
+    const prices = getServices(barber)
+      .map((service) => Number(service.precio))
+      .filter((price) => Number.isFinite(price));
+
+    return prices.length > 0 ? Math.min(...prices) : null;
+  };
+
+  const getShortestDuration = (barber: BarberUser) => {
+    const durations = getServices(barber)
+      .map((service) => Number(service.duracion_minutos))
+      .filter((duration) => Number.isFinite(duration));
+
+    return durations.length > 0 ? Math.min(...durations) : null;
+  };
+
+  const formatPrice = (price: number) =>
+    new Intl.NumberFormat('es-CL', {
+      style: 'currency',
+      currency: 'CLP',
+      maximumFractionDigits: 0,
+    }).format(price);
+
+  const compareOptionalNumber = (
+    a: number | null,
+    b: number | null,
+    direction: 'asc' | 'desc',
+  ) => {
+    if (a === null && b === null) return 0;
+    if (a === null) return 1;
+    if (b === null) return -1;
+    return direction === 'asc' ? a - b : b - a;
+  };
+
   const getSpecialty = (barber: BarberUser) => {
     const services = getServices(barber).map((service) => service.nombre_servicio).filter(Boolean);
     return services.length > 0 ? services.slice(0, 2).join(', ') : 'Sin servicios registrados';
@@ -236,7 +290,9 @@ import '../styles/barberos.css';
     const rawName = String(user?.nombre || user?.name || user?.email || 'Usuario').trim();
     const displayName = rawName.includes('@') ? rawName.split('@')[0] : rawName;
 
-    if (profileInitials) profileInitials.textContent = getInitials(displayName);
+    const initialsFallback = profileInitials?.querySelector<HTMLElement>('[data-avatar-fallback]');
+    if (initialsFallback) initialsFallback.textContent = getInitials(displayName);
+    else if (profileInitials) profileInitials.textContent = getInitials(displayName);
     if (profileName) profileName.textContent = displayName;
 
     profileLink?.classList.add('hidden');
@@ -273,8 +329,14 @@ import '../styles/barberos.css';
         throw new Error(freshUser?.message || 'Sesión inválida');
       }
 
-      localStorage.setItem('user', JSON.stringify(freshUser));
+      const cachedUser = freshUser?.perfilBarbero
+        ? { ...freshUser, perfilBarbero: { ...freshUser.perfilBarbero, foto_perfil: null } }
+        : freshUser;
+      localStorage.setItem('user', JSON.stringify(cachedUser));
       applyProfileUser(freshUser);
+      window.dispatchEvent(new CustomEvent('profile-photo-change', {
+        detail: localStorage.getItem(`profile-photo-${freshUser.id}`) || freshUser?.perfilBarbero?.foto_perfil || null,
+      }));
     } catch {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
@@ -296,7 +358,7 @@ import '../styles/barberos.css';
 
   const getFilteredBarbers = () => {
     const search = normalize(barberSearch?.value || '');
-    const sort = sortFilter?.value || 'name';
+    const sort = sortFilter?.value || 'name-asc';
 
     return barbers
       .filter((barber) => {
@@ -313,8 +375,31 @@ import '../styles/barberos.css';
         return true;
       })
       .sort((a, b) => {
-        if (sort === 'services') return getServices(b).length - getServices(a).length || a.nombre.localeCompare(b.nombre);
-        return a.nombre.localeCompare(b.nombre);
+        const nameComparison = a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' });
+
+        if (sort === 'name-desc') return -nameComparison;
+        if (sort === 'services-desc') {
+          return getServices(b).length - getServices(a).length || nameComparison;
+        }
+        if (sort === 'services-asc') {
+          return getServices(a).length - getServices(b).length || nameComparison;
+        }
+        if (sort === 'price-asc' || sort === 'price-desc') {
+          return compareOptionalNumber(
+            getLowestPrice(a),
+            getLowestPrice(b),
+            sort === 'price-asc' ? 'asc' : 'desc',
+          ) || nameComparison;
+        }
+        if (sort === 'duration-asc' || sort === 'duration-desc') {
+          return compareOptionalNumber(
+            getShortestDuration(a),
+            getShortestDuration(b),
+            sort === 'duration-asc' ? 'asc' : 'desc',
+          ) || nameComparison;
+        }
+
+        return nameComparison;
       });
   };
 
@@ -356,14 +441,16 @@ import '../styles/barberos.css';
       return;
     }
 
-    grid.innerHTML = visible.map((barber, index) => {
+    grid.innerHTML = visible.map((barber) => {
       const services = getServices(barber);
       const profileId = barber.perfilBarbero?.id || '';
       const hasServices = services.length > 0;
       const isFavorite = favorites.has(barber.id);
+      const lowestPrice = getLowestPrice(barber);
+      const shortestDuration = getShortestDuration(barber);
       return `
         <article class="barber-profile-card" data-barber-id="${barber.id}">
-          <div class="barber-profile-photo" style="--photo: url(${barberPhotoSrc});">
+          <div class="barber-profile-photo" style="--photo: url('${getDisplayedPhoto(barber)}');">
             <span class="availability ${hasServices ? '' : 'busy'}">${hasServices ? 'Disponible' : 'Sin servicios'}</span>
           </div>
           <div class="barber-profile-body">
@@ -382,6 +469,12 @@ import '../styles/barberos.css';
               ${icon.pin}
               ${escapeHtml(getLocation(barber))}
             </p>
+            ${hasServices ? `
+              <p class="barber-service-summary">
+                <strong>${lowestPrice !== null ? `Desde ${formatPrice(lowestPrice)}` : 'Precio no informado'}</strong>
+                <span>${shortestDuration !== null ? `Desde ${shortestDuration} min` : 'Duración no informada'}</span>
+              </p>
+            ` : ''}
             <a class="profile-button" href="${getBookingUrl(barber)}" data-profile-id="${profileId}">Ver perfil</a>
           </div>
         </article>
