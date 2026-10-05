@@ -495,6 +495,42 @@
   text-decoration: none;
 }
 
+.barber-card-actions {
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: 1fr 1fr;
+  margin-top: 0.95rem;
+}
+
+.barber-card-actions .profile-button {
+  margin-top: 0;
+}
+
+.message-button {
+  align-items: center;
+  border: 1px solid #328bff;
+  border-radius: 8px;
+  color: #ffffff;
+  display: flex;
+  font-size: 0.85rem;
+  font-weight: 850;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 0.55rem;
+  text-align: center;
+  text-decoration: none;
+}
+
+.message-button:hover,
+.message-button:focus-visible {
+  background: rgba(18, 97, 216, 0.18);
+  outline: none;
+}
+
+html[data-theme='light'] .message-button {
+  color: #0b4eac;
+}
+
 .barbers-pagination {
   align-items: center;
   display: flex;
@@ -650,5 +686,9 @@
 
   .profile-button {
     width: 100%;
+  }
+
+  .barber-card-actions {
+    grid-template-columns: 1fr;
   }
 }

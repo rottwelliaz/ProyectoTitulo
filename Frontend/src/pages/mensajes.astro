@@ -1,0 +1,441 @@
+---
+import Layout from '../layouts/Layout.astro';
+import logoConce from '../assets/logotesis.png';
+import { ArrowLeft, MessageCircle, Send } from 'lucide-astro';
+import '../styles/messages.css';
+---
+
+<Layout title="Mensajes - Conce Barber Club">
+  <main class="messages-root">
+    <header class="messages-topbar">
+      <a class="messages-brand" href="/home" aria-label="Volver al inicio">
+        <img src={logoConce.src} alt="Conce Barber Club" />
+      </a>
+      <div class="messages-title">
+        <MessageCircle size={25} aria-hidden="true" />
+        <div>
+          <h1>Mensajes</h1>
+          <p>Comunícate directamente dentro de Conce Barber Club</p>
+        </div>
+      </div>
+      <a class="messages-home-link" href="/home">Volver al inicio</a>
+    </header>
+
+    <section id="messages-app" class="messages-app" aria-label="Mensajería interna">
+      <div id="messages-sidebar" class="messages-sidebar" role="navigation" aria-label="Conversaciones">
+        <div class="messages-sidebar-header">
+          <div>
+            <h2>Contactos</h2>
+            <p id="conversation-count">Cargando...</p>
+          </div>
+        </div>
+        <div id="conversations-list" class="messages-sidebar-list" aria-live="polite">
+          <p class="messages-state">Cargando conversaciones...</p>
+        </div>
+      </div>
+
+      <section class="chat-panel">
+        <div id="chat-empty" class="chat-empty">
+          <span><MessageCircle size={38} aria-hidden="true" /></span>
+          <h2>Selecciona una conversación</h2>
+          <p>Elige un contacto para revisar el historial y enviar mensajes.</p>
+        </div>
+
+        <div id="chat-content" class="chat-content" hidden>
+          <header class="chat-header">
+            <button id="chat-back" class="chat-back" type="button" aria-label="Volver a conversaciones">
+              <ArrowLeft size={21} aria-hidden="true" />
+            </button>
+            <span id="chat-avatar" class="message-avatar message-avatar-large" aria-hidden="true"></span>
+            <div>
+              <h2 id="chat-name">Conversación</h2>
+              <p id="chat-role">Contacto</p>
+            </div>
+          </header>
+
+          <div id="messages-history" class="messages-history" aria-live="polite"></div>
+
+          <form id="message-form" class="message-composer">
+            <label class="sr-only" for="message-input">Escribir mensaje</label>
+            <textarea
+              id="message-input"
+              name="content"
+              maxlength="2000"
+              rows="1"
+              placeholder="Escribe un mensaje..."
+              required
+            ></textarea>
+            <button id="send-message" type="submit">
+              <Send size={19} aria-hidden="true" />
+              <span>Enviar</span>
+            </button>
+          </form>
+          <p id="chat-error" class="chat-error" role="alert"></p>
+        </div>
+      </section>
+    </section>
+  </main>
+</Layout>
+
+<script>
+  const API_URL = 'http://localhost:3001/api';
+  const token = localStorage.getItem('token');
+  const app = document.querySelector<HTMLElement>('#messages-app');
+  const conversationsPanel = document.querySelector<HTMLElement>('#messages-sidebar');
+  const conversationsHeader = document.querySelector<HTMLElement>('.messages-sidebar-header');
+  const conversationsList = document.querySelector<HTMLElement>('#conversations-list');
+  const conversationCount = document.querySelector<HTMLElement>('#conversation-count');
+  const chatEmpty = document.querySelector<HTMLElement>('#chat-empty');
+  const chatContent = document.querySelector<HTMLElement>('#chat-content');
+  const chatBack = document.querySelector<HTMLButtonElement>('#chat-back');
+  const chatAvatar = document.querySelector<HTMLElement>('#chat-avatar');
+  const chatName = document.querySelector<HTMLElement>('#chat-name');
+  const chatRole = document.querySelector<HTMLElement>('#chat-role');
+  const messagesHistory = document.querySelector<HTMLElement>('#messages-history');
+  const messageForm = document.querySelector<HTMLFormElement>('#message-form');
+  const messageInput = document.querySelector<HTMLTextAreaElement>('#message-input');
+  const sendButton = document.querySelector<HTMLButtonElement>('#send-message');
+  const chatError = document.querySelector<HTMLElement>('#chat-error');
+
+  // Evita que el navegador restaure la posición del compositor al recargar.
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+
+  // Earlier versions used these classes to hide the conversation list.
+  app?.classList.remove('has-active-chat', 'is-chat-open');
+
+  const mobileChatMedia = window.matchMedia(
+    '(max-width: 520px) and (hover: none) and (pointer: coarse)',
+  );
+
+  const isCompactMessagesView = () => mobileChatMedia.matches;
+
+  const ensureDesktopSidebar = () => {
+    const desktop = !isCompactMessagesView();
+    if (desktop) {
+      app?.classList.remove('is-mobile-chat-open', 'has-active-chat', 'is-chat-open');
+      conversationsPanel?.removeAttribute('hidden');
+      conversationsPanel?.style.setProperty('display', 'flex', 'important');
+      conversationsHeader?.style.setProperty('display', 'flex', 'important');
+      conversationsList?.style.setProperty('display', 'block', 'important');
+      return;
+    }
+
+    conversationsPanel?.style.removeProperty('display');
+    conversationsHeader?.style.removeProperty('display');
+    conversationsList?.style.removeProperty('display');
+  };
+
+  ensureDesktopSidebar();
+
+  interface ChatUser {
+    id: number;
+    nombre: string;
+    rol: string;
+    foto_perfil?: string | null;
+  }
+
+  interface ChatMessage {
+    id: string;
+    conversationId: string;
+    senderId: number;
+    content: string;
+    read: boolean;
+    createdAt: string;
+    sender?: { id: number; nombre: string; rol: string };
+  }
+
+  interface Conversation {
+    id: string;
+    clientId: number;
+    barberId: number;
+    createdAt: string;
+    updatedAt: string;
+    otherUser: ChatUser;
+    lastMessage: ChatMessage | null;
+  }
+
+  let currentUser: ChatUser | null = null;
+  let conversations: Conversation[] = [];
+  let selectedConversationId = '';
+  let mobileChatOpen = false;
+  let messagesPollingId: number | undefined;
+  let conversationsPollingId: number | undefined;
+
+  const escapeHtml = (value: unknown) =>
+    String(value ?? '').replace(/[&<>"']/g, (character) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;',
+    }[character] || character));
+
+  const initials = (name: string) =>
+    name.split(' ').filter(Boolean).slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join('') || 'U';
+
+  const formatConversationDate = (value: string) => {
+    const date = new Date(value);
+    const today = new Date();
+    const sameDay = date.toDateString() === today.toDateString();
+    if (sameDay) {
+      return new Intl.DateTimeFormat('es-CL', {
+        hour: '2-digit',
+        minute: '2-digit',
+      }).format(date);
+    }
+
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    if (date.toDateString() === yesterday.toDateString()) return 'Ayer';
+
+    return new Intl.DateTimeFormat('es-CL', {
+      day: '2-digit',
+      month: 'short',
+    }).format(date);
+  };
+
+  const formatMessageTime = (value: string) =>
+    new Intl.DateTimeFormat('es-CL', { hour: '2-digit', minute: '2-digit' }).format(new Date(value));
+
+  const getUserPhoto = (user: ChatUser) =>
+    localStorage.getItem(`profile-photo-${user.id}`) || user.foto_perfil || null;
+
+  const avatarMarkup = (user: ChatUser, large = false) => {
+    const photo = getUserPhoto(user);
+    const classes = `message-avatar${large ? ' message-avatar-large' : ''}${photo ? ' has-photo' : ''}`;
+    const style = photo ? ` style="background-image:url('${escapeHtml(photo)}')"` : '';
+    return `<span class="${classes}"${style} aria-hidden="true">${photo ? '' : escapeHtml(initials(user.nombre))}</span>`;
+  };
+
+  const apiFetch = async (path: string, options: RequestInit = {}) => {
+    const response = await fetch(`${API_URL}${path}`, {
+      ...options,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+        ...(options.headers || {}),
+      },
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok) throw new Error(data?.message || 'No se pudo completar la solicitud.');
+    return data;
+  };
+
+  const showError = (message = '') => {
+    if (chatError) chatError.textContent = message;
+  };
+
+  const renderConversations = () => {
+    if (!conversationsList || !conversationCount) return;
+    conversationCount.textContent = `${conversations.length} ${conversations.length === 1 ? 'persona' : 'personas'} en tus mensajes`;
+
+    if (conversations.length === 0) {
+      conversationsList.innerHTML = `
+        <div class="messages-state">
+          <strong>Aún no tienes conversaciones.</strong>
+          <span>${currentUser?.rol === 'cliente' ? 'Abre el perfil de un barbero y presiona Enviar mensaje.' : 'Cuando un cliente te escriba, aparecerá aquí.'}</span>
+        </div>`;
+      return;
+    }
+
+    conversationsList.innerHTML = conversations.map((conversation) => `
+      <button
+        class="conversation-item ${conversation.id === selectedConversationId ? 'is-active' : ''}"
+        type="button"
+        data-conversation-id="${escapeHtml(conversation.id)}"
+      >
+        ${avatarMarkup(conversation.otherUser)}
+        <span class="conversation-copy">
+          <span class="conversation-name-row">
+            <strong>${escapeHtml(conversation.otherUser.nombre)}</strong>
+            <span class="conversation-role">${conversation.otherUser.rol === 'barbero' ? 'Barbero' : 'Cliente'}</span>
+          </span>
+          <small>${conversation.lastMessage?.senderId === currentUser?.id ? 'Tú: ' : ''}${escapeHtml(conversation.lastMessage?.content || 'Inicia la conversación')}</small>
+        </span>
+        <time datetime="${escapeHtml(conversation.lastMessage?.createdAt || conversation.updatedAt)}">
+          ${formatConversationDate(conversation.lastMessage?.createdAt || conversation.updatedAt)}
+        </time>
+      </button>
+    `).join('');
+  };
+
+  const setChatUser = (conversation: Conversation) => {
+    const user = conversation.otherUser;
+    const photo = getUserPhoto(user);
+    if (chatName) chatName.textContent = user.nombre;
+    if (chatRole) chatRole.textContent = user.rol === 'barbero' ? 'Barbero' : 'Cliente';
+    if (chatAvatar) {
+      chatAvatar.textContent = photo ? '' : initials(user.nombre);
+      chatAvatar.classList.toggle('has-photo', Boolean(photo));
+      chatAvatar.style.backgroundImage = photo ? `url(${JSON.stringify(photo)})` : '';
+    }
+  };
+
+  const loadMessages = async (forceScroll = false) => {
+    if (!selectedConversationId || !messagesHistory || document.hidden) return;
+    try {
+      const shouldKeepAtBottom = forceScroll ||
+        messagesHistory.scrollHeight - messagesHistory.scrollTop - messagesHistory.clientHeight < 90;
+      const messages = await apiFetch(`/conversations/${encodeURIComponent(selectedConversationId)}/messages`) as ChatMessage[];
+
+      if (messages.length === 0) {
+        messagesHistory.innerHTML = '<p class="messages-state chat-state">No hay mensajes todavía. Envía el primero.</p>';
+      } else {
+        messagesHistory.innerHTML = messages.map((message) => {
+          const own = message.senderId === currentUser?.id;
+          return `
+            <article class="message-row ${own ? 'is-sent' : 'is-received'}">
+              <div class="message-bubble">
+                <p>${escapeHtml(message.content).replace(/\n/g, '<br />')}</p>
+                <time datetime="${escapeHtml(message.createdAt)}">${formatMessageTime(message.createdAt)}</time>
+              </div>
+            </article>`;
+        }).join('');
+      }
+
+      if (shouldKeepAtBottom) messagesHistory.scrollTop = messagesHistory.scrollHeight;
+    } catch (error) {
+      showError(error instanceof Error ? error.message : 'No se pudieron cargar los mensajes.');
+    }
+  };
+
+  const openConversation = async (conversationId: string, forceScroll = true) => {
+    const conversation = conversations.find((item) => item.id === conversationId);
+    if (!conversation) return;
+    selectedConversationId = conversationId;
+    app?.classList.remove('has-active-chat', 'is-chat-open');
+    app?.classList.add('has-selected-conversation');
+    ensureDesktopSidebar();
+    renderConversations();
+    setChatUser(conversation);
+    chatEmpty?.setAttribute('hidden', '');
+    chatContent?.removeAttribute('hidden');
+    mobileChatOpen = isCompactMessagesView();
+    if (mobileChatOpen) {
+      app?.classList.add('is-mobile-chat-open');
+    } else {
+      app?.classList.remove('is-mobile-chat-open');
+    }
+    ensureDesktopSidebar();
+    history.replaceState(null, '', `/mensajes?conversation=${encodeURIComponent(conversationId)}`);
+    showError();
+    await loadMessages(forceScroll);
+    messageInput?.focus({ preventScroll: true });
+  };
+
+  const loadConversations = async (preserveSelection = true) => {
+    const data = await apiFetch('/conversations') as Conversation[];
+    conversations = data;
+    renderConversations();
+
+    if (preserveSelection && selectedConversationId) {
+      const selected = conversations.find((item) => item.id === selectedConversationId);
+      if (selected) setChatUser(selected);
+    }
+  };
+
+  const initialize = async () => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+
+    if (!token) {
+      window.location.href = '/login';
+      return;
+    }
+
+    try {
+      currentUser = await apiFetch('/auth/me') as ChatUser;
+      if (!['cliente', 'barbero'].includes(currentUser.rol)) {
+        throw new Error('La mensajería está disponible para clientes y barberos.');
+      }
+
+      const params = new URLSearchParams(window.location.search);
+      const barberId = Number(params.get('barbero'));
+      let requestedConversation = params.get('conversation') || '';
+
+      if (barberId && currentUser.rol === 'cliente') {
+        const conversation = await apiFetch('/conversations', {
+          method: 'POST',
+          body: JSON.stringify({ barberId }),
+        }) as Conversation;
+        requestedConversation = conversation.id;
+      }
+
+      await loadConversations(false);
+      if (requestedConversation && conversations.some((item) => item.id === requestedConversation)) {
+        await openConversation(requestedConversation);
+      } else if (conversations.length > 0 && !isCompactMessagesView()) {
+        await openConversation(conversations[0].id);
+      }
+
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+
+      conversationsPollingId = window.setInterval(() => {
+        if (!document.hidden) void loadConversations();
+      }, 10000);
+      messagesPollingId = window.setInterval(() => void loadMessages(), 5000);
+    } catch (error) {
+      if (conversationsList) {
+        conversationsList.innerHTML = `<p class="messages-state is-error">${escapeHtml(error instanceof Error ? error.message : 'No se pudo abrir Mensajes.')}</p>`;
+      }
+    }
+  };
+
+  conversationsList?.addEventListener('click', (event) => {
+    const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-conversation-id]');
+    if (button?.dataset.conversationId) void openConversation(button.dataset.conversationId);
+  });
+
+  chatBack?.addEventListener('click', () => {
+    mobileChatOpen = false;
+    app?.classList.remove('is-mobile-chat-open');
+  });
+
+  window.addEventListener('resize', () => {
+    ensureDesktopSidebar();
+    if (!isCompactMessagesView()) {
+      mobileChatOpen = false;
+      app?.classList.remove('is-mobile-chat-open', 'has-active-chat', 'is-chat-open');
+    }
+  });
+
+  messageInput?.addEventListener('input', () => {
+    messageInput.style.height = 'auto';
+    messageInput.style.height = `${Math.min(messageInput.scrollHeight, 130)}px`;
+  });
+
+  messageInput?.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      messageForm?.requestSubmit();
+    }
+  });
+
+  messageForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const content = messageInput?.value.trim() || '';
+    if (!selectedConversationId || !content || !messageInput || !sendButton) return;
+
+    sendButton.disabled = true;
+    messageInput.disabled = true;
+    showError();
+    try {
+      await apiFetch(`/conversations/${encodeURIComponent(selectedConversationId)}/messages`, {
+        method: 'POST',
+        body: JSON.stringify({ content }),
+      });
+      messageInput.value = '';
+      messageInput.style.height = 'auto';
+      await Promise.all([loadMessages(true), loadConversations()]);
+    } catch (error) {
+      showError(error instanceof Error ? error.message : 'No se pudo enviar el mensaje.');
+    } finally {
+      sendButton.disabled = false;
+      messageInput.disabled = false;
+      messageInput.focus({ preventScroll: true });
+    }
+  });
+
+  window.addEventListener('pagehide', () => {
+    if (messagesPollingId) window.clearInterval(messagesPollingId);
+    if (conversationsPollingId) window.clearInterval(conversationsPollingId);
+  });
+
+  void initialize();
+</script>

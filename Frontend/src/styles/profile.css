@@ -77,6 +77,10 @@
   color: var(--yellow);
 }
 
+.profile-sidebar-link.is-hidden {
+  display: none;
+}
+
 .profile-sidebar-link.is-active::before {
   background: var(--yellow);
   border-radius: 999px;

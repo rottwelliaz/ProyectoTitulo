@@ -25,6 +25,12 @@ import logoConce from '../assets/logotesis.png';
         </span>
         Configuración
       </a>
+      <a id="profile-messages-nav" class="profile-sidebar-link" href="/mensajes">
+        <span class="profile-link-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z"/><path d="M8 9h8M8 13h5"/></svg>
+        </span>
+        Mensajes
+      </a>
     </nav>
 
     <section class="profile-booking">
@@ -64,6 +70,7 @@ import logoConce from '../assets/logotesis.png';
           <a id="admin-panel-link" href="/admin" class="profile-dropdown-item is-hidden">
             Panel admin
           </a>
+          <a id="profile-dropdown-messages" href="/mensajes" class="profile-dropdown-item">Mensajes</a>
           <a href="/configuracion" class="profile-dropdown-item">Configuración</a>
           <button id="logout-button" class="profile-dropdown-item" type="button">
             Cerrar sesión
@@ -197,6 +204,8 @@ import logoConce from '../assets/logotesis.png';
   const profileDropdown = document.querySelector<HTMLDivElement>('#profile-dropdown');
   const professionalProfileLink = document.querySelector<HTMLAnchorElement>('#professional-profile-link');
   const adminPanelLink = document.querySelector<HTMLAnchorElement>('#admin-panel-link');
+  const profileMessagesNav = document.querySelector<HTMLAnchorElement>('#profile-messages-nav');
+  const dropdownMessagesLink = document.querySelector<HTMLAnchorElement>('#profile-dropdown-messages');
   const logoutButton = document.querySelector<HTMLButtonElement>('#logout-button');
   const clientAppointmentsCard = document.querySelector<HTMLElement>('#client-appointments-card');
   const clientAppointmentsList = document.querySelector<HTMLElement>('#client-appointments-list');
@@ -217,6 +226,7 @@ import logoConce from '../assets/logotesis.png';
     nombre: string;
     email: string;
     telefono: string | null;
+    foto_perfil?: string | null;
     rol: string;
     fecha_creacion: string;
     perfilBarbero?: {
@@ -251,7 +261,7 @@ import logoConce from '../assets/logotesis.png';
 
   const loadSavedPhoto = () => {
     setProfilePhoto(
-      localStorage.getItem(getPhotoStorageKey()) || currentUser?.perfilBarbero?.foto_perfil || null,
+      localStorage.getItem(getPhotoStorageKey()) || currentUser?.foto_perfil || currentUser?.perfilBarbero?.foto_perfil || null,
     );
   };
 
@@ -439,6 +449,8 @@ import logoConce from '../assets/logotesis.png';
     if (telefonoInput) telefonoInput.value = user.telefono || '';
     professionalProfileLink?.classList.toggle('is-hidden', user.rol !== 'barbero');
     adminPanelLink?.classList.toggle('is-hidden', user.rol !== 'admin');
+    profileMessagesNav?.classList.toggle('is-hidden', !['cliente', 'barbero'].includes(user.rol));
+    dropdownMessagesLink?.classList.toggle('is-hidden', !['cliente', 'barbero'].includes(user.rol));
     clientAppointmentsCard?.classList.toggle('is-hidden', user.rol !== 'cliente');
   };
 
@@ -462,9 +474,13 @@ import logoConce from '../assets/logotesis.png';
       }
 
       currentUser = data;
-      const cachedUser = data?.perfilBarbero
-        ? { ...data, perfilBarbero: { ...data.perfilBarbero, foto_perfil: null } }
-        : data;
+      const cachedUser = {
+        ...data,
+        foto_perfil: null,
+        ...(data?.perfilBarbero
+          ? { perfilBarbero: { ...data.perfilBarbero, foto_perfil: null } }
+          : {}),
+      };
       localStorage.setItem('user', JSON.stringify(cachedUser));
       renderUser(currentUser);
       loadSavedPhoto();
@@ -505,7 +521,7 @@ import logoConce from '../assets/logotesis.png';
       localStorage.setItem(getPhotoStorageKey(), imageData);
       setProfilePhoto(imageData);
 
-      if (currentUser?.rol === 'barbero' && token) {
+      if (currentUser && ['cliente', 'barbero'].includes(currentUser.rol) && token) {
         try {
           const response = await fetch(`${API_URL}/auth/me/photo`, {
             method: 'PUT',

@@ -47,6 +47,7 @@ export const getMe = async (req: AuthRequest, res: Response) => {
         nombre:         true,
         email:          true,
         telefono:       true,
+        foto_perfil:    true,
         rol:            true,
         aprobado:       true,
         fecha_creacion: true,
@@ -135,8 +136,8 @@ export const updateMe = async (req: AuthRequest, res: Response) => {
 
 export const updateProfilePhoto = async (req: AuthRequest, res: Response) => {
   try {
-    if (req.user?.rol !== 'barbero') {
-      return res.status(403).json({ message: 'Solo los barberos tienen una foto profesional pública' });
+    if (!req.user || !['cliente', 'barbero'].includes(req.user.rol)) {
+      return res.status(403).json({ message: 'Tu tipo de cuenta no permite cambiar la foto de perfil' });
     }
 
     const fotoPerfil = req.body?.foto_perfil;
@@ -147,17 +148,21 @@ export const updateProfilePhoto = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: 'La foto de perfil no puede superar 4 MB' });
     }
 
-    const profile = await prisma.barberProfile.findUnique({
-      where: { usuarioId: req.user.id },
-    });
-    if (!profile) {
-      return res.status(404).json({ message: 'No tienes perfil profesional creado' });
-    }
+    const updated = await prisma.$transaction(async (transaction) => {
+      const user = await transaction.user.update({
+        where: { id: req.user!.id },
+        data: { foto_perfil: fotoPerfil },
+        select: { id: true, foto_perfil: true },
+      });
 
-    const updated = await prisma.barberProfile.update({
-      where: { id: profile.id },
-      data: { foto_perfil: fotoPerfil },
-      select: { id: true, foto_perfil: true },
+      if (req.user!.rol === 'barbero') {
+        await transaction.barberProfile.updateMany({
+          where: { usuarioId: req.user!.id },
+          data: { foto_perfil: fotoPerfil },
+        });
+      }
+
+      return user;
     });
 
     return res.json(updated);

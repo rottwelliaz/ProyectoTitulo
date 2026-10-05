@@ -5,6 +5,7 @@ import authRoutes from './routes/auth';
 import serviciosRoutes from './routes/servicios';
 import citaRoutes from './routes/citas';
 import lugarTrabajoRoutes from './routes/lugartrabajo';
+import conversationsRoutes from './routes/conversations';
 
 const app = express();
 
@@ -17,6 +18,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/servicios', serviciosRoutes);
 app.use('/api/citas', citaRoutes);
 app.use('/api/lugartrabajo', lugarTrabajoRoutes);
+app.use('/api/conversations', conversationsRoutes);
 
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date() });
@@ -24,17 +26,16 @@ app.get('/health', (req, res) => {
 
 const PORT = process.env.PORT || 3001;
 
-const startServer = async () => {
-  try {
-    console.log('✅ Base de datos conectada');
+const server = app.listen(PORT, () => {
+  console.log(`Backend iniciado en http://localhost:${PORT}`);
+});
 
-    app.listen(PORT, () => {
-      console.log(`🚀 Servidor en puerto ${PORT}`);
-    });
-  } catch (error) {
-    console.error('❌ Error al iniciar:', error);
-    process.exit(1);
+server.on('error', (error: NodeJS.ErrnoException) => {
+  if (error.code === 'EADDRINUSE') {
+    console.error(`No se pudo iniciar: el puerto ${PORT} ya esta en uso.`);
+  } else {
+    console.error('No se pudo iniciar el backend.');
   }
-};
 
-startServer();
+  process.exit(1);
+});

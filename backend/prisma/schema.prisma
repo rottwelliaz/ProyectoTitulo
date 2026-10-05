@@ -22,25 +22,27 @@ enum CitaEstado {
 }
 
 model User {
-  id                 Int              @id @default(autoincrement())
-  nombre             String
-  email              String           @unique
-  password           String
-  telefono           String?
-  rol                UserRole         @default(cliente)
-  aprobado           Boolean          @default(true)
-  fecha_creacion     DateTime         @default(now())
+  id             Int      @id @default(autoincrement())
+  nombre         String
+  email          String   @unique
+  password       String
+  telefono       String?
+  foto_perfil    String?
+  rol            UserRole @default(cliente)
+  aprobado       Boolean  @default(true)
+  fecha_creacion DateTime @default(now())
 
-  perfilBarbero      BarberProfile?
-  citas              Cita[]           @relation("ClienteCitas")
-  mensajesEnviados   Message[]        @relation("emisorMessages")
-  mensajesRecibidos  Message[]        @relation("receptorMessages")
+  perfilBarbero         BarberProfile?
+  citas                 Cita[]         @relation("ClienteCitas")
+  conversacionesCliente Conversation[] @relation("ClientConversations")
+  conversacionesBarbero Conversation[] @relation("BarberConversations")
+  mensajesEnviados      Message[]      @relation("MessageSender")
 }
 
 model BarberProfile {
-  id               Int       @id @default(autoincrement())
-  usuarioId        Int       @unique
-  usuario          User      @relation(fields: [usuarioId], references: [id])
+  id               Int           @id @default(autoincrement())
+  usuarioId        Int           @unique
+  usuario          User          @relation(fields: [usuarioId], references: [id])
   biografia        String?
   foto_perfil      String?
   bancoNombre      String?
@@ -52,51 +54,68 @@ model BarberProfile {
   lugarTrabajoId   Int?
   lugarTrabajo     LugarTrabajo? @relation(fields: [lugarTrabajoId], references: [id])
 
-  servicios        Service[]
-  citas            Cita[]    @relation("BarberoCitas")
+  servicios Service[]
+  citas     Cita[]    @relation("BarberoCitas")
 }
 
 model LugarTrabajo {
-  id               Int             @id @default(autoincrement())
-  nombre_barberia  String?
-  direccion        String?
+  id              Int     @id @default(autoincrement())
+  nombre_barberia String?
+  direccion       String?
 
-  barberos         BarberProfile[]
+  barberos BarberProfile[]
 }
 
 model Service {
-  id                String         @id @default(uuid())
-  perfilBarberoId   Int
-  perfilBarbero     BarberProfile  @relation(fields: [perfilBarberoId], references: [id])
-  nombre_servicio   String
-  descripcion       String?
-  precio            Int
-  duracion_minutos  Int
-  citas             Cita[]
+  id               String        @id @default(uuid())
+  perfilBarberoId  Int
+  perfilBarbero    BarberProfile @relation(fields: [perfilBarberoId], references: [id])
+  nombre_servicio  String
+  descripcion      String?
+  precio           Int
+  duracion_minutos Int
+  citas            Cita[]
 }
 
 model Cita {
-  id             String       @id @default(uuid())
-  clienteId      Int?
-  cliente        User?         @relation("ClienteCitas", fields: [clienteId], references: [id])
-  barberoId      Int
-  barbero        BarberProfile @relation("BarberoCitas", fields: [barberoId], references: [id])
-  servicioId     String?
-  servicio       Service?      @relation(fields: [servicioId], references: [id])
-  fecha_hora     DateTime
-  estado         CitaEstado   @default(disponible)
+  id                       String        @id @default(uuid())
+  clienteId                Int?
+  cliente                  User?         @relation("ClienteCitas", fields: [clienteId], references: [id])
+  barberoId                Int
+  barbero                  BarberProfile @relation("BarberoCitas", fields: [barberoId], references: [id])
+  servicioId               String?
+  servicio                 Service?      @relation(fields: [servicioId], references: [id])
+  fecha_hora               DateTime
+  estado                   CitaEstado    @default(disponible)
   comprobanteTransferencia String?
   comprobanteNombre        String?
-  fecha_creacion DateTime     @default(now())
+  fecha_creacion           DateTime      @default(now())
+}
+
+model Conversation {
+  id        String    @id @default(uuid())
+  clientId  Int
+  client    User      @relation("ClientConversations", fields: [clientId], references: [id], onDelete: Cascade)
+  barberId  Int
+  barber    User      @relation("BarberConversations", fields: [barberId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  messages  Message[]
+
+  @@unique([clientId, barberId])
+  @@index([clientId, updatedAt])
+  @@index([barberId, updatedAt])
 }
 
 model Message {
-  id          String   @id @default(uuid())
-  emisorId    Int
-  emisor      User     @relation("emisorMessages", fields: [emisorId], references: [id])
-  receptorId  Int
-  receptor    User     @relation("receptorMessages", fields: [receptorId], references: [id])
-  contenido   String
-  leido       Boolean  @default(false)
-  fecha_envio DateTime @default(now())
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       Int
+  sender         User         @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  content        String
+  read           Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
 }

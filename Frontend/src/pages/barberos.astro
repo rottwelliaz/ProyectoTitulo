@@ -50,6 +50,7 @@ import '../styles/barberos.css';
             <a id="profile-link" class="hidden" href="/perfil">Mi perfil</a>
             <a id="professional-profile-link" class="hidden" href="/perfil-profesional">Perfil profesional</a>
             <a id="admin-panel-link" class="hidden" href="/admin">Panel admin</a>
+            <a id="messages-link" class="hidden" href="/mensajes">Mensajes</a>
             <a href="/configuracion">Configuración</a>
             <button id="logout-button" type="button">Cerrar sesión</button>
           </div>
@@ -137,6 +138,7 @@ import '../styles/barberos.css';
   const profileLink = document.querySelector<HTMLAnchorElement>('#profile-link');
   const professionalProfileLink = document.querySelector<HTMLAnchorElement>('#professional-profile-link');
   const adminPanelLink = document.querySelector<HTMLAnchorElement>('#admin-panel-link');
+  const messagesLink = document.querySelector<HTMLAnchorElement>('#messages-link');
   const logoutButton = document.querySelector<HTMLButtonElement>('#logout-button');
 
   interface Service {
@@ -298,6 +300,7 @@ import '../styles/barberos.css';
     profileLink?.classList.add('hidden');
     professionalProfileLink?.classList.add('hidden');
     adminPanelLink?.classList.add('hidden');
+    messagesLink?.classList.toggle('hidden', !['cliente', 'barbero'].includes(user?.rol));
 
     if (user?.rol === 'admin') {
       adminPanelLink?.classList.remove('hidden');
@@ -448,6 +451,7 @@ import '../styles/barberos.css';
       const isFavorite = favorites.has(barber.id);
       const lowestPrice = getLowestPrice(barber);
       const shortestDuration = getShortestDuration(barber);
+      const canMessage = getStoredUser()?.rol === 'cliente';
       return `
         <article class="barber-profile-card" data-barber-id="${barber.id}">
           <div class="barber-profile-photo" style="--photo: url('${getDisplayedPhoto(barber)}');">
@@ -475,7 +479,10 @@ import '../styles/barberos.css';
                 <span>${shortestDuration !== null ? `Desde ${shortestDuration} min` : 'Duración no informada'}</span>
               </p>
             ` : ''}
-            <a class="profile-button" href="${getBookingUrl(barber)}" data-profile-id="${profileId}">Ver perfil</a>
+            <div class="barber-card-actions">
+              <a class="profile-button" href="${getBookingUrl(barber)}" data-profile-id="${profileId}">Ver perfil</a>
+              ${canMessage ? `<a class="message-button" href="/mensajes?barbero=${barber.id}">Enviar mensaje</a>` : ''}
+            </div>
           </div>
         </article>
       `;
