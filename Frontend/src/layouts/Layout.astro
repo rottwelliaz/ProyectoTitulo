@@ -83,6 +83,16 @@ const { title } = Astro.props;
 
       const PENDING_SCROLL_KEY = 'pending-scroll-target';
 
+      document.addEventListener('click', (event) => {
+        const bookingLink = (event.target as HTMLElement).closest<HTMLAnchorElement>('a[href^="/booking"]');
+        if (!bookingLink || localStorage.getItem('token')) return;
+
+        event.preventDefault();
+        const destination = new URL(bookingLink.href, window.location.origin);
+        const redirect = `${destination.pathname}${destination.search}${destination.hash}`;
+        window.location.href = `/login?redirect=${encodeURIComponent(redirect)}`;
+      });
+
       const scrollToHash = (hash: string, updateUrl = false) => {
         if (!hash || hash === '#') return false;
         const target = document.querySelector<HTMLElement>(hash);

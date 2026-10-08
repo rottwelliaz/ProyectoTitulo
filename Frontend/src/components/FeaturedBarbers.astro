@@ -87,6 +87,10 @@
         const initials = getInitials(barber.nombre);
         const workplace = barber.perfilBarbero?.lugarTrabajo?.nombre_barberia || 'Barbero disponible';
         const bookingUrl = barber.perfilBarbero?.id ? `/booking?barbero=${barber.perfilBarbero.id}#servicios` : '/booking';
+        const hasSession = Boolean(localStorage.getItem('token'));
+        const actionUrl = hasSession
+          ? bookingUrl
+          : `/login?redirect=${encodeURIComponent(bookingUrl)}`;
         const photo = getDisplayedPhoto(barber);
 
         return `
@@ -96,7 +100,7 @@
             </div>
             <h3>${escapeHtml(barber.nombre)}</h3>
             <p class="barber-specialty">${escapeHtml(workplace)}</p>
-            <a href="${bookingUrl}">Reservar</a>
+            <a href="${actionUrl}">${hasSession ? 'Reservar' : 'Inicia sesión para reservar'}</a>
           </article>
         `;
       })

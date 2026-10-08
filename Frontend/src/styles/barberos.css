@@ -506,6 +506,24 @@
   margin-top: 0;
 }
 
+.barber-card-actions.is-single {
+  grid-template-columns: 1fr;
+}
+
+.profile-button.login-required {
+  background: #ffc928;
+  color: #061a45;
+  padding: 0.55rem 0.8rem;
+  text-align: center;
+}
+
+.profile-button.login-required:hover,
+.profile-button.login-required:focus-visible {
+  background: #ffd94d;
+  outline: 2px solid rgba(255, 201, 40, 0.35);
+  outline-offset: 2px;
+}
+
 .message-button {
   align-items: center;
   border: 1px solid #328bff;
