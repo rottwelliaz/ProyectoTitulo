@@ -1,5 +1,6 @@
 ---
 import { Search } from 'lucide-astro';
+import SessionNav from './SessionNav.astro';
 
 interface Props {
   logoSrc: string;
@@ -15,182 +16,20 @@ const { logoSrc } = Astro.props;
 
   <form id="home-search-form" class="search-pill" action="/barberos" method="get">
     <Search class="search-lucide-icon" size={20} aria-hidden="true" />
-    <input id="home-search-input" name="buscar" type="search" placeholder="Buscar barberías o barberos..." />
+    <input id="home-search-input" name="buscar" type="search" aria-label="Buscar barberías o barberos" placeholder="Buscar barberías o barberos..." />
   </form>
 
   <nav class="home-nav" aria-label="Navegación principal">
     <a class="nav-link active" href="/home#inicio">Inicio</a>
     <a class="nav-link" href="/barberos">Barberos</a>
     <a class="nav-link" href="/home#contacto">Sobre nosotros</a>
-
-    <a id="login-link" href="/login" class="home-nav-cta">Ingresar</a>
-    <div id="profile-menu" class="profile-menu">
-      <button
-        id="profile-button"
-        class="profile-circle"
-        data-user-avatar
-        type="button"
-        aria-label="Abrir menu de usuario"
-        aria-expanded="false"
-        aria-controls="profile-dropdown"
-      >
-        <span data-avatar-fallback>F</span>
-      </button>
-      <button
-        id="profile-name-button"
-        class="profile-name"
-        type="button"
-        aria-label="Abrir menu de usuario"
-        aria-expanded="false"
-        aria-controls="profile-dropdown"
-      >
-        Usuario
-      </button>
-
-      <div id="profile-dropdown" class="profile-dropdown" aria-hidden="true">
-        <a href="/perfil" class="profile-dropdown-item">Mi perfil</a>
-        <a id="professional-profile-link" href="/perfil-profesional" class="profile-dropdown-item hidden">
-          Perfil profesional
-        </a>
-        <a id="admin-barbers-link" href="/admin" class="profile-dropdown-item hidden">
-          Panel admin
-        </a>
-        <a id="home-messages-link" href="/mensajes" class="profile-dropdown-item hidden">Mensajes</a>
-        <a href="/configuracion" class="profile-dropdown-item">Configuración</a>
-        <button id="logout-button" class="profile-dropdown-item" type="button">
-          Cerrar sesión
-        </button>
-      </div>
-    </div>
+    <SessionNav showHome={false} label="Cuenta de usuario" />
   </nav>
 </header>
 
 <script>
-  const loginLink = document.querySelector<HTMLAnchorElement>('#login-link');
-  const profileMenu = document.querySelector<HTMLDivElement>('#profile-menu');
-  const profileButton = document.querySelector<HTMLButtonElement>('#profile-button');
-  const profileNameButton = document.querySelector<HTMLButtonElement>('#profile-name-button');
-  const profileDropdown = document.querySelector<HTMLDivElement>('#profile-dropdown');
-  const professionalProfileLink = document.querySelector<HTMLAnchorElement>('#professional-profile-link');
-  const adminBarbersLink = document.querySelector<HTMLAnchorElement>('#admin-barbers-link');
-  const messagesLink = document.querySelector<HTMLAnchorElement>('#home-messages-link');
-  const logoutButton = document.querySelector<HTMLButtonElement>('#logout-button');
   const homeSearchForm = document.querySelector<HTMLFormElement>('#home-search-form');
   const homeSearchInput = document.querySelector<HTMLInputElement>('#home-search-input');
-  const token = localStorage.getItem('token');
-
-  const getStoredUser = () => {
-    const storedUser = localStorage.getItem('user');
-    if (!storedUser) return null;
-
-    try {
-      return JSON.parse(storedUser);
-    } catch {
-      return null;
-    }
-  };
-
-  const setProfileIdentity = () => {
-    const user = getStoredUser();
-    const rawName = String(user?.nombre || user?.name || user?.email || 'Usuario').trim();
-    const displayName = rawName.includes('@') ? rawName.split('@')[0] : rawName;
-    const initial = displayName.charAt(0).toUpperCase() || 'U';
-
-    if (profileNameButton) profileNameButton.textContent = displayName;
-    profileButton?.querySelector('span')?.replaceChildren(initial);
-
-    if (user?.rol === 'barbero') {
-      professionalProfileLink?.classList.remove('hidden');
-    } else {
-      professionalProfileLink?.classList.add('hidden');
-    }
-
-    if (user?.rol === 'admin') {
-      adminBarbersLink?.classList.remove('hidden');
-    } else {
-      adminBarbersLink?.classList.add('hidden');
-    }
-
-    messagesLink?.classList.toggle('hidden', !['cliente', 'barbero'].includes(user?.rol));
-  };
-
-  const closeProfileMenu = () => {
-    profileMenu?.classList.remove('is-open');
-    profileButton?.setAttribute('aria-expanded', 'false');
-    profileNameButton?.setAttribute('aria-expanded', 'false');
-    profileDropdown?.setAttribute('aria-hidden', 'true');
-  };
-
-  const toggleProfileMenu = () => {
-    const isOpen = profileMenu?.classList.toggle('is-open') ?? false;
-
-    profileButton?.setAttribute('aria-expanded', String(isOpen));
-    profileNameButton?.setAttribute('aria-expanded', String(isOpen));
-    profileDropdown?.setAttribute('aria-hidden', String(!isOpen));
-  };
-
-  if (token) {
-    loginLink?.classList.add('hidden');
-    profileMenu?.classList.add('is-visible');
-    setProfileIdentity();
-
-    void fetch('http://localhost:3001/api/auth/me', {
-      headers: { Authorization: `Bearer ${token}` },
-    }).then(async (response) => {
-      if (!response.ok) return;
-      const user = await response.json();
-      const cachedUser = {
-        ...user,
-        foto_perfil: null,
-        ...(user?.perfilBarbero
-          ? { perfilBarbero: { ...user.perfilBarbero, foto_perfil: null } }
-          : {}),
-      };
-      localStorage.setItem('user', JSON.stringify(cachedUser));
-      setProfileIdentity();
-      const localPhoto = localStorage.getItem(`profile-photo-${user.id}`);
-      window.dispatchEvent(new CustomEvent('profile-photo-change', {
-        detail: localPhoto || user?.foto_perfil || user?.perfilBarbero?.foto_perfil || null,
-      }));
-
-      const serverPhoto = user?.foto_perfil || user?.perfilBarbero?.foto_perfil || null;
-      if (['cliente', 'barbero'].includes(user.rol) && localPhoto && localPhoto !== serverPhoto) {
-        const photoResponse = await fetch('http://localhost:3001/api/auth/me/photo', {
-          method: 'PUT',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ foto_perfil: localPhoto }),
-        });
-
-        if (photoResponse.ok) {
-          window.dispatchEvent(new CustomEvent('profile-photo-change', { detail: localPhoto }));
-        }
-      }
-    }).catch(() => undefined);
-  }
-
-  profileButton?.addEventListener('click', toggleProfileMenu);
-  profileNameButton?.addEventListener('click', toggleProfileMenu);
-
-  document.addEventListener('click', (event) => {
-    if (!profileMenu?.contains(event.target as Node)) {
-      closeProfileMenu();
-    }
-  });
-
-  document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') {
-      closeProfileMenu();
-    }
-  });
-
-  logoutButton?.addEventListener('click', () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    window.location.href = '/login';
-  });
 
   homeSearchForm?.addEventListener('submit', (event) => {
     event.preventDefault();

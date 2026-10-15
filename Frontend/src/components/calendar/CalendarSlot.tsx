@@ -2,7 +2,7 @@ export type SlotStatus = 'available' | 'booking' | 'reserved' | 'break';
 
 export const SLOT_LABELS: Record<SlotStatus, string> = {
   available: 'Disponible',
-  booking: 'Reserva',
+  booking: 'Bloqueado',
   reserved: 'Reservado',
   break: 'Descanso',
 };

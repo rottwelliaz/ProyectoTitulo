@@ -13,3 +13,13 @@ postgres_data/
 
 /package.json
 /package-lock.json
+
+playwright-report/
+test-results/
+Frontend/.playwright-browsers/
+
+# Local database backups contain private application data.
+/backups/
+/quality-artifacts/
+*.dump
+*.dump.sha256

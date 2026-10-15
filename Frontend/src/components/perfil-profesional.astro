@@ -1,8 +1,11 @@
 ---
 import logoConce from '../assets/logotesis.png';
-import homeFoto from '../assets/homefoto.png';
-import BarberCalendar from './calendar/BarberCalendar';
+import ProfessionalCalendar from './calendar/ProfessionalCalendar';
+import ProfessionalServices from './ProfessionalServices';
+import ProfessionalProfileEditor from './ProfessionalProfileEditor';
+import ProfessionalStatistics from './ProfessionalStatistics';
 import BarberAppointments from './BarberAppointments';
+import SessionNav from './SessionNav.astro';
 import {
   BriefcaseBusiness,
   CalendarDays,
@@ -10,9 +13,10 @@ import {
   CreditCard,
   LayoutDashboard,
   Pencil,
-  Plus,
   MessageCircle,
+  FileCheck2,
   Scissors,
+  Settings,
 } from 'lucide-astro';
 ---
 
@@ -47,6 +51,10 @@ import {
         <CreditCard class="pro-nav-lucide" size={23} aria-hidden="true" />
         Datos bancarios
       </a>
+      <a class="pro-nav-link" href="#configuracion-reservas">
+        <Settings class="pro-nav-lucide" size={23} aria-hidden="true" />
+        Configuración
+      </a>
       <a class="pro-nav-link" href="/mensajes">
         <MessageCircle class="pro-nav-lucide" size={23} aria-hidden="true" />
         Mensajes
@@ -71,10 +79,11 @@ import {
       </div>
 
       <div class="pro-top-actions">
-        <a class="pro-edit-button" href="/perfil">
+        <a class="pro-edit-button" href="#editar-perfil-profesional">
           <Pencil size={18} aria-hidden="true" />
           Editar perfil
         </a>
+        <SessionNav />
       </div>
     </header>
 
@@ -89,79 +98,24 @@ import {
           <h2 id="professional-name">Cargando...</h2>
           <span class="pro-verified" aria-label="Verificado"></span>
         </div>
-        <p id="professional-specialty" class="pro-specialty">Fade Master</p>
-        <p id="professional-shop" class="pro-meta">Barbería El Puente</p>
-        <p id="professional-location" class="pro-meta">Concepción, Chile</p>
-        <p class="pro-rating"><span>★</span> 4.9 <small>(156 reseñas)</small></p>
+        <p id="professional-specialty" class="pro-specialty">Perfil profesional</p>
+        <p id="professional-shop" class="pro-meta"></p>
+        <p id="professional-location" class="pro-meta"></p>
       </div>
 
       <div class="pro-about">
         <h3>Sobre mi</h3>
-        <p id="professional-bio">
-          Apasionado por los detalles y la transformación. Más de 6 años de experiencia entregando estilos únicos y personalizados.
-        </p>
-        <div class="pro-socials" aria-label="Redes sociales">
-          <a href="/perfil-profesional" aria-label="Instagram">ig</a>
-          <a href="/perfil-profesional" aria-label="WhatsApp">wa</a>
-          <a href="/perfil-profesional" aria-label="TikTok">tk</a>
-        </div>
-      </div>
-
-      <div class="pro-shop-photo" style={`background-image: url(${homeFoto.src});`}>
-        <span>Conce Barber Club</span>
+        <p id="professional-bio">Sin biografía registrada.</p>
       </div>
     </section>
 
-    <section class="pro-stats" aria-label="Estadísticas profesionales" hidden>
-      <article class="pro-stat-card">
-        <span class="pro-stat-icon icon-calendar" aria-hidden="true"></span>
-        <div>
-          <p>Citas este mes</p>
-          <strong>128</strong>
-          <small>↑ 18% vs mes anterior</small>
-        </div>
-      </article>
-
-      <article class="pro-stat-card">
-        <span class="pro-stat-icon icon-users" aria-hidden="true"></span>
-        <div>
-          <p>Clientes</p>
-          <strong>87</strong>
-          <small>↑ 12% vs mes anterior</small>
-        </div>
-      </article>
-
-      <article class="pro-stat-card">
-        <span class="pro-stat-icon icon-star" aria-hidden="true"></span>
-        <div>
-          <p>Calificación</p>
-          <strong>4.9 ★★★★★</strong>
-          <small>Basado en 156 reseñas</small>
-        </div>
-      </article>
-    </section>
+    <ProfessionalStatistics client:only="react" />
 
     <section class="pro-grid">
-      <BarberCalendar client:only="react" />
+      <ProfessionalCalendar client:only="react" />
+      <ProfessionalProfileEditor client:only="react" />
 
-      <article id="servicios-profesional" class="pro-panel pro-services">
-        <div class="pro-panel-header">
-          <h2>Mis servicios</h2>
-          <button id="open-service-modal" type="button">
-            <Plus size={18} aria-hidden="true" />
-            Agregar servicio
-          </button>
-        </div>
-
-        <div id="professional-services" class="pro-service-list">
-          <p class="pro-empty">Cargando servicios...</p>
-        </div>
-
-        <template id="service-icon-template">
-          <Scissors size={21} aria-hidden="true" />
-        </template>
-
-      </article>
+      <ProfessionalServices client:only="react" />
 
       <article id="lugar-trabajo" class="pro-panel pro-workplace">
         <div class="pro-panel-header">
@@ -238,53 +192,48 @@ import {
         </form>
       </article>
 
+      <article id="configuracion-reservas" class="pro-panel pro-booking-settings">
+        <div class="booking-settings-heading">
+          <Settings size={20} aria-hidden="true" />
+          <h2>Configuración de reservas</h2>
+        </div>
+
+        <div class="booking-settings-content">
+          <label class="booking-setting-row" for="requires-proof-switch">
+            <span>
+              <strong>Solicitar comprobante de pago</strong>
+              <small>Decide si los clientes deben adjuntar un comprobante al reservar una hora.</small>
+            </span>
+            <span class="booking-switch">
+              <input id="requires-proof-switch" type="checkbox" role="switch" checked disabled />
+              <span aria-hidden="true"></span>
+            </span>
+          </label>
+
+          <div class="booking-setting-state">
+            <FileCheck2 size={21} aria-hidden="true" />
+            <div>
+              <strong id="proof-setting-title">Comprobante obligatorio</strong>
+              <p id="proof-setting-description">Los clientes deberán adjuntar un comprobante para completar su reserva.</p>
+            </div>
+          </div>
+
+          <p id="proof-setting-message" class="booking-setting-message" role="status" aria-live="polite"></p>
+        </div>
+      </article>
+
       <BarberAppointments client:only="react" />
     </section>
   </section>
 
-  <dialog id="service-modal" class="service-modal">
-    <form id="service-form" class="service-form">
-      <div class="service-form-header">
-        <div>
-          <h2>Agregar servicio</h2>
-          <p>Completa los datos que verán tus clientes.</p>
-        </div>
-        <button id="close-service-modal" class="service-modal-close" type="button" aria-label="Cerrar">×</button>
-      </div>
-
-      <label>
-        Nombre del servicio
-        <input name="nombre_servicio" type="text" maxlength="80" required placeholder="Ej: Corte de cabello" />
-      </label>
-
-      <label>
-        Descripción
-        <textarea name="descripcion" maxlength="300" rows="3" placeholder="Describe brevemente el servicio"></textarea>
-      </label>
-
-      <div class="service-form-row">
-        <label>
-          Precio (CLP)
-          <input name="precio" type="number" min="0" step="1" required placeholder="12000" />
-        </label>
-        <label>
-          Duración (minutos)
-          <input name="duracion_minutos" type="number" min="1" step="1" required placeholder="60" />
-        </label>
-      </div>
-
-      <p id="service-form-message" class="service-form-message" role="status"></p>
-
-      <div class="service-form-actions">
-        <button id="cancel-service" type="button">Cancelar</button>
-        <button id="save-service" class="service-save-button" type="submit">Guardar servicio</button>
-      </div>
-    </form>
-  </dialog>
 </main>
 
 <script>
-  const API_URL = 'http://localhost:3001/api';
+  import { requireSession, authFetch as fetch, API_URL, cacheSessionUser } from '../lib/session';
+  import { safePhotoUrl } from '../lib/profilePhoto';
+  void (async () => {
+    if (!(await requireSession())) return;
+
   const token = localStorage.getItem('token');
   const navLinks = document.querySelectorAll<HTMLAnchorElement>('.pro-nav-link');
 
@@ -294,15 +243,6 @@ import {
   const professionalBio = document.querySelector<HTMLElement>('#professional-bio');
   const sidebarName = document.querySelector<HTMLElement>('#sidebar-name');
   const sidebarSpecialty = document.querySelector<HTMLElement>('#sidebar-specialty');
-  const serviceList = document.querySelector<HTMLElement>('#professional-services');
-  const serviceIconTemplate = document.querySelector<HTMLTemplateElement>('#service-icon-template');
-  const serviceModal = document.querySelector<HTMLDialogElement>('#service-modal');
-  const serviceForm = document.querySelector<HTMLFormElement>('#service-form');
-  const serviceFormMessage = document.querySelector<HTMLElement>('#service-form-message');
-  const saveServiceButton = document.querySelector<HTMLButtonElement>('#save-service');
-  const openServiceModalButton = document.querySelector<HTMLButtonElement>('#open-service-modal');
-  const closeServiceModalButton = document.querySelector<HTMLButtonElement>('#close-service-modal');
-  const cancelServiceButton = document.querySelector<HTMLButtonElement>('#cancel-service');
   const workplaceForm = document.querySelector<HTMLFormElement>('#workplace-form');
   const workplaceStatus = document.querySelector<HTMLElement>('#workplace-status');
   const workplaceHelper = document.querySelector<HTMLElement>('#workplace-helper');
@@ -320,6 +260,10 @@ import {
   const saveBankingButton = document.querySelector<HTMLButtonElement>('#save-banking');
   const editBankingButton = document.querySelector<HTMLButtonElement>('#edit-banking');
   const cancelBankingButton = document.querySelector<HTMLButtonElement>('#cancel-banking-edit');
+  const requiresProofSwitch = document.querySelector<HTMLInputElement>('#requires-proof-switch');
+  const proofSettingTitle = document.querySelector<HTMLElement>('#proof-setting-title');
+  const proofSettingDescription = document.querySelector<HTMLElement>('#proof-setting-description');
+  const proofSettingMessage = document.querySelector<HTMLElement>('#proof-setting-message');
   const bankingInputs = bankingForm
     ? Array.from(bankingForm.querySelectorAll<HTMLInputElement>('input'))
     : [];
@@ -334,13 +278,8 @@ import {
   } | null = null;
   let isEditingWorkplace = false;
   let isEditingBanking = false;
+  let currentRequiresProof = true;
 
-  const formatPrice = (value: number) =>
-    new Intl.NumberFormat('es-CL', {
-      style: 'currency',
-      currency: 'CLP',
-      maximumFractionDigits: 0,
-    }).format(value);
 
   navLinks.forEach((link) => {
     link.addEventListener('click', () => {
@@ -351,40 +290,19 @@ import {
   const renderUser = (user: any) => {
     const name = user?.nombre || 'Barbero';
     const profile = user?.perfilBarbero;
-    const shop = profile?.lugarTrabajo?.nombre_barberia || 'Conce Barber Club';
-    const specialty = profile?.biografia ? 'Barbero profesional' : 'Fade Master';
+    const shop = profile?.lugarTrabajo?.nombre_barberia || 'Sin lugar de trabajo registrado';
+    const specialty = profile?.especialidades?.join(' · ') || 'Barbero profesional';
 
     if (professionalName) professionalName.textContent = name;
     if (professionalSpecialty) professionalSpecialty.textContent = specialty;
     if (professionalShop) professionalShop.textContent = shop;
-    if (professionalBio && profile?.biografia) professionalBio.textContent = profile.biografia;
+    if (professionalBio) professionalBio.textContent = profile?.biografia || 'Sin biografía registrada.';
+    const location = document.querySelector('#professional-location');
+    if (location) location.textContent = profile?.lugarTrabajo?.direccion || '';
     if (sidebarName) sidebarName.textContent = name;
     if (sidebarSpecialty) sidebarSpecialty.textContent = specialty;
     renderBanking(profile || null);
-  };
-
-  const renderServices = (services: any[]) => {
-    if (!serviceList) return;
-
-    if (!services.length) {
-      serviceList.innerHTML = '<p class="pro-empty">Aún no tienes servicios registrados.</p>';
-      return;
-    }
-
-    serviceList.innerHTML = services
-      .slice(0, 5)
-      .map((service) => `
-        <article class="pro-service-item">
-          <span class="pro-service-icon" aria-hidden="true">${serviceIconTemplate?.innerHTML || ''}</span>
-          <div>
-            <strong>${service.nombre_servicio}</strong>
-            <small>${service.descripcion || 'Servicio profesional'}</small>
-          </div>
-          <b>${formatPrice(Number(service.precio || 0))}</b>
-          <em>${service.duracion_minutos} min</em>
-        </article>
-      `)
-      .join('');
+    renderBookingSettings(profile?.requiereComprobante ?? true);
   };
 
   const loadProfessionalProfile = async () => {
@@ -405,34 +323,13 @@ import {
         return;
       }
 
-      const cachedUser = user?.perfilBarbero
-        ? { ...user, perfilBarbero: { ...user.perfilBarbero, foto_perfil: null } }
-        : user;
-      localStorage.setItem('user', JSON.stringify(cachedUser));
+      cacheSessionUser(user);
       renderUser(user);
       window.dispatchEvent(new CustomEvent('profile-photo-change', {
-        detail: localStorage.getItem(`profile-photo-${user.id}`) || user?.perfilBarbero?.foto_perfil || null,
+        detail: safePhotoUrl(user.foto_perfil) || safePhotoUrl(user?.perfilBarbero?.foto_perfil),
       }));
-    } catch {
-      window.location.href = '/login';
-    }
-  };
-
-  const loadServices = async () => {
-    if (!token) return;
-
-    try {
-      const response = await fetch(`${API_URL}/servicios`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const services = await response.json().catch(() => []);
-
-      if (!response.ok) throw new Error('No se pudieron cargar los servicios.');
-      renderServices(Array.isArray(services) ? services : []);
-    } catch {
-      if (serviceList) {
-        serviceList.innerHTML = '<p class="pro-empty">No se pudieron cargar tus servicios.</p>';
-      }
+    } catch (error) {
+      if (professionalBio) professionalBio.textContent = error instanceof Error ? error.message : 'No se pudo cargar el perfil.';
     }
   };
 
@@ -456,6 +353,28 @@ import {
     if (!bankingMessage) return;
     bankingMessage.textContent = message;
     bankingMessage.classList.toggle('is-error', isError);
+  };
+
+  const setBookingSettingsMessage = (message = '', isError = false) => {
+    if (!proofSettingMessage) return;
+    proofSettingMessage.textContent = message;
+    proofSettingMessage.classList.toggle('is-error', isError);
+  };
+
+  const renderBookingSettings = (requiresProof: boolean) => {
+    currentRequiresProof = requiresProof;
+    if (requiresProofSwitch) {
+      requiresProofSwitch.checked = requiresProof;
+      requiresProofSwitch.disabled = false;
+    }
+    if (proofSettingTitle) {
+      proofSettingTitle.textContent = requiresProof ? 'Comprobante obligatorio' : 'Reserva sin comprobante';
+    }
+    if (proofSettingDescription) {
+      proofSettingDescription.textContent = requiresProof
+        ? 'Los clientes deberán adjuntar un comprobante para completar su reserva.'
+        : 'Los clientes podrán completar la reserva sin adjuntar archivos.';
+    }
   };
 
   const setBankingReadonly = (readonly: boolean) => {
@@ -546,70 +465,6 @@ import {
       );
     }
   };
-
-  const closeServiceModal = () => {
-    serviceModal?.close();
-    serviceForm?.reset();
-    if (serviceFormMessage) {
-      serviceFormMessage.textContent = '';
-      serviceFormMessage.classList.remove('is-error');
-    }
-  };
-
-  openServiceModalButton?.addEventListener('click', () => serviceModal?.showModal());
-  closeServiceModalButton?.addEventListener('click', closeServiceModal);
-  cancelServiceButton?.addEventListener('click', closeServiceModal);
-
-  serviceModal?.addEventListener('click', (event) => {
-    if (event.target === serviceModal) closeServiceModal();
-  });
-
-  serviceForm?.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    if (!token || !serviceForm || !saveServiceButton) return;
-
-    const formData = new FormData(serviceForm);
-    const payload = {
-      nombre_servicio: String(formData.get('nombre_servicio') || '').trim(),
-      descripcion: String(formData.get('descripcion') || '').trim(),
-      precio: Number(formData.get('precio')),
-      duracion_minutos: Number(formData.get('duracion_minutos')),
-    };
-
-    saveServiceButton.disabled = true;
-    saveServiceButton.textContent = 'Guardando...';
-    if (serviceFormMessage) {
-      serviceFormMessage.textContent = '';
-      serviceFormMessage.classList.remove('is-error');
-    }
-
-    try {
-      const response = await fetch(`${API_URL}/servicios`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
-      const data = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        throw new Error(data.message || 'No se pudo crear el servicio.');
-      }
-
-      closeServiceModal();
-      await loadServices();
-    } catch (error) {
-      if (serviceFormMessage) {
-        serviceFormMessage.textContent = error instanceof Error ? error.message : 'No se pudo crear el servicio.';
-        serviceFormMessage.classList.add('is-error');
-      }
-    } finally {
-      saveServiceButton.disabled = false;
-      saveServiceButton.textContent = 'Guardar servicio';
-    }
-  });
 
   editWorkplaceButton?.addEventListener('click', () => {
     if (!currentWorkplace || !workplaceNameInput || !workplaceAddressInput || !saveWorkplaceButton) return;
@@ -776,7 +631,41 @@ import {
     }
   });
 
+  requiresProofSwitch?.addEventListener('change', async () => {
+    if (!token || !requiresProofSwitch) return;
+
+    const requestedValue = requiresProofSwitch.checked;
+    requiresProofSwitch.disabled = true;
+    setBookingSettingsMessage('Guardando preferencia...');
+
+    try {
+      const response = await fetch(`${API_URL}/auth/me/booking-settings`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ requiereComprobante: requestedValue }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.message || 'No se pudo guardar la configuración.');
+
+      renderBookingSettings(Boolean(data.requiereComprobante));
+      setBookingSettingsMessage('Configuración guardada correctamente.');
+    } catch (error) {
+      renderBookingSettings(currentRequiresProof);
+      setBookingSettingsMessage(
+        error instanceof Error ? error.message : 'No se pudo guardar la configuración.',
+        true,
+      );
+    } finally {
+      requiresProofSwitch.disabled = false;
+    }
+  });
+
+  document.querySelector('.pro-camera')?.addEventListener('click', () => document.querySelector<HTMLInputElement>('#professional-photo-input')?.click());
+  window.addEventListener('professional-profile-updated', () => void loadProfessionalProfile());
   loadProfessionalProfile();
-  loadServices();
   loadWorkplace();
+  })();
 </script>

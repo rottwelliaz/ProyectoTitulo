@@ -1,9 +1,9 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import SessionNav from '../components/SessionNav.astro';
 import logoConce from '../assets/logotesis.png';
 import barberPhoto from '../assets/homefoto.png';
 import {
-  ChevronDown,
   List,
   Search,
   SlidersHorizontal,
@@ -32,31 +32,7 @@ import '../styles/barberos.css';
       </nav>
 
       <div class="barbers-user-actions">
-        <div id="barbers-profile-menu" class="barbers-profile-menu">
-          <button
-            id="barbers-profile-button"
-            class="barbers-profile"
-            type="button"
-            aria-label="Abrir menu de usuario"
-            aria-expanded="false"
-            aria-controls="barbers-profile-dropdown"
-          >
-            <span id="profile-initials" data-user-avatar><i data-avatar-fallback>U</i></span>
-            <strong id="profile-name">Usuario</strong>
-            <ChevronDown size={17} aria-hidden="true" />
-          </button>
-
-          <div id="barbers-profile-dropdown" class="barbers-profile-dropdown" aria-hidden="true">
-            <a id="guest-login-link" class="hidden" href="/login?redirect=/barberos">Iniciar sesión</a>
-            <a id="guest-register-link" class="hidden" href="/registro">Registrarse</a>
-            <a id="profile-link" class="hidden" href="/perfil">Mi perfil</a>
-            <a id="professional-profile-link" class="hidden" href="/perfil-profesional">Perfil profesional</a>
-            <a id="admin-panel-link" class="hidden" href="/admin">Panel admin</a>
-            <a id="messages-link" class="hidden" href="/mensajes">Mensajes</a>
-            <a id="settings-link" href="/configuracion">Configuración</a>
-            <button id="logout-button" type="button">Cerrar sesión</button>
-          </div>
-        </div>
+        <SessionNav showHome={false} label="Cuenta de usuario" />
       </div>
     </header>
 
@@ -120,7 +96,8 @@ import '../styles/barberos.css';
 </Layout>
 
 <script>
-  const API_URL = 'http://localhost:3001/api';
+  import { API_URL, getSession } from '../lib/session';
+  import { safePhotoUrl, setPhotoBackground } from '../lib/profilePhoto';
   const PAGE_SIZE = 8;
 
   const topSearch = document.querySelector<HTMLInputElement>('#top-search');
@@ -132,19 +109,6 @@ import '../styles/barberos.css';
   const cardsViewButton = document.querySelector<HTMLButtonElement>('#cards-view');
   const listViewButton = document.querySelector<HTMLButtonElement>('#list-view');
   const barberPhotoSrc = grid?.dataset.photoSrc || '';
-  const profileMenu = document.querySelector<HTMLDivElement>('#barbers-profile-menu');
-  const profileButton = document.querySelector<HTMLButtonElement>('#barbers-profile-button');
-  const profileDropdown = document.querySelector<HTMLDivElement>('#barbers-profile-dropdown');
-  const profileInitials = document.querySelector<HTMLSpanElement>('#profile-initials');
-  const profileName = document.querySelector<HTMLElement>('#profile-name');
-  const profileLink = document.querySelector<HTMLAnchorElement>('#profile-link');
-  const professionalProfileLink = document.querySelector<HTMLAnchorElement>('#professional-profile-link');
-  const adminPanelLink = document.querySelector<HTMLAnchorElement>('#admin-panel-link');
-  const messagesLink = document.querySelector<HTMLAnchorElement>('#messages-link');
-  const guestLoginLink = document.querySelector<HTMLAnchorElement>('#guest-login-link');
-  const guestRegisterLink = document.querySelector<HTMLAnchorElement>('#guest-register-link');
-  const settingsLink = document.querySelector<HTMLAnchorElement>('#settings-link');
-  const logoutButton = document.querySelector<HTMLButtonElement>('#logout-button');
 
   interface Service {
     id: string;
@@ -160,6 +124,7 @@ import '../styles/barberos.css';
     email?: string;
     telefono?: string | null;
     rol: string;
+    aprobado: boolean;
     perfilBarbero?: {
       id?: number;
       biografia?: string | null;
@@ -173,6 +138,7 @@ import '../styles/barberos.css';
   }
 
   let barbers: BarberUser[] = [];
+  let catalogState: 'loading' | 'ready' | 'error' = 'loading';
   let currentPage = 1;
   let currentView: 'cards' | 'list' = 'cards';
   let isAuthenticated = Boolean(localStorage.getItem('token'));
@@ -209,23 +175,10 @@ import '../styles/barberos.css';
     }
   };
 
-  const getInitials = (name: string) =>
-    name.split(' ').filter(Boolean).slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join('') || 'B';
-
   const getServices = (barber: BarberUser) => barber.perfilBarbero?.servicios || [];
 
   const getDisplayedPhoto = (barber: BarberUser) => {
-    try {
-      const currentUser = getStoredUser();
-      if (currentUser?.id === barber.id) {
-        const localPhoto = localStorage.getItem(`profile-photo-${barber.id}`);
-        if (localPhoto) return localPhoto;
-      }
-    } catch {
-      // Se utiliza la imagen pública o la imagen predeterminada.
-    }
-
-    return barber.perfilBarbero?.foto_perfil || barberPhotoSrc;
+    return safePhotoUrl(barber.perfilBarbero?.foto_perfil) || barberPhotoSrc;
   };
 
   const getLowestPrice = (barber: BarberUser) => {
@@ -272,9 +225,6 @@ import '../styles/barberos.css';
     barber.perfilBarbero?.lugarTrabajo?.nombre_barberia ||
     'Ubicación no informada';
 
-  const getBookingUrl = (barber: BarberUser) =>
-    barber.perfilBarbero?.id ? `/booking?barbero=${barber.perfilBarbero.id}#servicios` : '/booking';
-
   const getFavorites = () => {
     try {
       return new Set(JSON.parse(localStorage.getItem('favoriteBarbers') || '[]') as number[]);
@@ -294,102 +244,9 @@ import '../styles/barberos.css';
     pin: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-5.4 7-12a7 7 0 0 0-14 0c0 6.6 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>',
   };
 
-  const applyProfileUser = (user: any) => {
-    isAuthenticated = true;
-    const rawName = String(user?.nombre || user?.name || user?.email || 'Usuario').trim();
-    const displayName = rawName.includes('@') ? rawName.split('@')[0] : rawName;
-
-    const initialsFallback = profileInitials?.querySelector<HTMLElement>('[data-avatar-fallback]');
-    if (initialsFallback) initialsFallback.textContent = getInitials(displayName);
-    else if (profileInitials) profileInitials.textContent = getInitials(displayName);
-    if (profileName) profileName.textContent = displayName;
-
-    profileLink?.classList.add('hidden');
-    professionalProfileLink?.classList.add('hidden');
-    adminPanelLink?.classList.add('hidden');
-    messagesLink?.classList.toggle('hidden', !['cliente', 'barbero'].includes(user?.rol));
-    guestLoginLink?.classList.add('hidden');
-    guestRegisterLink?.classList.add('hidden');
-    settingsLink?.classList.remove('hidden');
-    logoutButton?.classList.remove('hidden');
-
-    if (user?.rol === 'admin') {
-      adminPanelLink?.classList.remove('hidden');
-    } else if (user?.rol === 'barbero') {
-      professionalProfileLink?.classList.remove('hidden');
-    } else {
-      profileLink?.classList.remove('hidden');
-    }
-  };
-
-  const applyGuestProfile = () => {
-    isAuthenticated = false;
-    const initialsFallback = profileInitials?.querySelector<HTMLElement>('[data-avatar-fallback]');
-    if (initialsFallback) initialsFallback.textContent = 'I';
-    else if (profileInitials) profileInitials.textContent = 'I';
-    if (profileName) profileName.textContent = 'Invitado';
-
-    profileLink?.classList.add('hidden');
-    professionalProfileLink?.classList.add('hidden');
-    adminPanelLink?.classList.add('hidden');
-    messagesLink?.classList.add('hidden');
-    settingsLink?.classList.add('hidden');
-    logoutButton?.classList.add('hidden');
-    guestLoginLink?.classList.remove('hidden');
-    guestRegisterLink?.classList.remove('hidden');
-  };
-
-  const setupProfile = async () => {
-    const token = localStorage.getItem('token');
-    const user = getStoredUser();
-
-    if (!token) {
-      applyGuestProfile();
-      return;
-    }
-
-    if (user) applyProfileUser(user);
-
-    try {
-      const response = await fetch(`${API_URL}/auth/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const freshUser = await response.json().catch(() => null);
-
-      if (!response.ok) {
-        throw new Error(freshUser?.message || 'Sesión inválida');
-      }
-
-      const cachedUser = freshUser?.perfilBarbero
-        ? { ...freshUser, perfilBarbero: { ...freshUser.perfilBarbero, foto_perfil: null } }
-        : freshUser;
-      localStorage.setItem('user', JSON.stringify(cachedUser));
-      applyProfileUser(freshUser);
-      window.dispatchEvent(new CustomEvent('profile-photo-change', {
-        detail: localStorage.getItem(`profile-photo-${freshUser.id}`) || freshUser?.perfilBarbero?.foto_perfil || null,
-      }));
-    } catch {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      applyGuestProfile();
-      renderBarbers();
-    }
-  };
-
-  const closeProfileMenu = () => {
-    profileMenu?.classList.remove('is-open');
-    profileButton?.setAttribute('aria-expanded', 'false');
-    profileDropdown?.setAttribute('aria-hidden', 'true');
-  };
-
-  const toggleProfileMenu = () => {
-    const isOpen = profileMenu?.classList.toggle('is-open') ?? false;
-    profileButton?.setAttribute('aria-expanded', String(isOpen));
-    profileDropdown?.setAttribute('aria-hidden', String(!isOpen));
-  };
 
   const getFilteredBarbers = () => {
-    const search = normalize(barberSearch?.value || '');
+    const search = normalize((barberSearch?.value || '').trim());
     const sort = sortFilter?.value || 'name-asc';
 
     return barbers
@@ -398,7 +255,8 @@ import '../styles/barberos.css';
         const searchable = normalize([
           barber.nombre,
           barber.email || '',
-          getSpecialty(barber),
+          ...services.map((service) => service.nombre_servicio),
+          barber.perfilBarbero?.biografia || '',
           getLocation(barber),
           barber.perfilBarbero?.lugarTrabajo?.nombre_barberia || '',
         ].join(' '));
@@ -455,7 +313,7 @@ import '../styles/barberos.css';
   };
 
   const renderBarbers = () => {
-    if (!grid || !countLabel) return;
+    if (!grid || !countLabel || catalogState !== 'ready') return;
 
     const favorites = getFavorites();
     const filtered = getFilteredBarbers();
@@ -468,7 +326,9 @@ import '../styles/barberos.css';
     grid.classList.toggle('is-list', currentView === 'list');
 
     if (visible.length === 0) {
-      grid.innerHTML = '<p class="barbers-empty">No hay barberos que coincidan con los filtros.</p>';
+      grid.innerHTML = barbers.length === 0
+        ? '<p class="barbers-empty">No hay barberos disponibles por el momento.</p>'
+        : '<p class="barbers-empty">No hay barberos que coincidan con los filtros.</p>';
       renderPagination(totalPages);
       return;
     }
@@ -481,13 +341,10 @@ import '../styles/barberos.css';
       const lowestPrice = getLowestPrice(barber);
       const shortestDuration = getShortestDuration(barber);
       const canMessage = isAuthenticated && getStoredUser()?.rol === 'cliente';
-      const bookingUrl = getBookingUrl(barber);
-      const profileAction = isAuthenticated
-        ? `<a class="profile-button" href="${escapeHtml(bookingUrl)}" data-profile-id="${profileId}">Ver perfil</a>`
-        : `<a class="profile-button login-required" href="/login?redirect=${encodeURIComponent(bookingUrl)}">Inicia sesión para reservar</a>`;
+      const profileAction = `<a class="profile-button" href="/barbero?barbero=${profileId}" data-profile-id="${profileId}">Ver perfil</a>`;
       return `
         <article class="barber-profile-card" data-barber-id="${barber.id}">
-          <div class="barber-profile-photo" style="--photo: url('${getDisplayedPhoto(barber)}');">
+          <div class="barber-profile-photo">
             <span class="availability ${hasServices ? '' : 'busy'}">${hasServices ? 'Disponible' : 'Sin servicios'}</span>
           </div>
           <div class="barber-profile-body">
@@ -521,23 +378,30 @@ import '../styles/barberos.css';
       `;
     }).join('');
 
+    grid.querySelectorAll<HTMLElement>('.barber-profile-photo').forEach((photo, index) => {
+      setPhotoBackground(photo, getDisplayedPhoto(visible[index]), '--photo');
+    });
+
     renderPagination(totalPages);
   };
 
   const loadBarbers = async () => {
     try {
       const response = await fetch(`${API_URL}/usuarios?rol=barbero`);
-      const data = await response.json().catch(() => []);
+      const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'No se pudieron cargar los barberos.');
+        throw new Error('No se pudieron cargar los barberos.');
       }
 
-      barbers = Array.isArray(data) ? data.filter((barber) => barber.rol === 'barbero') : [];
+      if (!Array.isArray(data)) throw new Error('Respuesta de catálogo inválida.');
+      barbers = data.filter((barber) => barber?.rol === 'barbero' && barber.aprobado === true);
+      catalogState = 'ready';
       renderBarbers();
     } catch (error) {
+      catalogState = 'error';
       if (countLabel) countLabel.textContent = 'No se pudieron cargar los barberos';
-      if (grid) grid.innerHTML = '<p class="barbers-empty">No se pudo conectar con el backend. Revisa que el servidor esté corriendo en el puerto 3001.</p>';
+      if (grid) grid.innerHTML = '<p class="barbers-empty">No pudimos cargar el catálogo. Revisa tu conexión e inténtalo nuevamente recargando la página.</p>';
       if (pagination) pagination.innerHTML = '';
     }
   };
@@ -597,26 +461,11 @@ import '../styles/barberos.css';
     renderBarbers();
   });
 
-  profileButton?.addEventListener('click', toggleProfileMenu);
-
-  document.addEventListener('click', (event) => {
-    if (!profileMenu?.contains(event.target as Node)) {
-      closeProfileMenu();
-    }
-  });
-
-  document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') {
-      closeProfileMenu();
-    }
-  });
-
-  logoutButton?.addEventListener('click', () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    window.location.href = '/login';
-  });
-
-  void setupProfile();
+  if (isAuthenticated) {
+    void getSession().then((user) => {
+      isAuthenticated = Boolean(user);
+      renderBarbers();
+    }).catch(() => undefined);
+  }
   void loadBarbers();
 </script>

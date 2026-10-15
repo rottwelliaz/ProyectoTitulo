@@ -1,6 +1,9 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import prisma from '../config/prisma';
 import { AuthRequest } from '../middleware/auth';
+import { ScheduleError, scheduleFailure, withSchedule } from '../services/schedule';
+import { freezeServiceHistory } from '../services/reservationLifecycle';
+import { professionalSelect } from '../services/professionalPrivacy';
 import {
   createServiceValidation,
   updateServiceValidation,
@@ -22,7 +25,7 @@ const canAccessService = async (serviceId: string, userId: number) => {
   const service = await prisma.service.findUnique({
     where: { id: serviceId },
     include: {
-      perfilBarbero: true,
+      perfilBarbero: { select: professionalSelect },
     },
   });
 
@@ -83,7 +86,8 @@ export const getServices = async (req: AuthRequest, res: Response) => {
       const services = await prisma.service.findMany({
         include: {
           perfilBarbero: {
-            include: {
+            select: {
+              ...professionalSelect,
               usuario: {
                 select: {
                   id: true,
@@ -108,7 +112,7 @@ export const getServices = async (req: AuthRequest, res: Response) => {
     const services = await prisma.service.findMany({
       where: { perfilBarberoId: barberProfile.id },
       include: {
-        perfilBarbero: true,
+        perfilBarbero: { select: professionalSelect },
       },
     });
 
@@ -129,7 +133,7 @@ export const getServiceById = async (req: AuthRequest, res: Response) => {
     const service = await prisma.service.findUnique({
       where: { id },
       include: {
-        perfilBarbero: true,
+        perfilBarbero: { select: professionalSelect },
       },
     });
 
@@ -173,18 +177,26 @@ export const updateService = async (req: AuthRequest, res: Response) => {
     const priceValue = value.precio !== undefined ? toInt(value.precio) : undefined;
     const durationValue = value.duracion_minutos !== undefined ? toInt(value.duracion_minutos) : undefined;
 
-    const updated = await prisma.service.update({
-      where: { id },
-      data: {
-        nombre_servicio: value.nombre_servicio ?? undefined,
-        descripcion: value.descripcion !== undefined ? value.descripcion : undefined,
-        precio: priceValue ?? undefined,
-        duracion_minutos: durationValue ?? undefined,
-      },
+    const updated = await withSchedule(service.perfilBarberoId, async tx => {
+      const current = await tx.service.findUnique({ where: { id } });
+      if (!current) throw new ScheduleError(404, 'Servicio no encontrado');
+      await freezeServiceHistory(tx, current);
+      return tx.service.update({
+        where: { id },
+        data: {
+          activo: value.activo ?? undefined,
+          nombre_servicio: value.nombre_servicio ?? undefined,
+          descripcion: value.descripcion !== undefined ? value.descripcion : undefined,
+          precio: priceValue ?? undefined,
+          duracion_minutos: durationValue ?? undefined,
+        },
+      });
     });
 
     return res.json(updated);
   } catch (error) {
+    const failure = scheduleFailure(error);
+    if (failure) return res.status(failure.status).json({ message: failure.message });
     console.error('updateService error', error);
     return res.status(500).json({ message: 'Error al editar servicio' });
   }
@@ -206,9 +218,18 @@ export const deleteService = async (req: AuthRequest, res: Response) => {
       }
     }
 
-    await prisma.service.delete({ where: { id } });
+    const service = await prisma.service.findUnique({ where: { id } });
+    if (!service) return res.status(404).json({ message: 'Servicio no encontrado' });
+    await withSchedule(service.perfilBarberoId, async tx => {
+      const current = await tx.service.findUnique({ where: { id } });
+      if (!current) throw new ScheduleError(404, 'Servicio no encontrado');
+      await freezeServiceHistory(tx, current);
+      await tx.service.update({ where: { id }, data: { activo: false } });
+    });
     return res.status(204).send();
   } catch (error) {
+    const failure = scheduleFailure(error);
+    if (failure) return res.status(failure.status).json({ message: failure.message });
     console.error('deleteService error', error);
     return res.status(500).json({ message: 'Error al eliminar servicio' });
   }

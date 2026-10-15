@@ -1,0 +1,12 @@
+---
+import Layout from '../layouts/Layout.astro';
+import SessionNav from '../components/SessionNav.astro';
+import PublicBarberProfile from '../components/PublicBarberProfile';
+import '../styles/public-profile.css';
+---
+<Layout title="Perfil del barbero - Conce Barber Club">
+  <main class="public-profile">
+    <header class="public-header"><a href="/barberos">← Volver a barberos</a><SessionNav /></header>
+    <PublicBarberProfile client:only="react" />
+  </main>
+</Layout>

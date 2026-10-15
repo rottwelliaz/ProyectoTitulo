@@ -1,0 +1,31 @@
+---
+import Layout from '../layouts/Layout.astro';
+import logo from '../assets/logotesis.png';
+---
+
+<Layout title="Página no encontrada - Conce Barber Club">
+  <main class="not-found">
+    <a href="/" aria-label="Conce Barber Club, inicio"><img src={logo.src} alt="Conce Barber Club" width="160" height="150" /></a>
+    <p class="error-code">404</p>
+    <h1>Página no encontrada</h1>
+    <p>La página que buscas no existe o cambió de dirección.</p>
+    <a class="error-home" href="/">Volver a la página principal</a>
+  </main>
+</Layout>
+
+<style>
+  .not-found { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.25rem; padding: 2rem 1.25rem; background: radial-gradient(circle at top, #103c70, #020b18 65%); color: #fff; text-align: center; }
+  img { object-fit: contain; }
+  .error-code { color: #ffc928; font-size: clamp(5rem, 20vw, 9rem); font-weight: 900; line-height: 1; }
+  h1 { font-size: clamp(1.75rem, 5vw, 2.5rem); font-weight: 800; }
+  p:not(.error-code) { color: #c7d2e1; max-width: 32rem; }
+  .error-home { background: #ffc928; color: #061b33; border-radius: 8px; padding: 1rem 1.5rem; font-weight: 800; }
+  .error-home:hover { background: #ffda65; }
+  :global(html[data-theme='light']) .not-found { background: #f4f7fb; color: #0f172a; }
+  :global(html[data-theme='light']) .not-found p:not(.error-code) { color: #526175; }
+  :global(html[data-theme='light']) .error-code { color: #1261d8; }
+  :global(html[data-theme='light']) .error-home:focus-visible { outline-color: #0b63ce; }
+  :global(html[data-theme='dark']) .not-found { background: #08090c; color: #f8fafc; }
+  :global(html[data-theme='dark']) .not-found p:not(.error-code) { color: #b8c2d0; }
+  :global(html[data-theme='dark']) .error-home:focus-visible { outline-color: #60a5fa; }
+</style>

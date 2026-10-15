@@ -1,6 +1,7 @@
+import { authFetch as fetch, API_URL } from '../lib/session';
 import { type ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { addDays, addWeeks, format, startOfDay } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { addDays, addWeeks, businessDate, businessTime, dayStart, formatDay, formatInstant } from '../lib/businessTime';
+import { safePhotoUrl, photoBackground } from '../lib/profilePhoto';
 
 interface Service {
   id: string;
@@ -14,12 +15,7 @@ interface Barber {
   id: number;
   biografia: string | null;
   foto_perfil: string | null;
-  bancoNombre: string | null;
-  bancoRut: string | null;
-  bancoNombreBanco: string | null;
-  bancoTipoCuenta: string | null;
-  bancoNroCuenta: string | null;
-  bancoCorreo: string | null;
+  requiereComprobante: boolean;
   usuario: {
     id: number;
     nombre: string;
@@ -37,13 +33,25 @@ interface AppointmentSlot {
   fecha_hora: string;
 }
 
+interface PaymentDetails {
+  citaId: string;
+  servicioId: string;
+  barberoId: number;
+  bancoNombre: string;
+  bancoRut: string;
+  bancoNombreBanco: string;
+  bancoTipoCuenta: string;
+  bancoNroCuenta: string;
+  bancoCorreo: string;
+}
+
 interface AvailabilityResponse {
   citas: AppointmentSlot[];
   servicios: Service[];
   message?: string;
 }
 
-const API_URL = 'http://localhost:3001/api';
+
 
 const initials = (name: string) =>
   name.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'B';
@@ -72,11 +80,14 @@ export default function BookingFlow() {
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [slots, setSlots] = useState<AppointmentSlot[]>([]);
   const [weekOffset, setWeekOffset] = useState(0);
-  const [selectedDate, setSelectedDate] = useState(startOfDay(new Date()));
+  const [selectedDate, setSelectedDate] = useState(() => businessDate());
   const [loadingBarbers, setLoadingBarbers] = useState(true);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [booking, setBooking] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
+  const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null);
+  const [loadingPayment, setLoadingPayment] = useState(false);
+  const paymentRequest = useRef(0);
   const [proofData, setProofData] = useState('');
   const [proofName, setProofName] = useState('');
   const [message, setMessage] = useState('');
@@ -86,7 +97,7 @@ export default function BookingFlow() {
     return Number(new URLSearchParams(window.location.search).get('barbero')) || null;
   }, []);
 
-  const weekStart = useMemo(() => addWeeks(startOfDay(new Date()), weekOffset), [weekOffset]);
+  const weekStart = useMemo(() => addWeeks(businessDate(), weekOffset), [weekOffset]);
   const weekDays = useMemo(
     () => Array.from({ length: 7 }, (_, index) => addDays(weekStart, index)),
     [weekStart],
@@ -94,14 +105,17 @@ export default function BookingFlow() {
   const selectedBarber = barbers.find((barber) => barber.id === selectedBarberId) ?? null;
   const selectedService = selectedBarber?.servicios.find((service) => service.id === selectedServiceId) ?? null;
   const selectedSlot = slots.find((slot) => slot.id === selectedSlotId) ?? null;
-  const hasBankingData = Boolean(
-    selectedBarber?.bancoNombre &&
-    selectedBarber?.bancoRut &&
-    selectedBarber?.bancoNombreBanco &&
-    selectedBarber?.bancoTipoCuenta &&
-    selectedBarber?.bancoNroCuenta &&
-    selectedBarber?.bancoCorreo,
-  );
+  const requiresProof = selectedBarber?.requiereComprobante ?? true;
+  const hasBankingData = paymentDetails?.citaId === selectedSlotId &&
+    paymentDetails?.servicioId === selectedServiceId && paymentDetails?.barberoId === selectedBarberId;
+
+  useEffect(() => {
+    paymentRequest.current++;
+    setPaymentDetails(null);
+    setLoadingPayment(false);
+    setShowPayment(false);
+    return () => { paymentRequest.current++; };
+  }, [token, selectedBarberId, selectedServiceId, selectedSlotId, selectedDate]);
 
   const scrollToElement = (element: HTMLElement | null) => {
     if (!element) return;
@@ -164,35 +178,44 @@ export default function BookingFlow() {
   }, [requestedBarberId]);
 
   useEffect(() => {
-    if (!token || !selectedBarberId) {
+    if (!token || !selectedBarberId || !selectedServiceId) {
       setSlots([]);
       return;
     }
 
+    let active = true;
     const loadAvailability = async () => {
       setLoadingSlots(true);
       setError('');
       setSelectedSlotId(null);
 
       try {
-        const date = format(selectedDate, 'yyyy-MM-dd');
+        const params = new URLSearchParams({
+          fecha: selectedDate,
+          desde: dayStart(selectedDate).toISOString(),
+          hasta: dayStart(addDays(selectedDate, 1)).toISOString(),
+          servicioId: selectedServiceId,
+        });
         const response = await fetch(
-          `${API_URL}/citas/disponibilidad/${selectedBarberId}?fecha=${date}`,
+          `${API_URL}/citas/disponibilidad/${selectedBarberId}?${params}`,
           { headers: { Authorization: `Bearer ${token}` } },
         );
         const data = await response.json().catch(() => ({})) as AvailabilityResponse;
         if (!response.ok) throw new Error(data.message || 'No se pudo cargar la disponibilidad.');
-        setSlots(Array.isArray(data.citas) ? data.citas.filter(isFutureSlot) : []);
+        if (active) setSlots(Array.isArray(data.citas) ? data.citas.filter(isFutureSlot) : []);
       } catch (requestError) {
-        setSlots([]);
-        setError(requestError instanceof Error ? requestError.message : 'No se pudo cargar la disponibilidad.');
+        if (active) {
+          setSlots([]);
+          setError(requestError instanceof Error ? requestError.message : 'No se pudo cargar la disponibilidad.');
+        }
       } finally {
-        setLoadingSlots(false);
+        if (active) setLoadingSlots(false);
       }
     };
 
     void loadAvailability();
-  }, [selectedBarberId, selectedDate, token]);
+    return () => { active = false; };
+  }, [selectedBarberId, selectedServiceId, selectedDate, token]);
 
   useEffect(() => {
     if (selectedBarber) {
@@ -243,12 +266,12 @@ export default function BookingFlow() {
 
   const moveWeek = (direction: number) => {
     const nextOffset = Math.max(0, weekOffset + direction);
-    const nextStart = addWeeks(startOfDay(new Date()), nextOffset);
+    const nextStart = addWeeks(businessDate(), nextOffset);
     setWeekOffset(nextOffset);
     setSelectedDate(nextStart);
   };
 
-  const openPaymentStep = () => {
+  const openPaymentStep = async () => {
     if (selectedSlot && !isFutureSlot(selectedSlot)) {
       setSelectedSlotId(null);
       setShowPayment(false);
@@ -256,14 +279,37 @@ export default function BookingFlow() {
       return;
     }
 
-    if (!hasBankingData) {
-      setError('Este barbero aun no tiene datos bancarios registrados. Intenta con otro barbero o contactalo directamente.');
+    if (!requiresProof) {
+      void confirmBooking();
       return;
     }
 
+    if (!token || !selectedSlotId || !selectedServiceId) return;
+    const requestId = ++paymentRequest.current;
+    setLoadingPayment(true);
+    setPaymentDetails(null);
+    setShowPayment(false);
     setError('');
     setMessage('');
-    setShowPayment(true);
+    try {
+      const response = await fetch(`${API_URL}/citas/${selectedSlotId}/pago`, {
+        method: 'POST', cache: 'no-store',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ servicioId: selectedServiceId }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (requestId !== paymentRequest.current) return;
+      if (!response.ok) throw new Error(data.message || 'No se pudieron cargar los datos de pago.');
+      if (data.citaId !== selectedSlotId || data.servicioId !== selectedServiceId || data.barberoId !== selectedBarberId) {
+        throw new Error('Los datos de pago no corresponden a la selección actual.');
+      }
+      setPaymentDetails(data);
+      setShowPayment(true);
+    } catch (requestError) {
+      if (requestId === paymentRequest.current) setError(requestError instanceof Error ? requestError.message : 'No se pudieron cargar los datos de pago.');
+    } finally {
+      if (requestId === paymentRequest.current) setLoadingPayment(false);
+    }
   };
 
   const handleProofChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -304,7 +350,7 @@ export default function BookingFlow() {
       return;
     }
 
-    if (!proofData) {
+    if (requiresProof && !proofData) {
       setError('Debes subir el comprobante de transferencia antes de reservar.');
       return;
     }
@@ -322,8 +368,8 @@ export default function BookingFlow() {
         },
         body: JSON.stringify({
           servicioId: selectedServiceId,
-          comprobanteTransferencia: proofData,
-          comprobanteNombre: proofName,
+          comprobanteTransferencia: proofData || null,
+          comprobanteNombre: proofName || null,
         }),
       });
       const data = await response.json().catch(() => ({}));
@@ -359,7 +405,6 @@ export default function BookingFlow() {
     <main className="booking-root">
       <header className="booking-header">
         <div>
-          <a href="/home">← Volver al inicio</a>
           <h1>Reservar hora</h1>
           <p>Elige tu profesional, servicio y un horario disponible.</p>
         </div>
@@ -393,10 +438,10 @@ export default function BookingFlow() {
                 onClick={() => chooseBarber(barber)}
               >
                 <span
-                  className={`booking-avatar${barber.foto_perfil ? ' has-photo' : ''}`}
-                  style={barber.foto_perfil ? { backgroundImage: `url(${JSON.stringify(barber.foto_perfil)})` } : undefined}
+                  className={`booking-avatar${safePhotoUrl(barber.foto_perfil) ? ' has-photo' : ''}`}
+                  style={{ backgroundImage: photoBackground(barber.foto_perfil) }}
                 >
-                  {!barber.foto_perfil && initials(barber.usuario.nombre)}
+                  {!safePhotoUrl(barber.foto_perfil) && initials(barber.usuario.nombre)}
                 </span>
                 <strong>{barber.usuario.nombre}</strong>
                 <small>{barber.lugarTrabajo?.nombre_barberia || 'Barbería'}</small>
@@ -449,23 +494,23 @@ export default function BookingFlow() {
 
           <div className="booking-week-nav">
             <button type="button" onClick={() => moveWeek(-1)} disabled={weekOffset === 0}>← Semana anterior</button>
-            <strong>{format(weekDays[0], 'd MMM', { locale: es })} – {format(weekDays[6], 'd MMM yyyy', { locale: es })}</strong>
+            <strong>{formatDay(weekDays[0], { day: 'numeric', month: 'short' })} – {formatDay(weekDays[6], { day: 'numeric', month: 'short', year: 'numeric' })}</strong>
             <button type="button" onClick={() => moveWeek(1)}>Semana siguiente →</button>
           </div>
 
           <div className="booking-days">
             {weekDays.map((day) => {
-              const key = format(day, 'yyyy-MM-dd');
+              const key = day;
               return (
                 <button
                   key={key}
                   type="button"
-                  className={format(selectedDate, 'yyyy-MM-dd') === key ? 'is-selected' : ''}
+                  className={selectedDate === key ? 'is-selected' : ''}
                   onClick={() => setSelectedDate(day)}
                 >
-                  <span>{format(day, 'EEE', { locale: es })}</span>
-                  <strong>{format(day, 'd')}</strong>
-                  <small>{format(day, 'MMM', { locale: es })}</small>
+                  <span>{formatDay(day, { weekday: 'short' })}</span>
+                  <strong>{formatDay(day, { day: 'numeric' })}</strong>
+                  <small>{formatDay(day, { month: 'short' })}</small>
                 </button>
               );
             })}
@@ -490,7 +535,7 @@ export default function BookingFlow() {
                     setMessage('');
                   }}
                 >
-                  {format(new Date(slot.fecha_hora), 'HH:mm')}
+                  {businessTime(slot.fecha_hora)}
                 </button>
               ))
             )}
@@ -501,15 +546,16 @@ export default function BookingFlow() {
               <div>
                 <span>Resumen</span>
                 <strong>{selectedBarber.usuario.nombre} · {selectedService.nombre_servicio}</strong>
-                <p>{format(new Date(selectedSlot.fecha_hora), "EEEE d 'de' MMMM, HH:mm", { locale: es })}</p>
+                <p>{formatInstant(selectedSlot.fecha_hora, { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })}</p>
+                {!requiresProof && <small className="booking-payment-note">Este profesional permite reservar sin comprobante de pago.</small>}
               </div>
-              <button type="button" disabled={booking} onClick={openPaymentStep}>
-                Confirmar reserva
+              <button type="button" disabled={booking || loadingPayment} onClick={() => void openPaymentStep()}>
+                {booking ? 'Reservando...' : loadingPayment ? 'Consultando datos de pago...' : requiresProof ? 'Continuar al pago' : 'Reservar ahora'}
               </button>
             </div>
           )}
 
-          {selectedSlot && showPayment && (
+          {selectedSlot && showPayment && requiresProof && hasBankingData && paymentDetails && (
             <div className="booking-payment" ref={paymentPanelRef}>
               <div className="booking-section-title">
                 <span>04</span>
@@ -523,27 +569,27 @@ export default function BookingFlow() {
                 <div className="booking-bank-grid">
                   <div>
                     <span>Nombre</span>
-                    <strong>{selectedBarber.bancoNombre}</strong>
+                    <strong>{paymentDetails.bancoNombre}</strong>
                   </div>
                   <div>
                     <span>RUT</span>
-                    <strong>{selectedBarber.bancoRut}</strong>
+                    <strong>{paymentDetails.bancoRut}</strong>
                   </div>
                   <div>
                     <span>Banco</span>
-                    <strong>{selectedBarber.bancoNombreBanco}</strong>
+                    <strong>{paymentDetails.bancoNombreBanco}</strong>
                   </div>
                   <div>
                     <span>Tipo de cuenta</span>
-                    <strong>{selectedBarber.bancoTipoCuenta}</strong>
+                    <strong>{paymentDetails.bancoTipoCuenta}</strong>
                   </div>
                   <div>
                     <span>N.º de cuenta</span>
-                    <strong>{selectedBarber.bancoNroCuenta}</strong>
+                    <strong>{paymentDetails.bancoNroCuenta}</strong>
                   </div>
                   <div>
                     <span>Correo</span>
-                    <strong>{selectedBarber.bancoCorreo}</strong>
+                    <strong>{paymentDetails.bancoCorreo}</strong>
                   </div>
                 </div>
               ) : (
@@ -554,6 +600,7 @@ export default function BookingFlow() {
                 Comprobante de transferencia
                 <input
                   type="file"
+                  required
                   accept="image/png,image/jpeg,image/webp,application/pdf"
                   onChange={handleProofChange}
                 />

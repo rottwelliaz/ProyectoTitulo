@@ -1,10 +1,10 @@
 ---
 import logoConce from '../assets/logotesis.png';
+import SessionNav from './SessionNav.astro';
 import {
   BadgeCheck,
   CalendarCheck,
   LayoutDashboard,
-  LogOut,
   Scissors,
   ShieldCheck,
   UserCheck,
@@ -58,11 +58,7 @@ import {
       </div>
 
       <div class="admin-top-actions">
-        <a class="admin-secondary-button" href="/home">Ir al inicio</a>
-        <button id="admin-logout-button" class="admin-danger-ghost" type="button">
-          <LogOut size={18} aria-hidden="true" />
-          Salir
-        </button>
+        <SessionNav />
       </div>
     </header>
 
@@ -174,8 +170,8 @@ import {
   </section>
 </main>
 
-<div id="admin-edit-modal" class="admin-modal-backdrop" hidden>
-  <section class="admin-modal" role="dialog" aria-modal="true" aria-labelledby="admin-edit-title">
+<dialog id="admin-edit-modal" class="admin-modal-backdrop" aria-labelledby="admin-edit-title" hidden>
+  <section class="admin-modal">
     <div class="admin-modal-header">
       <div>
         <span class="admin-kicker">Editar usuario</span>
@@ -218,7 +214,7 @@ import {
 
       <label>
         <span>Nueva contraseña <small>(opcional)</small></span>
-        <input name="password" type="password" minlength="6" placeholder="Dejar vacío para mantener la actual" />
+        <input name="password" type="password" minlength="12" maxlength="72" placeholder="Dejar vacío para mantener la actual" />
       </label>
 
       <p id="admin-edit-message" class="admin-edit-message" hidden></p>
@@ -229,10 +225,15 @@ import {
       </div>
     </form>
   </section>
-</div>
+</dialog>
 
 <script>
-  const API_URL = 'http://localhost:3001/api';
+  import { newPasswordError } from '../lib/registration';
+  import { requireSession, authFetch as fetch, API_URL } from '../lib/session';
+  import { setPhotoBackground } from '../lib/profilePhoto';
+  void (async () => {
+    if (!(await requireSession())) return;
+
   const token = localStorage.getItem('token');
   const storedUser = localStorage.getItem('user');
 
@@ -245,6 +246,8 @@ import {
     telefono?: string | null;
     rol: AdminRole;
     aprobado: boolean;
+    activo?: boolean;
+    solicitudProfesional?: { estado: string; motivoRechazo?: string | null };
     fecha_creacion: string;
     perfilBarbero?: {
       id: number;
@@ -287,7 +290,6 @@ import {
 
   const message = document.querySelector<HTMLParagraphElement>('#admin-dashboard-message');
   const refreshButton = document.querySelector<HTMLButtonElement>('#admin-refresh-button');
-  const logoutButton = document.querySelector<HTMLButtonElement>('#admin-logout-button');
   const navButtons = document.querySelectorAll<HTMLButtonElement>('[data-admin-tab]');
   const panels = document.querySelectorAll<HTMLElement>('[data-admin-panel]');
 
@@ -295,7 +297,7 @@ import {
   const barberosList = document.querySelector<HTMLDivElement>('#admin-barberos-list');
   const pendientesList = document.querySelector<HTMLDivElement>('#admin-pendientes-list');
   const adminsList = document.querySelector<HTMLDivElement>('#admin-admins-list');
-  const editModal = document.querySelector<HTMLDivElement>('#admin-edit-modal');
+  const editModal = document.querySelector<HTMLDialogElement>('#admin-edit-modal');
   const editForm = document.querySelector<HTMLFormElement>('#admin-edit-form');
   const editCloseButton = document.querySelector<HTMLButtonElement>('#admin-edit-close');
   const editCancelButton = document.querySelector<HTMLButtonElement>('#admin-edit-cancel');
@@ -363,6 +365,7 @@ import {
 
   const closeEditModal = () => {
     if (!editModal) return;
+    editModal.close();
     editModal.hidden = true;
     document.body.classList.remove('admin-modal-open');
     clearEditMessage();
@@ -391,6 +394,7 @@ import {
     toggleApprovedField();
     clearEditMessage();
     editModal.hidden = false;
+    editModal.showModal();
     document.body.classList.add('admin-modal-open');
     nameInput.focus();
   };
@@ -406,6 +410,7 @@ import {
   };
 
   const statusPill = (user: AdminUser) => {
+    if (user.activo === false) return '<span class="admin-pill is-warning">Desactivado</span>';
     if (user.rol !== 'barbero') return '<span class="admin-pill is-ok">Activo</span>';
     return user.aprobado
       ? '<span class="admin-pill is-ok">Aprobado</span>'
@@ -416,14 +421,13 @@ import {
     const profile = user.perfilBarbero;
     const workplace = profile?.lugarTrabajo;
     const services = profile?.servicios || [];
-    const photo = profile?.foto_perfil || '';
     const citasCount = user.rol === 'barbero' ? profile?._count?.citas || 0 : user._count?.citas || 0;
     const servicesCount = profile?._count?.servicios ?? services.length;
 
     return `
       <article class="admin-user-card" data-user-id="${escapeHtml(user.id)}">
-        <div class="admin-user-avatar ${photo ? 'has-photo' : ''}"${photo ? ` style="background-image: url('${photo}')"` : ''}>
-          ${photo ? '' : escapeHtml(user.nombre?.charAt(0).toUpperCase() || 'U')}
+        <div class="admin-user-avatar">
+          ${escapeHtml(user.nombre?.charAt(0).toUpperCase() || 'U')}
         </div>
         <div class="admin-user-body">
           <div class="admin-user-title-row">
@@ -438,6 +442,7 @@ import {
             <span>Rol: ${escapeHtml(user.rol)}</span>
             <span>Teléfono: ${escapeHtml(user.telefono || 'No registrado')}</span>
             <span>Creado: ${escapeHtml(formatDate(user.fecha_creacion))}</span>
+            ${user.solicitudProfesional ? `<span>Solicitud: ${escapeHtml(user.solicitudProfesional.estado)} ${escapeHtml(user.solicitudProfesional.motivoRechazo || '')}</span>` : ''}
             <span>Citas: ${escapeHtml(citasCount)}</span>
           </div>
 
@@ -458,19 +463,21 @@ import {
         </div>
 
         <div class="admin-user-actions">
+          ${user.activo === false ? `<button class="admin-approve-button" type="button" data-reactivate-id="${escapeHtml(user.id)}">Reactivar</button>` : ''}
           ${options.allowEdit ? `
             <button class="admin-edit-button" type="button" data-edit-id="${escapeHtml(user.id)}">
               <span>Editar</span>
             </button>
           ` : ''}
-          ${options.allowApprove && user.rol === 'barbero' && !user.aprobado ? `
+          ${options.allowApprove && user.solicitudProfesional?.estado === 'pendiente' && user.activo !== false ? `
             <button class="admin-approve-button" type="button" data-approve-id="${escapeHtml(user.id)}">
               <span>Aprobar</span>
             </button>
+            <button class="admin-delete-button" type="button" data-reject-id="${escapeHtml(user.id)}">Rechazar</button>
           ` : ''}
-          ${options.allowDelete ? `
+          ${options.allowDelete && user.activo !== false ? `
             <button class="admin-delete-button" type="button" data-delete-id="${escapeHtml(user.id)}">
-              <span>Eliminar</span>
+              <span>Desactivar</span>
             </button>
           ` : ''}
         </div>
@@ -485,6 +492,9 @@ import {
       return;
     }
     container.innerHTML = users.map((user) => renderUserCard(user, options)).join('');
+    container.querySelectorAll<HTMLElement>('.admin-user-avatar').forEach((avatar, index) => {
+      if (setPhotoBackground(avatar, users[index].perfilBarbero?.foto_perfil)) avatar.textContent = '';
+    });
   };
 
   const renderDashboard = (data: AdminDashboardResponse) => {
@@ -577,18 +587,38 @@ import {
         throw new Error(data.message || 'No se pudo aprobar el barbero.');
       }
 
-      showMessage('Barbero aprobado correctamente.', 'success');
       await loadDashboard();
+      showMessage('Barbero aprobado correctamente.', 'success');
     } catch (error) {
       const text = error instanceof Error ? error.message : 'Error al aprobar barbero.';
       showMessage(text, 'error');
     }
   };
 
+  const rejectBarber = async (id: string) => {
+    const motivoRechazo = window.prompt('Motivo del rechazo (obligatorio, hasta 1000 caracteres):');
+    if (motivoRechazo === null) return;
+    if (!motivoRechazo.trim() || motivoRechazo.trim().length > 1000) { showMessage('Indica un motivo de entre 1 y 1000 caracteres.', 'error'); return; }
+    try {
+      const response = await fetch(API_URL + '/usuarios/' + id + '/rechazar-barbero', { method: 'PATCH', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ motivoRechazo }) });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'No se pudo rechazar la solicitud.');
+      await loadDashboard(); showMessage('Solicitud rechazada. El motivo y resultado quedaron registrados.', 'success');
+    } catch (error) { showMessage(error instanceof Error ? error.message : 'No se pudo rechazar la solicitud.', 'error'); }
+  };
+  const reactivateUser = async (id: string) => {
+    try {
+      const response = await fetch(API_URL + '/usuarios/' + id, { method: 'PUT', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ activo: true }) });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'No se pudo reactivar la cuenta.');
+      await loadDashboard(); showMessage('Cuenta reactivada.', 'success');
+    } catch (error) { showMessage(error instanceof Error ? error.message : 'No se pudo reactivar la cuenta.', 'error'); }
+  };
+
   const deleteUser = async (id: string) => {
     if (!token) return;
 
-    const ok = window.confirm('¿Seguro que quieres eliminar este usuario? Esta acción no se puede deshacer.');
+    const ok = window.confirm('¿Desactivar esta cuenta? Se impedirá su acceso y nuevas reservas. Sus citas existentes e historial se conservarán. Puedes reactivarla desde este panel.');
     if (!ok) return;
 
     try {
@@ -601,13 +631,13 @@ import {
 
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        throw new Error(data.message || 'No se pudo eliminar el usuario.');
+        throw new Error(data.message || 'No se pudo desactivar el usuario.');
       }
 
-      showMessage('Usuario eliminado correctamente.', 'success');
       await loadDashboard();
+      showMessage('Cuenta desactivada. Se conservaron sus reservas e historial.', 'success');
     } catch (error) {
-      const text = error instanceof Error ? error.message : 'Error al eliminar usuario.';
+      const text = error instanceof Error ? error.message : 'Error al desactivar usuario.';
       showMessage(text, 'error');
     }
   };
@@ -619,6 +649,10 @@ import {
     const id = String(formData.get('id') || '');
     const rol = String(formData.get('rol') || 'cliente') as AdminRole;
     const password = String(formData.get('password') || '');
+    if (password && newPasswordError(password)) {
+      showEditMessage(newPasswordError(password)!, 'error');
+      return;
+    }
 
     const payload: {
       nombre: string;
@@ -663,8 +697,8 @@ import {
       }
 
       closeEditModal();
-      showMessage('Usuario actualizado correctamente.', 'success');
       await loadDashboard();
+      showMessage('Usuario actualizado correctamente.', 'success');
     } catch (error) {
       const text = error instanceof Error ? error.message : 'Error al actualizar usuario.';
       showEditMessage(text, 'error');
@@ -676,6 +710,10 @@ import {
 
   document.addEventListener('click', (event) => {
     const target = event.target as HTMLElement;
+    const rejectButton = target.closest<HTMLButtonElement>('[data-reject-id]');
+    if (rejectButton?.dataset.rejectId) void rejectBarber(rejectButton.dataset.rejectId);
+    const reactivateButton = target.closest<HTMLButtonElement>('[data-reactivate-id]');
+    if (reactivateButton?.dataset.reactivateId) void reactivateUser(reactivateButton.dataset.reactivateId);
     const editButton = target.closest<HTMLButtonElement>('[data-edit-id]');
     const approveButton = target.closest<HTMLButtonElement>('[data-approve-id]');
     const deleteButton = target.closest<HTMLButtonElement>('[data-delete-id]');
@@ -716,18 +754,12 @@ import {
     }
   });
 
-  document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && editModal && !editModal.hidden) {
-      closeEditModal();
-    }
+  editModal?.addEventListener('cancel', (event) => {
+    event.preventDefault();
+    closeEditModal();
   });
 
   refreshButton?.addEventListener('click', loadDashboard);
-  logoutButton?.addEventListener('click', () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    window.location.href = '/login';
-  });
-
   loadDashboard();
+  })();
 </script>

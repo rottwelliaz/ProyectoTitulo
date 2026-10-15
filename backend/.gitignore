@@ -16,12 +16,3 @@ yarn-error.log*
 *.swo
 *~
 .env.production
-
-# TypeORM
-ormconfig.json
-ormconfig.*.json
-src/migration/*.js
-src/subscriber/*.js
-
-# Prisma
-node_modules/.prisma

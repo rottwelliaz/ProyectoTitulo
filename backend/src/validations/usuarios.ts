@@ -14,13 +14,23 @@ const nombre = Joi.string()
 
 const email = Joi.string()
   .trim()
+  .lowercase()
+  .email({ tlds: { allow: false } })
+  .max(254)
   .messages({
+    'string.email': 'Ingresa un correo electrónico válido',
+    'string.max': 'El correo electrónico es demasiado largo',
     'string.base': 'El email debe ser texto',
     'string.empty': 'El email no puede estar vacío',
   });
 
 const password = Joi.string()
+  .min(12)
+  .custom((value, helpers) => Buffer.byteLength(value, 'utf8') > 72 ? helpers.error('password.bytes') : /^\s+$/.test(value) ? helpers.error('password.blank') : value)
   .messages({
+    'string.min': 'La contraseña nueva debe tener al menos 12 caracteres',
+    'password.bytes': 'La contraseña no puede superar 72 bytes (algunos caracteres ocupan más de un byte)',
+    'password.blank': 'La contraseña no puede contener solo espacios',
     'string.base': 'El password debe ser texto',
     'string.empty': 'El password no puede estar vacío',
   });
@@ -44,7 +54,7 @@ export const createUserValidation = Joi.object({
   password: password.required().messages({
     'any.required': 'El password es obligatorio',
   }),
-  telefono: telefono.optional(),
+  telefono: telefono.invalid(null, '').required().messages({ 'any.required': 'El teléfono es obligatorio', 'any.invalid': 'El teléfono es obligatorio' }),
   rol: Joi.string()
     .valid('cliente', 'barbero')
     .optional()
@@ -57,6 +67,7 @@ export const createUserValidation = Joi.object({
 });
 
 export const updateUserValidation = Joi.object({
+  activo: Joi.boolean().strict().optional(),
   nombre: nombre.optional(),
   email: email.optional(),
   password: password.optional(),

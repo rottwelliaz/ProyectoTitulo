@@ -1,5 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import SessionNav from '../components/SessionNav.astro';
 import logoConce from '../assets/logotesis.png';
 import { ArrowLeft, MessageCircle, Send } from 'lucide-astro';
 import '../styles/messages.css';
@@ -18,7 +19,7 @@ import '../styles/messages.css';
           <p>Comunícate directamente dentro de Conce Barber Club</p>
         </div>
       </div>
-      <a class="messages-home-link" href="/home">Volver al inicio</a>
+      <SessionNav />
     </header>
 
     <section id="messages-app" class="messages-app" aria-label="Mensajería interna">
@@ -78,7 +79,11 @@ import '../styles/messages.css';
 </Layout>
 
 <script>
-  const API_URL = 'http://localhost:3001/api';
+  import { requireSession, authFetch as fetch, API_URL } from '../lib/session';
+  import { safePhotoUrl, setPhotoBackground } from '../lib/profilePhoto';
+  void (async () => {
+    if (!(await requireSession())) return;
+
   const token = localStorage.getItem('token');
   const app = document.querySelector<HTMLElement>('#messages-app');
   const conversationsPanel = document.querySelector<HTMLElement>('#messages-sidebar');
@@ -105,7 +110,7 @@ import '../styles/messages.css';
   app?.classList.remove('has-active-chat', 'is-chat-open');
 
   const mobileChatMedia = window.matchMedia(
-    '(max-width: 520px) and (hover: none) and (pointer: coarse)',
+    '(max-width: 520px)',
   );
 
   const isCompactMessagesView = () => mobileChatMedia.matches;
@@ -195,13 +200,11 @@ import '../styles/messages.css';
     new Intl.DateTimeFormat('es-CL', { hour: '2-digit', minute: '2-digit' }).format(new Date(value));
 
   const getUserPhoto = (user: ChatUser) =>
-    localStorage.getItem(`profile-photo-${user.id}`) || user.foto_perfil || null;
+    safePhotoUrl(user.foto_perfil);
 
   const avatarMarkup = (user: ChatUser, large = false) => {
-    const photo = getUserPhoto(user);
-    const classes = `message-avatar${large ? ' message-avatar-large' : ''}${photo ? ' has-photo' : ''}`;
-    const style = photo ? ` style="background-image:url('${escapeHtml(photo)}')"` : '';
-    return `<span class="${classes}"${style} aria-hidden="true">${photo ? '' : escapeHtml(initials(user.nombre))}</span>`;
+    const classes = `message-avatar${large ? ' message-avatar-large' : ''}`;
+    return `<span class="${classes}" aria-hidden="true">${escapeHtml(initials(user.nombre))}</span>`;
   };
 
   const apiFetch = async (path: string, options: RequestInit = {}) => {
@@ -254,6 +257,9 @@ import '../styles/messages.css';
         </time>
       </button>
     `).join('');
+    conversationsList.querySelectorAll<HTMLElement>('.message-avatar').forEach((avatar, index) => {
+      if (setPhotoBackground(avatar, getUserPhoto(conversations[index].otherUser))) avatar.textContent = '';
+    });
   };
 
   const setChatUser = (conversation: Conversation) => {
@@ -263,8 +269,7 @@ import '../styles/messages.css';
     if (chatRole) chatRole.textContent = user.rol === 'barbero' ? 'Barbero' : 'Cliente';
     if (chatAvatar) {
       chatAvatar.textContent = photo ? '' : initials(user.nombre);
-      chatAvatar.classList.toggle('has-photo', Boolean(photo));
-      chatAvatar.style.backgroundImage = photo ? `url(${JSON.stringify(photo)})` : '';
+      setPhotoBackground(chatAvatar, photo);
     }
   };
 
@@ -438,4 +443,5 @@ import '../styles/messages.css';
   });
 
   void initialize();
+  })();
 </script>

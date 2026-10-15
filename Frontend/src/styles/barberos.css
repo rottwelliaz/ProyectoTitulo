@@ -594,6 +594,96 @@ html[data-theme='light'] .message-button {
   opacity: 0.45;
 }
 
+html[data-theme='light'] :is(.barbers-header, .barbers-filters, .barber-profile-card, .barbers-empty) {
+  background: #ffffff;
+  border-color: #b8c7dc;
+  color: #0f172a;
+}
+
+html[data-theme='light'] :is(.barbers-nav a, .barbers-profile, .barber-name-row button svg) {
+  color: #334155;
+}
+
+html[data-theme='light'] :is(.barbers-nav a.active, .barbers-nav a:hover) {
+  color: #0b4eac;
+}
+
+html[data-theme='light'] .filter-select option {
+  background: #ffffff;
+  color: #0f172a;
+}
+
+html[data-theme='light'] :is(.view-switch button, .barbers-pagination button) {
+  border-color: #94a3b8;
+  color: #334155;
+}
+
+html[data-theme='light'] :is(.view-switch button.active, .barbers-pagination button.active) {
+  background: #1261d8;
+  border-color: #0b63ce;
+  color: #ffffff;
+}
+
+html[data-theme='light'] .barbers-empty {
+  color: #475569;
+}
+
+html[data-theme='dark'] :is(.barbers-header, .barbers-filters, .barber-profile-card, .barbers-empty) {
+  background: #15171c;
+  border-color: #3d4654;
+  color: #f8fafc;
+}
+
+html[data-theme='dark'] :is(.barbers-top-search, .barbers-search-field, .filter-select) {
+  background: #0c0e12;
+  border-color: #46505e;
+  color: #f8fafc;
+}
+
+html[data-theme='dark'] .filter-select option {
+  background: #15171c;
+  color: #f8fafc;
+}
+
+html[data-theme='dark'] :is(.view-switch button, .barbers-pagination button) {
+  border-color: #46505e;
+  color: #e2e8f0;
+}
+
+html[data-theme='dark'] :is(.view-switch button.active, .barbers-pagination button.active) {
+  background: #1261d8;
+  border-color: #60a5fa;
+  color: #ffffff;
+}
+
+html[data-theme='dark'] .barbers-empty {
+  color: #b8c2d0;
+}
+
+@media (min-width: 721px) and (max-height: 820px) {
+  .barbers-header {
+    min-height: 78px;
+  }
+
+  .barbers-brand img {
+    height: 66px;
+    width: 76px;
+  }
+
+  .barbers-main {
+    padding-top: 1.35rem;
+  }
+
+  .barbers-hero {
+    margin-bottom: 1rem;
+  }
+}
+
+html[data-theme='light'] .barbers-pagination button:disabled,
+html[data-theme='dark'] .barbers-pagination button:disabled {
+  opacity: 0.62;
+}
+
 @media (max-width: 1180px) {
   .barbers-header {
     grid-template-columns: 94px 1fr auto;
@@ -686,10 +776,6 @@ html[data-theme='light'] .message-button {
   .barbers-search {
     min-height: 42px;
     padding: 0 0.9rem;
-  }
-
-  .barbers-title h1 {
-    font-size: 2.2rem;
   }
 
   .barbers-filters,

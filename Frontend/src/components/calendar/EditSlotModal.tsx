@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { SLOT_LABELS, type SlotStatus } from './CalendarSlot';
 
 interface EditSlotModalProps {
@@ -9,7 +9,7 @@ interface EditSlotModalProps {
   onChange: (status: SlotStatus) => void;
 }
 
-const STATUS_OPTIONS = Object.keys(SLOT_LABELS) as SlotStatus[];
+const STATUS_OPTIONS: SlotStatus[] = ['available', 'booking', 'break'];
 
 export default function EditSlotModal({
   dateLabel,
@@ -18,22 +18,20 @@ export default function EditSlotModal({
   onClose,
   onChange,
 }: EditSlotModalProps) {
+  const dialog = useRef<HTMLDialogElement>(null);
   useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    };
-
-    window.addEventListener('keydown', handleEscape);
-    return () => window.removeEventListener('keydown', handleEscape);
-  }, [onClose]);
+    const element = dialog.current;
+    const trigger = document.activeElement as HTMLElement | null;
+    element?.showModal();
+    return () => { element?.close(); if (trigger?.isConnected) trigger.focus(); };
+  }, []);
 
   return (
-    <div className="slot-modal-backdrop" role="presentation" onMouseDown={onClose}>
+    <dialog ref={dialog} className="slot-modal-backdrop" aria-labelledby="slot-modal-title"
+      onCancel={event => { event.preventDefault(); onClose(); }}
+      onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}>
       <section
         className="slot-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="slot-modal-title"
         onMouseDown={(event) => event.stopPropagation()}
       >
         <div className="slot-modal-header">
@@ -51,6 +49,7 @@ export default function EditSlotModal({
             <button
               key={option}
               type="button"
+              aria-pressed={status === option}
               className={`slot-status-option is-${option}${status === option ? ' is-selected' : ''}`}
               onClick={() => onChange(option)}
             >
@@ -60,6 +59,6 @@ export default function EditSlotModal({
           ))}
         </div>
       </section>
-    </div>
+    </dialog>
   );
 }

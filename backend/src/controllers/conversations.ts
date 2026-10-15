@@ -50,7 +50,6 @@ const formatConversation = (conversation: any, currentUserId: number) => {
     lastMessage: conversation.messages?.[0] || null,
   };
 };
-
 const findAccessibleConversation = (conversationId: string, userId: number) =>
   prisma.conversation.findFirst({
     where: {
@@ -66,12 +65,12 @@ export const createOrGetConversation = async (req: AuthRequest, res: Response) =
     }
 
     const barberId = Number(req.body?.barberId);
-    if (!Number.isInteger(barberId)) {
+    if (!Number.isSafeInteger(barberId) || barberId <= 0) {
       return res.status(400).json({ message: 'barberId debe ser un número válido' });
     }
 
     const barber = await prisma.user.findFirst({
-      where: { id: barberId, rol: 'barbero', aprobado: true },
+      where: { id: barberId, rol: 'barbero', aprobado: true, activo: true },
       select: { id: true },
     });
     if (!barber) {
@@ -207,11 +206,4 @@ export const sendConversationMessage = async (req: AuthRequest, res: Response) =
     console.error('sendConversationMessage error', error);
     return res.status(500).json({ message: 'Error al enviar el mensaje' });
   }
-};
-
-export default {
-  createOrGetConversation,
-  getConversations,
-  getConversationMessages,
-  sendConversationMessage,
 };

@@ -1,13 +1,12 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import SessionNav from '../components/SessionNav.astro';
 ---
 
 <Layout title="Barberos pendientes - Admin">
   <main class="min-h-screen bg-[#020B18] px-6 py-10 text-white">
     <section class="mx-auto max-w-5xl">
-      <a href="/home" class="inline-flex text-sm font-bold text-[#1E6DFF] transition hover:text-white">
-        ← Volver al inicio
-      </a>
+      <SessionNav />
 
       <div class="mt-8 rounded-lg border border-[#0D47A1] bg-[#061B33] p-6 shadow-2xl shadow-black/30">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -15,7 +14,7 @@ import Layout from '../layouts/Layout.astro';
             <p class="text-sm font-black uppercase tracking-[0.18em] text-[#F2C230]">Admin</p>
             <h1 class="mt-2 text-3xl font-black">Barberos pendientes</h1>
             <p class="mt-2 max-w-2xl text-sm leading-6 text-[#C7D2E1]">
-              Revisa las solicitudes de cuentas de barbero y apruébalas para que puedan iniciar sesión y crear su perfil profesional.
+              Revisa las solicitudes de cuentas de barbero y apruébalas para habilitar su perfil profesional.
             </p>
           </div>
           <button
@@ -34,8 +33,50 @@ import Layout from '../layouts/Layout.astro';
   </main>
 </Layout>
 
+<style>
+  :global(html[data-theme='light']) #pending-barbers-list :is(article, div.rounded-lg) {
+    background: #f8fafc;
+    border-color: #b8c7dc;
+    color: #0f172a;
+  }
+
+  :global(html[data-theme='light']) #pending-barbers-list p {
+    color: #475569;
+  }
+
+  :global(html[data-theme='light']) #refresh-pending-barbers {
+    background: #ffffff;
+    border-color: #0b63ce;
+    color: #0b4eac;
+  }
+
+  :global(html[data-theme='light']) #refresh-pending-barbers:hover {
+    background: #1261d8;
+    color: #ffffff;
+  }
+
+  :global(html[data-theme='dark']) #pending-barbers-list :is(article, div.rounded-lg) {
+    background: #0c0e12;
+    border-color: #46505e;
+    color: #f8fafc;
+  }
+
+  :global(html[data-theme='dark']) #pending-barbers-list p {
+    color: #b8c2d0;
+  }
+
+  :global(html[data-theme='dark']) #refresh-pending-barbers {
+    background: #15171c;
+    border-color: #60a5fa;
+    color: #f8fafc;
+  }
+</style>
+
 <script>
-  const API_URL = 'http://localhost:3001/api';
+  import { requireSession, authFetch as fetch, API_URL } from '../lib/session';
+  void (async () => {
+    if (!(await requireSession())) return;
+
   const token = localStorage.getItem('token');
   const storedUser = localStorage.getItem('user');
   const list = document.querySelector<HTMLDivElement>('#pending-barbers-list');
@@ -90,7 +131,7 @@ import Layout from '../layouts/Layout.astro';
     try {
       const response = await fetch(`${API_URL}/usuarios/barberos/pendientes`, {
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${token}`, 'Content-Type': 'application/json',
         },
       });
 
@@ -123,6 +164,7 @@ import Layout from '../layouts/Layout.astro';
               >
                 Aprobar barbero
               </button>
+              <button type="button" class="reject-barber rounded-lg bg-red-800 px-5 py-3 text-sm font-black text-white" data-id="${escapeHtml(barber.id)}">Rechazar solicitud</button>
             </article>
           `;
         })
@@ -135,18 +177,22 @@ import Layout from '../layouts/Layout.astro';
   };
 
   list?.addEventListener('click', async (event) => {
-    const button = (event.target as HTMLElement).closest<HTMLButtonElement>('.approve-barber');
+    const button = (event.target as HTMLElement).closest<HTMLButtonElement>('.approve-barber, .reject-barber');
     if (!button || !token) return;
 
+    const rejected = button.classList.contains('reject-barber');
+    const motivoRechazo = rejected ? window.prompt('Motivo del rechazo (obligatorio):') : null;
+    if (rejected && !motivoRechazo?.trim()) return;
     button.disabled = true;
-    button.textContent = 'Aprobando...';
+    button.textContent = 'Guardando...';
 
     try {
-      const response = await fetch(`${API_URL}/usuarios/${button.dataset.id}/aprobar-barbero`, {
+      const response = await fetch(`${API_URL}/usuarios/${button.dataset.id}/${rejected ? 'rechazar-barbero' : 'aprobar-barbero'}`, {
         method: 'PATCH',
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${token}`, 'Content-Type': 'application/json',
         },
+        body: rejected ? JSON.stringify({ motivoRechazo }) : undefined,
       });
 
       const data = await response.json().catch(() => ({}));
@@ -154,16 +200,17 @@ import Layout from '../layouts/Layout.astro';
         throw new Error(data.message || 'No se pudo aprobar el barbero.');
       }
 
-      showMessage('Barbero aprobado correctamente.', 'success');
+      showMessage(rejected ? 'Solicitud rechazada; resultado conservado.' : 'Barbero aprobado correctamente.', 'success');
       await loadPendingBarbers();
     } catch (error) {
       const text = error instanceof Error ? error.message : 'Error al aprobar barbero.';
       showMessage(text, 'error');
       button.disabled = false;
-      button.textContent = 'Aprobar barbero';
+      button.textContent = rejected ? 'Rechazar solicitud' : 'Aprobar barbero';
     }
   });
 
   refreshButton?.addEventListener('click', loadPendingBarbers);
   loadPendingBarbers();
+  })();
 </script>

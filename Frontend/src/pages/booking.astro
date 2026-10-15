@@ -1,9 +1,20 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import BookingFlow from '../components/BookingFlow';
+import SessionNav from '../components/SessionNav.astro';
 import '../styles/booking.css';
 ---
 
 <Layout title="Reservar hora - Conce Barber Club">
+  <div class="booking-page-nav"><SessionNav /></div>
   <BookingFlow client:only="react" />
 </Layout>
+
+<style>
+  .booking-page-nav {
+    background: #020b18;
+    padding: 0.75rem max(1rem, calc((100vw - 1240px) / 2));
+  }
+  :global(html[data-theme='light']) .booking-page-nav { background: #f4f7fb; }
+  :global(html[data-theme='dark']) .booking-page-nav { background: #08090c; }
+</style>

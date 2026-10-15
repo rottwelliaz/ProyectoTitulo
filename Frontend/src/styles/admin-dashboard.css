@@ -646,6 +646,97 @@
   margin-top: 0.25rem;
 }
 
+html[data-theme='light'] :is(.admin-brand, .admin-hero-card, .admin-stat-card, .admin-panel, .admin-summary-grid article, .admin-user-card, .admin-empty) {
+  background: #ffffff;
+  border-color: #b8c7dc;
+  color: #0f172a;
+}
+
+html[data-theme='light'] :is(.admin-user-meta span, .admin-barber-details span, .admin-check-field) {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #334155;
+}
+
+html[data-theme='light'] .admin-modal-backdrop {
+  background: rgba(15, 23, 42, 0.55);
+}
+
+html[data-theme='light'] .admin-edit-form :is(input, select) {
+  background: #ffffff;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+html[data-theme='dark'] :is(.admin-brand, .admin-hero-card, .admin-stat-card, .admin-panel, .admin-summary-grid article, .admin-user-card, .admin-empty) {
+  background: #15171c;
+  border-color: #3d4654;
+  color: #f8fafc;
+}
+
+html[data-theme='dark'] :is(.admin-user-meta span, .admin-barber-details span, .admin-check-field) {
+  background: #172b47;
+  border-color: #3b4a60;
+  color: #d5deea;
+}
+
+html[data-theme='dark'] .admin-edit-form :is(input, select) {
+  background: #0c0e12;
+  border-color: #46505e;
+  color: #f8fafc;
+}
+
+html[data-theme='dark'] .admin-secondary-button {
+  background: #15171c;
+  border-color: #46505e;
+  color: #f8fafc;
+}
+
+@media (min-width: 1101px) and (max-height: 820px) {
+  .admin-sidebar {
+    gap: 0.75rem;
+    padding: 0.75rem;
+  }
+
+  .admin-brand {
+    min-height: 112px;
+  }
+
+  .admin-brand img {
+    height: 92px;
+  }
+
+  .admin-nav {
+    gap: 0.25rem;
+  }
+
+  .admin-nav-link {
+    font-size: 0.9rem;
+    min-height: 46px;
+  }
+
+  .admin-sidebar-card {
+    padding: 0.75rem;
+  }
+
+  .admin-main {
+    padding: 1rem 1.35rem 1.5rem;
+  }
+
+  .admin-topbar {
+    margin-bottom: 0.85rem;
+  }
+
+  .admin-hero-card {
+    padding: 1.15rem 1.35rem;
+  }
+
+  .admin-stat-card {
+    min-height: 108px;
+    padding: 1rem;
+  }
+}
+
 @media (max-width: 1100px) {
   .admin-root {
     grid-template-columns: 1fr;
@@ -766,8 +857,7 @@
 
   .admin-panel,
   .admin-hero-card,
-  .admin-stat-card,
-  .admin-summary-card {
+  .admin-stat-card {
     border-radius: 8px;
   }
 
@@ -788,8 +878,4 @@
     width: 100%;
   }
 
-  .admin-modal-card {
-    max-height: calc(100vh - 1.5rem);
-    padding: 1rem;
-  }
 }

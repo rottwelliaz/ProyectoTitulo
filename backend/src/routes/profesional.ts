@@ -1,0 +1,12 @@
+import { Router } from 'express';
+import { authenticate, authorizeRoles } from '../middleware/auth';
+import { updateProfessionalProfile, getProfessionalCalendar, getProfessionalStatistics, createProfessionalBlock, deleteProfessionalBlock } from '../controllers/profesional';
+const router = Router();
+router.use((_, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
+router.use(authenticate, authorizeRoles('barbero'));
+router.put('/perfil', updateProfessionalProfile);
+router.get('/calendario', getProfessionalCalendar);
+router.get('/estadisticas', getProfessionalStatistics);
+router.post('/bloqueos', createProfessionalBlock);
+router.delete('/bloqueos/:id', deleteProfessionalBlock);
+export default router;

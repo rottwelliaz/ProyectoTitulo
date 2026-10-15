@@ -10,7 +10,8 @@
 </section>
 
 <script>
-  const API_URL = 'http://localhost:3001/api';
+  import { API_URL } from '../lib/session';
+  import { safePhotoUrl, setPhotoBackground } from '../lib/profilePhoto';
   const barberGrid = document.querySelector<HTMLDivElement>('#barber-grid');
 
   interface BarberUser {
@@ -40,17 +41,7 @@
   const getTone = (index: number) => ['azul', 'verde', 'amarillo'][index % 3];
 
   const getDisplayedPhoto = (barber: BarberUser) => {
-    try {
-      const currentUser = JSON.parse(localStorage.getItem('user') || 'null');
-      if (currentUser?.id === barber.id) {
-        const localPhoto = localStorage.getItem(`profile-photo-${barber.id}`);
-        if (localPhoto) return localPhoto;
-      }
-    } catch {
-      // Si la sesión local está dañada, se utiliza la foto pública del backend.
-    }
-
-    return barber.perfilBarbero?.foto_perfil || '';
+    return safePhotoUrl(barber.perfilBarbero?.foto_perfil) || '';
   };
 
   const getRandomBarbers = (barbers: BarberUser[], limit = 4) =>
@@ -81,30 +72,29 @@
       return;
     }
 
-    barberGrid.innerHTML = getRandomBarbers(onlyBarbers)
+    const visible = getRandomBarbers(onlyBarbers);
+    barberGrid.innerHTML = visible
       .map((barber, index) => {
         const tone = getTone(index);
         const initials = getInitials(barber.nombre);
         const workplace = barber.perfilBarbero?.lugarTrabajo?.nombre_barberia || 'Barbero disponible';
-        const bookingUrl = barber.perfilBarbero?.id ? `/booking?barbero=${barber.perfilBarbero.id}#servicios` : '/booking';
-        const hasSession = Boolean(localStorage.getItem('token'));
-        const actionUrl = hasSession
-          ? bookingUrl
-          : `/login?redirect=${encodeURIComponent(bookingUrl)}`;
-        const photo = getDisplayedPhoto(barber);
+        const actionUrl = `/barbero?barbero=${barber.perfilBarbero?.id || ""}`;
 
         return `
           <article class="barber-card tone-${tone}">
-            <div class="barber-avatar ${photo ? 'has-photo' : ''}"${photo ? ` style="background-image: url('${photo}')"` : ''}>
+            <div class="barber-avatar">
               <span>${escapeHtml(initials)}</span>
             </div>
             <h3>${escapeHtml(barber.nombre)}</h3>
             <p class="barber-specialty">${escapeHtml(workplace)}</p>
-            <a href="${actionUrl}">${hasSession ? 'Reservar' : 'Inicia sesión para reservar'}</a>
+            <a href="${actionUrl}">Ver perfil</a>
           </article>
         `;
       })
       .join('');
+    barberGrid.querySelectorAll<HTMLElement>('.barber-avatar').forEach((avatar, index) => {
+      setPhotoBackground(avatar, getDisplayedPhoto(visible[index]));
+    });
   };
 
   const loadBarbers = async () => {

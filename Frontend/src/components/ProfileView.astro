@@ -1,8 +1,10 @@
 ---
 import logoConce from '../assets/logotesis.png';
+import { ShieldCheck } from 'lucide-astro';
+import SessionNav from './SessionNav.astro';
 ---
 
-<main class="profile-root">
+<main class="profile-root profile-dashboard">
   <aside class="profile-sidebar">
     <a class="profile-brand" href="/home" aria-label="Conce Barber Club">
       <img
@@ -33,49 +35,24 @@ import logoConce from '../assets/logotesis.png';
       </a>
     </nav>
 
-    <section class="profile-booking">
-      <div class="profile-booking-title">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4M16 2v4M3 10h18"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="m9 16 2 2 4-5"/></svg>
-        <strong>¿Listo para tu próximo corte?</strong>
+    <div class="profile-sidebar-card">
+      <ShieldCheck size={22} aria-hidden="true" />
+      <div>
+        <strong>Cuenta personal</strong>
+        <span>Gestiona tus datos y reservas.</span>
       </div>
-      <p>Reserva ahora y vive la experiencia Conce Barber Club.</p>
-      <a href="/booking">Reservar ahora</a>
-    </section>
+    </div>
   </aside>
 
   <section class="profile-main">
     <header class="profile-topbar">
-      <div id="profile-menu" class="profile-user-menu">
-        <button
-          id="profile-menu-button"
-          class="profile-user-chip"
-          type="button"
-          aria-label="Abrir menu de usuario"
-          aria-expanded="false"
-          aria-controls="profile-dropdown"
-        >
-          <span class="profile-mini-avatar" data-user-avatar aria-hidden="true"></span>
-          <span class="profile-chip-text">
-            <strong id="profile-header-name">Cargando...</strong>
-            <span id="profile-header-role">-</span>
-          </span>
-          <svg class="profile-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
-        </button>
+      <div class="profile-page-heading">
+        <p>Conce Barber Club</p>
+        <h1>Mi perfil</h1>
+      </div>
 
-        <div id="profile-dropdown" class="profile-dropdown" aria-hidden="true">
-          <a href="/perfil" class="profile-dropdown-item">Mi perfil</a>
-          <a id="professional-profile-link" href="/perfil-profesional" class="profile-dropdown-item is-hidden">
-            Perfil profesional
-          </a>
-          <a id="admin-panel-link" href="/admin" class="profile-dropdown-item is-hidden">
-            Panel admin
-          </a>
-          <a id="profile-dropdown-messages" href="/mensajes" class="profile-dropdown-item">Mensajes</a>
-          <a href="/configuracion" class="profile-dropdown-item">Configuración</a>
-          <button id="logout-button" class="profile-dropdown-item" type="button">
-            Cerrar sesión
-          </button>
-        </div>
+      <div class="profile-top-actions">
+        <SessionNav />
       </div>
     </header>
 
@@ -83,14 +60,14 @@ import logoConce from '../assets/logotesis.png';
       <article class="profile-card profile-identity">
         <div class="profile-photo-wrap">
           <div class="profile-photo" data-user-avatar aria-hidden="true"></div>
-          <input id="profile-photo-input" class="profile-photo-input" type="file" accept="image/*" />
+          <input id="profile-photo-input" class="profile-photo-input" type="file" accept="image/png,image/jpeg,image/webp" />
           <button id="profile-camera-button" class="profile-camera-button" type="button" aria-label="Cambiar foto">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4h-5L8 6H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3l-1.5-2Z"/><circle cx="12" cy="13" r="3"/></svg>
           </button>
         </div>
 
         <div class="profile-summary">
-          <p class="profile-card-title">Tu identidad</p>
+          <span class="profile-kicker">Resumen de cuenta</span>
           <h1 id="profile-name">Cargando...</h1>
           <div class="profile-pill">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/></svg>
@@ -108,8 +85,14 @@ import logoConce from '../assets/logotesis.png';
         </button>
       </article>
 
-      <article class="profile-card profile-data-card">
-        <p class="profile-card-title">Tus datos personales</p>
+      <section class="profile-dashboard-grid">
+        <article class="profile-card profile-data-card">
+        <div class="profile-panel-header">
+          <div>
+            <h2>Tus datos personales</h2>
+            <p>Revisa y actualiza la información asociada a tu cuenta.</p>
+          </div>
+        </div>
 
         <form id="profile-form" class="profile-form">
           <label class="profile-field">
@@ -157,12 +140,35 @@ import logoConce from '../assets/logotesis.png';
         </form>
 
         <p id="profile-message" class="profile-message" aria-live="polite"></p>
+        </article>
+
+        <aside class="profile-security">
+        <div class="profile-shield" aria-hidden="true">
+          <ShieldCheck size={30} />
+        </div>
+        <div>
+          <span class="profile-kicker">Seguridad</span>
+          <strong>Tu información está protegida</strong>
+          <p>En Conce Barber Club resguardamos tus datos personales y nunca los compartimos con terceros.</p>
+        </div>
+        </aside>
+      </section>
+
+      <article id="professional-application" class="profile-card profile-appointments-card is-hidden">
+        <div class="profile-appointments-header"><div>
+          <h2>Solicitud de perfil profesional</h2>
+          <p id="application-status" aria-live="polite">Cargando solicitud...</p>
+        </div></div>
+        <div class="profile-actions is-visible">
+          <button id="apply-professional" class="profile-save-button" type="button" hidden>Solicitar perfil profesional</button>
+          <button id="refresh-application" class="profile-cancel-button" type="button">Actualizar estado</button>
+        </div>
       </article>
 
       <article id="client-appointments-card" class="profile-card profile-appointments-card is-hidden">
         <div class="profile-appointments-header">
           <div>
-            <p class="profile-card-title">Mis citas</p>
+            <h2>Mis citas</h2>
             <p>Revisa tus horas confirmadas y el historial de tus reservas.</p>
           </div>
           <a href="/booking">Reservar otra hora</a>
@@ -173,21 +179,17 @@ import logoConce from '../assets/logotesis.png';
         </div>
       </article>
 
-      <aside class="profile-security">
-        <div class="profile-shield" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m8.5 12 2.25 2.25L16 9"/></svg>
-        </div>
-        <div>
-          <strong>Tu información está segura</strong>
-          <p>En Conce Barber Club protegemos tus datos y nunca los compartimos con terceros.</p>
-        </div>
-      </aside>
     </div>
   </section>
 </main>
 
 <script>
-  const API_URL = 'http://localhost:3001/api';
+  import { BUSINESS_TIME_ZONE } from '../lib/businessTime';
+  import { safePhotoUrl, setPhotoBackground } from '../lib/profilePhoto';
+  import { requireSession, authFetch as fetch, API_URL, cacheSessionUser } from '../lib/session';
+  void (async () => {
+    if (!(await requireSession())) return;
+
   const token = localStorage.getItem('token');
 
   const form = document.querySelector<HTMLFormElement>('#profile-form');
@@ -198,21 +200,11 @@ import logoConce from '../assets/logotesis.png';
   const photoButton = document.querySelector<HTMLButtonElement>('#profile-camera-button');
   const photoInput = document.querySelector<HTMLInputElement>('#profile-photo-input');
   const profilePhoto = document.querySelector<HTMLDivElement>('.profile-photo');
-  const miniAvatar = document.querySelector<HTMLSpanElement>('.profile-mini-avatar');
-  const profileMenu = document.querySelector<HTMLDivElement>('#profile-menu');
-  const profileMenuButton = document.querySelector<HTMLButtonElement>('#profile-menu-button');
-  const profileDropdown = document.querySelector<HTMLDivElement>('#profile-dropdown');
-  const professionalProfileLink = document.querySelector<HTMLAnchorElement>('#professional-profile-link');
-  const adminPanelLink = document.querySelector<HTMLAnchorElement>('#admin-panel-link');
   const profileMessagesNav = document.querySelector<HTMLAnchorElement>('#profile-messages-nav');
-  const dropdownMessagesLink = document.querySelector<HTMLAnchorElement>('#profile-dropdown-messages');
-  const logoutButton = document.querySelector<HTMLButtonElement>('#logout-button');
   const clientAppointmentsCard = document.querySelector<HTMLElement>('#client-appointments-card');
   const clientAppointmentsList = document.querySelector<HTMLElement>('#client-appointments-list');
 
   const nameTitle = document.querySelector<HTMLHeadingElement>('#profile-name');
-  const headerName = document.querySelector<HTMLElement>('#profile-header-name');
-  const headerRole = document.querySelector<HTMLElement>('#profile-header-role');
   const roleText = document.querySelector<HTMLSpanElement>('#profile-role');
   const createdAtText = document.querySelector<HTMLSpanElement>('#profile-created-at');
 
@@ -240,35 +232,20 @@ import logoConce from '../assets/logotesis.png';
     message.className = `profile-message is-${type}`;
   };
 
-  const getPhotoStorageKey = () => {
-    const userId = currentUser?.id ?? 'default';
-    return `profile-photo-${userId}`;
-  };
 
   const setProfilePhoto = (imageData: string | null) => {
-    [profilePhoto, miniAvatar].forEach((element) => {
+    imageData = safePhotoUrl(imageData);
+    [profilePhoto].forEach((element) => {
       if (!element) return;
-      if (imageData) {
-        element.style.backgroundImage = `url("${imageData}")`;
-        element.classList.add('has-photo');
-      } else {
-        element.style.backgroundImage = '';
-        element.classList.remove('has-photo');
-      }
+      setPhotoBackground(element, imageData);
     });
     window.dispatchEvent(new CustomEvent('profile-photo-change', { detail: imageData }));
   };
 
   const loadSavedPhoto = () => {
     setProfilePhoto(
-      localStorage.getItem(getPhotoStorageKey()) || currentUser?.foto_perfil || currentUser?.perfilBarbero?.foto_perfil || null,
+      safePhotoUrl(currentUser?.foto_perfil) || safePhotoUrl(currentUser?.perfilBarbero?.foto_perfil),
     );
-  };
-
-  const closeProfileMenu = () => {
-    profileMenu?.classList.remove('is-open');
-    profileMenuButton?.setAttribute('aria-expanded', 'false');
-    profileDropdown?.setAttribute('aria-hidden', 'true');
   };
 
   const setEditing = (enabled: boolean, focusInput?: HTMLInputElement | null) => {
@@ -316,6 +293,8 @@ import logoConce from '../assets/logotesis.png';
     }
 
     const statusLabels: Record<string, string> = {
+      rechazada: 'Rechazada',
+      inasistencia: 'Inasistencia',
       pendiente: 'Pendiente',
       confirmada: 'Confirmada',
       cancelada: 'Cancelada',
@@ -329,12 +308,15 @@ import logoConce from '../assets/logotesis.png';
     clientAppointmentsList.innerHTML = sortedAppointments.map((appointment) => {
       const date = new Date(appointment.fecha_hora);
       const dateLabel = new Intl.DateTimeFormat('es-CL', {
+        timeZone: BUSINESS_TIME_ZONE,
         weekday: 'long',
         day: 'numeric',
         month: 'long',
         year: 'numeric',
       }).format(date);
       const timeLabel = new Intl.DateTimeFormat('es-CL', {
+        timeZone: BUSINESS_TIME_ZONE,
+        hourCycle: 'h23',
         hour: '2-digit',
         minute: '2-digit',
       }).format(date);
@@ -342,6 +324,7 @@ import logoConce from '../assets/logotesis.png';
       const service = escapeHtml(appointment.servicio?.nombre_servicio || 'Servicio');
       const workplace = escapeHtml(appointment.barbero?.lugarTrabajo?.nombre_barberia || 'Barbería');
       const status = String(appointment.estado || 'confirmada');
+      const hasProof = Boolean(appointment.comprobanteTransferencia);
       const appointmentDate = new Date(appointment.fecha_hora);
       const canCancel = ['pendiente', 'confirmada'].includes(status) && appointmentDate > new Date();
 
@@ -355,6 +338,7 @@ import logoConce from '../assets/logotesis.png';
             <strong>${service}</strong>
             <span>Con ${barber}</span>
             <small>${workplace}</small>
+            <small>${hasProof ? 'Comprobante adjuntado' : 'Reserva sin comprobante'}</small>
           </div>
           <div class="client-appointment-actions">
             <span class="client-appointment-status is-${escapeHtml(status)}">
@@ -365,6 +349,7 @@ import logoConce from '../assets/logotesis.png';
                 class="client-appointment-cancel"
                 type="button"
                 data-cancel-appointment="${escapeHtml(appointment.id)}"
+                data-has-proof="${String(hasProof)}"
               >
                 Cancelar
               </button>
@@ -382,7 +367,9 @@ import logoConce from '../assets/logotesis.png';
     }
 
     const confirmed = window.confirm(
-      'Si cancelas esta hora perderás el pago previo asociado a la reserva. Esta acción no se puede deshacer. ¿Deseas continuar?',
+      button.dataset.hasProof === 'true'
+        ? 'Si cancelas esta hora perderás el pago previo asociado a la reserva. Esta acción no se puede deshacer. ¿Deseas continuar?'
+        : 'Esta acción cancelará la reserva y no se puede deshacer. ¿Deseas continuar?',
     );
 
     if (!confirmed) return;
@@ -440,19 +427,46 @@ import logoConce from '../assets/logotesis.png';
     if (!user) return;
 
     if (nameTitle) nameTitle.textContent = user.nombre;
-    if (headerName) headerName.textContent = user.nombre;
-    if (headerRole) headerRole.textContent = user.rol;
     if (roleText) roleText.textContent = user.rol;
     if (createdAtText) createdAtText.textContent = formatDate(user.fecha_creacion);
     if (nombreInput) nombreInput.value = user.nombre;
     if (emailInput) emailInput.value = user.email;
     if (telefonoInput) telefonoInput.value = user.telefono || '';
-    professionalProfileLink?.classList.toggle('is-hidden', user.rol !== 'barbero');
-    adminPanelLink?.classList.toggle('is-hidden', user.rol !== 'admin');
     profileMessagesNav?.classList.toggle('is-hidden', !['cliente', 'barbero'].includes(user.rol));
-    dropdownMessagesLink?.classList.toggle('is-hidden', !['cliente', 'barbero'].includes(user.rol));
     clientAppointmentsCard?.classList.toggle('is-hidden', user.rol !== 'cliente');
+    if (photoButton) photoButton.hidden = !['cliente', 'barbero'].includes(user.rol);
   };
+
+  const applicationCard = document.querySelector<HTMLElement>('#professional-application');
+  const applicationStatus = document.querySelector<HTMLElement>('#application-status');
+  const applyButton = document.querySelector<HTMLButtonElement>('#apply-professional');
+  const refreshApplication = document.querySelector<HTMLButtonElement>('#refresh-application');
+  const loadApplication = async () => {
+    if (!currentUser || currentUser.rol === 'admin') return;
+    applicationCard?.classList.remove('is-hidden');
+    if (applyButton) applyButton.hidden = true;
+    try {
+      const response = await fetch(API_URL + '/usuarios/solicitud-profesional', { headers: { Authorization: 'Bearer ' + token } });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'No se pudo consultar la solicitud.');
+      if (applicationStatus) applicationStatus.textContent = !data ? (currentUser.rol === 'barbero' ? 'Tu perfil profesional está habilitado.' : 'Puedes solicitar la habilitación de tu perfil profesional.')
+        : data.estado === 'pendiente' ? 'Solicitud pendiente de revisión administrativa.'
+        : data.estado === 'aprobada' ? 'Solicitud aprobada. Actualiza la página para acceder al panel profesional.'
+        : 'Solicitud rechazada. Motivo: ' + data.motivoRechazo;
+      if (applyButton) applyButton.hidden = Boolean(data) || currentUser.rol !== 'cliente';
+    } catch (error) { if (applicationStatus) applicationStatus.textContent = error instanceof Error ? error.message : 'No se pudo cargar la solicitud.'; }
+  };
+  applyButton?.addEventListener('click', async () => {
+    applyButton.disabled = true;
+    try {
+      const response = await fetch(API_URL + '/usuarios/solicitud-profesional', { method: 'POST', headers: { Authorization: 'Bearer ' + token } });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'No se pudo enviar la solicitud.');
+      await loadApplication();
+    } catch (error) { if (applicationStatus) applicationStatus.textContent = error instanceof Error ? error.message : 'No se pudo enviar la solicitud.'; }
+    finally { applyButton.disabled = false; }
+  });
+  refreshApplication?.addEventListener('click', () => void loadApplication());
 
   const loadProfile = async () => {
     if (!token) {
@@ -474,16 +488,10 @@ import logoConce from '../assets/logotesis.png';
       }
 
       currentUser = data;
-      const cachedUser = {
-        ...data,
-        foto_perfil: null,
-        ...(data?.perfilBarbero
-          ? { perfilBarbero: { ...data.perfilBarbero, foto_perfil: null } }
-          : {}),
-      };
-      localStorage.setItem('user', JSON.stringify(cachedUser));
+      cacheSessionUser(data);
       renderUser(currentUser);
       loadSavedPhoto();
+      await loadApplication();
       if (data.rol === 'cliente') await loadClientAppointments();
       showMessage('', 'info');
     } catch (error) {
@@ -504,8 +512,9 @@ import logoConce from '../assets/logotesis.png';
     const file = photoInput.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
-      showMessage('Selecciona una imagen válida.', 'error');
+    if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+      showMessage('Selecciona una fotografía PNG, JPEG o WebP.', 'error');
+      photoInput.value = '';
       return;
     }
 
@@ -516,13 +525,21 @@ import logoConce from '../assets/logotesis.png';
     }
 
     const reader = new FileReader();
+    photoInput.disabled = true;
+    if (photoButton) photoButton.disabled = true;
+    const finishPhotoUpload = () => {
+      photoInput.disabled = false;
+      photoInput.value = '';
+      if (photoButton) photoButton.disabled = false;
+    };
+    reader.addEventListener('error', () => {
+      showMessage('No se pudo leer la fotografía.', 'error');
+      finishPhotoUpload();
+    });
     reader.addEventListener('load', async () => {
       const imageData = String(reader.result || '');
-      localStorage.setItem(getPhotoStorageKey(), imageData);
-      setProfilePhoto(imageData);
-
-      if (currentUser && ['cliente', 'barbero'].includes(currentUser.rol) && token) {
-        try {
+      try {
+          if (!currentUser || !['cliente', 'barbero'].includes(currentUser.rol) || !token) throw new Error('Inicia sesión para actualizar tu fotografía.');
           const response = await fetch(`${API_URL}/auth/me/photo`, {
             method: 'PUT',
             headers: {
@@ -533,41 +550,16 @@ import logoConce from '../assets/logotesis.png';
           });
           const data = await response.json().catch(() => ({}));
           if (!response.ok) throw new Error(data.message || 'No se pudo publicar la foto.');
-
+          const normalized = safePhotoUrl(data.foto_perfil);
+          if (!normalized) throw new Error('El servidor no devolvió una fotografía válida.');
+          currentUser.foto_perfil = normalized;
+          setProfilePhoto(normalized);
           showMessage('Foto actualizada en todo tu perfil.', 'success');
-        } catch (error) {
-          showMessage(error instanceof Error ? error.message : 'La foto se guardó solo en este dispositivo.', 'error');
-        }
-      } else {
-        showMessage('Foto actualizada en todo tu perfil.', 'success');
-      }
+      } catch (error) {
+        showMessage(error instanceof Error ? error.message : 'No se pudo actualizar la fotografía.', 'error');
+      } finally { finishPhotoUpload(); }
     });
     reader.readAsDataURL(file);
-  });
-
-  profileMenuButton?.addEventListener('click', (event) => {
-    event.stopPropagation();
-    const isOpen = profileMenu?.classList.toggle('is-open') ?? false;
-    profileMenuButton.setAttribute('aria-expanded', String(isOpen));
-    profileDropdown?.setAttribute('aria-hidden', String(!isOpen));
-  });
-
-  document.addEventListener('click', (event) => {
-    if (!profileMenu?.contains(event.target as Node)) {
-      closeProfileMenu();
-    }
-  });
-
-  document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') {
-      closeProfileMenu();
-    }
-  });
-
-  logoutButton?.addEventListener('click', () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    window.location.href = '/login';
   });
 
   document.querySelectorAll<HTMLButtonElement>('[data-edit-field]').forEach((button) => {
@@ -598,8 +590,12 @@ import logoConce from '../assets/logotesis.png';
     const telefono = String(formData.get('telefono') || '').trim();
     if (nombre) payload.nombre = nombre;
     if (email) payload.email = email;
-    if (telefono) payload.telefono = telefono;
+    if (!nombre || !email) { showMessage('Nombre y email son obligatorios.', 'error'); return; }
+    payload.telefono = telefono;
 
+    const saveButton = form.querySelector<HTMLButtonElement>('button[type=submit]');
+    if (saveButton?.disabled) return;
+    if (saveButton) saveButton.disabled = true;
     try {
       const response = await fetch(`${API_URL}/auth/me`, {
         method: 'PUT',
@@ -617,15 +613,16 @@ import logoConce from '../assets/logotesis.png';
       }
 
       currentUser = data;
-      localStorage.setItem('user', JSON.stringify(data));
+      cacheSessionUser(data);
       renderUser(currentUser);
       setEditing(false);
       showMessage('Perfil actualizado correctamente.', 'success');
     } catch (error) {
       const text = error instanceof Error ? error.message : 'Error al actualizar el perfil.';
       showMessage(text, 'error');
-    }
+    } finally { if (saveButton) saveButton.disabled = false; }
   });
 
   loadProfile();
+  })();
 </script>

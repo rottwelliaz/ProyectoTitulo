@@ -1,0 +1,383 @@
+---
+interface Props {
+  showHome?: boolean;
+  label?: string;
+}
+
+const { showHome = true, label = 'Navegación de cuenta' } = Astro.props;
+---
+
+<div class="session-nav" data-session-nav role="navigation" aria-label={label} aria-busy="true">
+  {showHome && (
+    <a class="session-nav-home" href="/home" data-session-home>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10M9 20v-6h6v6"/></svg>
+      <span>Inicio</span>
+    </a>
+  )}
+
+  <span class="session-nav-loading" data-session-loading>Validando sesión…</span>
+
+  <a class="session-nav-login" data-session-guest href="/login" hidden>
+    Iniciar sesión / Registrarse
+  </a>
+
+  <div class="session-user-menu" data-session-user hidden>
+    <button
+      class="session-user-trigger"
+      data-session-trigger
+      type="button"
+      aria-label="Abrir menú de usuario"
+      aria-expanded="false"
+    >
+      <span class="session-user-avatar" data-user-avatar aria-hidden="true">
+        <span data-avatar-fallback>U</span>
+      </span>
+      <span class="session-user-copy">
+        <strong data-session-name>Usuario</strong>
+        <small data-session-role>Cuenta</small>
+      </span>
+      <svg class="session-user-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+    </button>
+
+    <div class="session-user-dropdown" data-session-dropdown aria-hidden="true">
+      <a href="/perfil">Mi perfil</a>
+      <a href="/perfil-profesional" data-session-role-link="barbero" hidden>Perfil profesional</a>
+      <a href="/admin" data-session-role-link="admin" hidden>Panel de administración</a>
+      <a href="/mensajes" data-session-role-link="cliente barbero" hidden>Mensajes</a>
+      <a href="/configuracion">Configuración</a>
+      <button type="button" data-session-logout>Cerrar sesión</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { clearSession, getSession } from '../lib/session';
+  import { safePhotoUrl, setPhotoBackground } from '../lib/profilePhoto';
+
+  type MenuRoot = HTMLElement & { dataset: DOMStringMap };
+
+  const displayName = (user: any) => {
+    const raw = String(user?.nombre || user?.name || user?.email || 'Usuario').trim();
+    return raw.includes('@') ? raw.split('@')[0] : raw;
+  };
+
+  const initials = (name: string) =>
+    name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join('') || 'U';
+
+  const roleName = (role: string) => ({
+    cliente: 'Cliente',
+    barbero: 'Barbero',
+    admin: 'Administrador',
+  }[role] || 'Cuenta');
+
+  const closeMenu = (root: MenuRoot) => {
+    root.querySelector('[data-session-user]')?.classList.remove('is-open');
+    root.querySelector('[data-session-trigger]')?.setAttribute('aria-expanded', 'false');
+    root.querySelector('[data-session-dropdown]')?.setAttribute('aria-hidden', 'true');
+  };
+
+  const showGuest = (root: MenuRoot) => {
+    const guest = root.querySelector<HTMLAnchorElement>('[data-session-guest]');
+    const redirect = `${location.pathname}${location.search}${location.hash}`;
+    if (guest) {
+      guest.href = `/login?redirect=${encodeURIComponent(redirect)}`;
+      guest.hidden = false;
+    }
+    const userMenu = root.querySelector<HTMLElement>('[data-session-user]');
+    if (userMenu) userMenu.hidden = true;
+    const loading = root.querySelector<HTMLElement>('[data-session-loading]');
+    if (loading) loading.hidden = true;
+    root.dataset.sessionState = 'guest';
+    root.setAttribute('aria-busy', 'false');
+  };
+
+  const showUser = (root: MenuRoot, user: any) => {
+    const name = displayName(user);
+    const nameElement = root.querySelector<HTMLElement>('[data-session-name]');
+    const roleElement = root.querySelector<HTMLElement>('[data-session-role]');
+    const fallback = root.querySelector<HTMLElement>('[data-avatar-fallback]');
+    const avatar = root.querySelector<HTMLElement>('[data-user-avatar]');
+    const photo = safePhotoUrl(user?.foto_perfil) || safePhotoUrl(user?.perfilBarbero?.foto_perfil);
+
+    if (nameElement) nameElement.textContent = name;
+    if (roleElement) roleElement.textContent = roleName(user.rol);
+    if (fallback) fallback.textContent = initials(name);
+    if (avatar) {
+      setPhotoBackground(avatar, photo);
+      fallback?.classList.toggle('hidden', Boolean(photo));
+    }
+    root.querySelectorAll<HTMLElement>('[data-session-role-link]').forEach((link) => {
+      link.hidden = !link.dataset.sessionRoleLink?.split(' ').includes(user.rol);
+    });
+    const guest = root.querySelector<HTMLElement>('[data-session-guest]');
+    if (guest) guest.hidden = true;
+    const userMenu = root.querySelector<HTMLElement>('[data-session-user]');
+    if (userMenu) userMenu.hidden = false;
+    const loading = root.querySelector<HTMLElement>('[data-session-loading]');
+    if (loading) loading.hidden = true;
+    root.dataset.sessionState = 'authenticated';
+    root.setAttribute('aria-busy', 'false');
+  };
+
+  document.querySelectorAll<MenuRoot>('[data-session-nav]').forEach((root) => {
+    if (root.dataset.sessionReady === 'true') return;
+    root.dataset.sessionReady = 'true';
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      showGuest(root);
+    } else {
+      void getSession()
+        .then((user) => user ? showUser(root, user) : showGuest(root))
+        .catch(() => {
+          const loading = root.querySelector<HTMLElement>('[data-session-loading]');
+          if (loading) loading.textContent = 'No se pudo validar la sesión';
+          root.dataset.sessionState = 'error';
+          root.setAttribute('aria-busy', 'false');
+        });
+    }
+
+    const trigger = root.querySelector<HTMLButtonElement>('[data-session-trigger]');
+    trigger?.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const menu = root.querySelector<HTMLElement>('[data-session-user]');
+      const dropdown = root.querySelector<HTMLElement>('[data-session-dropdown]');
+      const open = menu?.classList.toggle('is-open') ?? false;
+      trigger.setAttribute('aria-expanded', String(open));
+      dropdown?.setAttribute('aria-hidden', String(!open));
+    });
+
+    root.querySelector<HTMLButtonElement>('[data-session-logout]')?.addEventListener('click', () => {
+      clearSession();
+      location.assign('/login');
+    });
+  });
+
+  document.addEventListener('click', (event) => {
+    document.querySelectorAll<MenuRoot>('[data-session-nav]').forEach((root) => {
+      if (!root.contains(event.target as Node)) closeMenu(root);
+    });
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      document.querySelectorAll<MenuRoot>('[data-session-nav]').forEach(root => {
+        if (root.querySelector('[data-session-trigger]')?.getAttribute('aria-expanded') === 'true') {
+          closeMenu(root);
+          root.querySelector<HTMLButtonElement>('[data-session-trigger]')?.focus();
+        }
+      });
+    }
+  });
+</script>
+
+<style>
+  .session-nav {
+    align-items: center;
+    display: flex;
+    flex: 0 0 auto;
+    gap: clamp(0.65rem, 1.2vw, 1.1rem);
+    justify-content: flex-end;
+    min-width: 0;
+    position: relative;
+  }
+
+  .session-nav [hidden] { display: none !important; }
+
+  .session-nav-home,
+  .session-nav-login {
+    align-items: center;
+    border-radius: 8px;
+    display: inline-flex;
+    font-size: 0.9rem;
+    font-weight: 800;
+    justify-content: center;
+    min-height: 42px;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .session-nav-home {
+    color: #eef5ff;
+    gap: 0.5rem;
+    padding: 0.55rem 0.35rem;
+  }
+
+  .session-nav-home svg {
+    fill: none;
+    height: 19px;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.9;
+    width: 19px;
+  }
+
+  .session-nav-home:hover,
+  .session-nav-home:focus-visible { color: #ffd025; }
+
+  .session-nav-login {
+    background: #1261d8;
+    border: 1px solid #2478f3;
+    color: #ffffff;
+    padding: 0.65rem 1rem;
+  }
+
+  .session-nav-login:hover,
+  .session-nav-login:focus-visible {
+    background: #1e6dff;
+    outline: 2px solid rgba(96, 165, 250, 0.45);
+    outline-offset: 2px;
+  }
+
+  .session-nav-loading {
+    color: #b8c5d8;
+    font-size: 0.78rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .session-user-menu { position: relative; }
+
+  .session-user-trigger {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    color: #ffffff;
+    cursor: pointer;
+    display: flex;
+    font: inherit;
+    gap: 0.65rem;
+    max-width: 250px;
+    min-height: 46px;
+    padding: 0.15rem;
+    text-align: left;
+  }
+
+  .session-user-trigger:focus-visible {
+    border-radius: 8px;
+    outline: 2px solid #60a5fa;
+    outline-offset: 3px;
+  }
+
+  .session-user-avatar {
+    align-items: center;
+    background: linear-gradient(145deg, #1261d8, #08294e);
+    background-position: center;
+    background-size: cover;
+    border: 1px solid rgba(255, 255, 255, 0.72);
+    border-radius: 999px;
+    color: #ffffff;
+    display: inline-flex;
+    flex: 0 0 auto;
+    font-size: 0.78rem;
+    font-weight: 900;
+    height: 40px;
+    justify-content: center;
+    width: 40px;
+  }
+
+  .session-user-copy {
+    display: grid;
+    line-height: 1.15;
+    min-width: 0;
+  }
+
+  .session-user-copy strong {
+    max-width: 145px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .session-user-copy small {
+    color: #aebdd0;
+    font-size: 0.72rem;
+    margin-top: 0.2rem;
+  }
+
+  .session-user-chevron {
+    fill: none;
+    flex: 0 0 auto;
+    height: 16px;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
+    transition: transform 0.15s ease;
+    width: 16px;
+  }
+
+  .session-user-menu.is-open .session-user-chevron { transform: rotate(180deg); }
+
+  .session-user-dropdown {
+    background: #ffffff;
+    border: 1px solid #d4d4d8;
+    border-radius: 9px;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.3);
+    display: none;
+    gap: 0.2rem;
+    min-width: 220px;
+    padding: 0.5rem;
+    position: absolute;
+    right: 0;
+    top: calc(100% + 0.65rem);
+    z-index: 120;
+  }
+
+  .session-user-menu.is-open .session-user-dropdown { display: grid; }
+
+  .session-user-dropdown a,
+  .session-user-dropdown button {
+    background: transparent;
+    border: 0;
+    border-radius: 7px;
+    color: #18181b;
+    cursor: pointer;
+    display: block;
+    font: inherit;
+    font-size: 0.88rem;
+    font-weight: 700;
+    padding: 0.72rem 0.8rem;
+    text-align: left;
+    text-decoration: none;
+    width: 100%;
+  }
+
+  .session-user-dropdown a:hover,
+  .session-user-dropdown a:focus-visible,
+  .session-user-dropdown button:hover,
+  .session-user-dropdown button:focus-visible {
+    background: #edf5ff;
+    color: #0456b8;
+    outline: none;
+  }
+
+  :global(html[data-theme='light']) .session-nav-home,
+  :global(html[data-theme='light']) .session-user-trigger { color: #0f172a; }
+  :global(html[data-theme='light']) .session-user-copy small,
+  :global(html[data-theme='light']) .session-nav-loading { color: #526175; }
+  :global(html[data-theme='light']) .session-user-avatar { border-color: #7d93af; }
+
+  :global(html[data-theme='dark']) .session-user-dropdown {
+    background: #15171c;
+    border-color: #46505e;
+  }
+  :global(html[data-theme='dark']) .session-user-dropdown :is(a, button) { color: #f8fafc; }
+  :global(html[data-theme='dark']) .session-user-dropdown :is(a, button):is(:hover, :focus-visible) {
+    background: #20242b;
+    color: #93c5fd;
+  }
+
+  @media (max-width: 760px) {
+    .session-nav-home { margin-right: auto; }
+    .session-user-copy small { display: none; }
+    .session-user-copy strong { max-width: 112px; }
+    .session-nav-login { min-height: 40px; padding: 0.55rem 0.8rem; }
+  }
+
+  @media (max-width: 420px) {
+    .session-user-copy strong { max-width: 88px; }
+    .session-user-trigger { gap: 0.35rem; }
+    .session-nav-login { font-size: 0.8rem; }
+  }
+</style>

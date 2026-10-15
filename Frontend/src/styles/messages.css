@@ -463,6 +463,22 @@ html[data-theme='light'] .chat-panel {
   background: #f8fafc;
 }
 
+html[data-theme='light'] :is(.messages-sidebar, .messages-sidebar-header, .chat-header, .message-composer) {
+  background: #ffffff;
+  border-color: #cbd8eb;
+}
+
+html[data-theme='light'] .conversation-item:is(:hover, .is-active) {
+  background: #dbeafe;
+  border-color: #93c5fd;
+}
+
+html[data-theme='light'] .conversation-role {
+  background: #dbeafe;
+  border-color: #93c5fd;
+  color: #0b4eac;
+}
+
 html[data-theme='light'] .message-bubble {
   background: #ffffff;
   border-color: #d5deea;
@@ -494,6 +510,62 @@ html[data-theme='dark'] .chat-panel {
   background: #0c0e12;
 }
 
+html[data-theme='dark'] :is(.messages-sidebar, .messages-sidebar-header, .chat-header, .message-composer) {
+  background: #15171c;
+  border-color: #343842;
+}
+
+html[data-theme='dark'] .conversation-item:is(:hover, .is-active) {
+  background: #1c3150;
+  border-color: #3b82f6;
+}
+
+html[data-theme='dark'] .message-bubble {
+  background: #16263b;
+  border-color: #46505e;
+  color: #f8fafc;
+}
+
+html[data-theme='dark'] .is-sent .message-bubble {
+  background: #1261d8;
+  border-color: #4d99ff;
+}
+
+html[data-theme='dark'] .message-composer textarea {
+  background: #0c0e12;
+  border-color: #46505e;
+  color: #f8fafc;
+}
+
+@media (min-width: 521px) and (max-height: 820px) {
+  .messages-root {
+    padding-bottom: 1rem;
+  }
+
+  .messages-topbar {
+    min-height: 84px;
+  }
+
+  .messages-brand img {
+    height: 68px;
+    width: 78px;
+  }
+
+  .messages-app {
+    height: calc(100vh - 100px);
+    height: calc(100dvh - 100px);
+  }
+
+  .chat-content {
+    grid-template-rows: 70px minmax(0, 1fr) auto auto;
+  }
+
+  .messages-sidebar-header {
+    flex-basis: 70px;
+    height: 70px;
+  }
+}
+
 @media (min-width: 521px) {
   .messages-app .messages-sidebar,
   .messages-app.has-active-chat .messages-sidebar,
@@ -518,15 +590,21 @@ html[data-theme='dark'] .chat-panel {
   }
 }
 
-@media (max-width: 520px) and (hover: none) and (pointer: coarse) {
+@media (max-width: 520px) {
   .messages-root {
     padding: 0;
   }
 
   .messages-topbar {
     grid-template-columns: 72px 1fr;
-    min-height: 88px;
-    padding: 0 0.9rem;
+    grid-template-rows: auto auto;
+    min-height: 142px;
+    padding: 0.45rem 0.9rem;
+  }
+
+  .messages-topbar .session-nav {
+    grid-column: 1 / -1;
+    justify-content: space-between;
   }
 
   .messages-brand img {
@@ -545,7 +623,8 @@ html[data-theme='dark'] .chat-panel {
     border-radius: 0;
     border-right: 0;
     display: block;
-    height: calc(100vh - 88px);
+    height: calc(100vh - 142px);
+    height: calc(100dvh - 142px);
     min-height: 0;
   }
 

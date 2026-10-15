@@ -5,6 +5,7 @@ const descripcionRegex = /^[\p{L}0-9\s]+$/u;
 
 const nombreServicio = Joi.string()
   .trim()
+  .max(80)
   .pattern(nombreServicioRegex)
   .messages({
     'string.base': 'El nombre del servicio debe ser texto',
@@ -14,6 +15,7 @@ const nombreServicio = Joi.string()
 
 const descripcion = Joi.string()
   .trim()
+  .max(300)
   .pattern(descripcionRegex)
   .allow(null, '')
   .messages({
@@ -59,6 +61,7 @@ export const createServiceValidation = Joi.object({
 });
 
 export const updateServiceValidation = Joi.object({
+  activo: Joi.boolean().strict().optional(),
   nombre_servicio: nombreServicio.optional(),
   descripcion: descripcion.optional(),
   precio: precio.optional(),

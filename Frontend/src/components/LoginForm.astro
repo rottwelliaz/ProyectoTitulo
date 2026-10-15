@@ -67,7 +67,8 @@
 </main>
 
 <script>
-  const API_URL = 'http://localhost:3001/api';
+  import { API_URL, getSession, clearSession } from '../lib/session';
+  import { isRole, loginDestination } from '../lib/access';
   const form = document.querySelector<HTMLFormElement>('#login-form');
   const message = document.querySelector<HTMLParagraphElement>('#login-message');
   const button = document.querySelector<HTMLButtonElement>('#login-button');
@@ -111,17 +112,17 @@
       const token = data.token || data.accessToken || data.jwt;
       const user = data.usuario || data.user;
 
-      if (token) localStorage.setItem('token', token);
-      if (user) localStorage.setItem('user', JSON.stringify(user));
+      if (!token || !isRole(user?.rol)) throw new Error('La respuesta de inicio de sesión no es válida.');
+      localStorage.setItem('token', token);
+      const verifiedUser = await getSession(true);
+      if (!verifiedUser) {
+        clearSession();
+        throw new Error('No se pudo validar tu cuenta. Vuelve a iniciar sesión.');
+      }
 
       showMessage('Sesión iniciada correctamente.', 'success');
-      window.setTimeout(() => {
-        const requestedRedirect = new URLSearchParams(window.location.search).get('redirect');
-        const safeRedirect = requestedRedirect?.startsWith('/') && !requestedRedirect.startsWith('//')
-          ? requestedRedirect
-          : '/home';
-        window.location.href = safeRedirect;
-      }, 800);
+      const requestedRedirect = new URLSearchParams(window.location.search).get('redirect');
+      window.location.replace(loginDestination(requestedRedirect, verifiedUser.rol));
     } catch (error) {
       const text = error instanceof Error ? error.message : 'Error al iniciar sesión.';
       showMessage(text, 'error');

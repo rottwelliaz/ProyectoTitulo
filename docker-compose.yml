@@ -2,19 +2,18 @@ services:
   # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
-    container_name: barberia_postgres
     environment:
       POSTGRES_USER: ${DB_USERNAME:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-barcelona}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Configura DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME:-taller}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "${DB_PORT:-5432}:5432"
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
     networks:
       - barberia_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres}"]
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -24,20 +23,18 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: barberia_backend
     environment:
       - NODE_ENV=${NODE_ENV:-development}
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USERNAME=${DB_USERNAME:-postgres}
-      - DB_PASSWORD=${DB_PASSWORD:-barcelona}
+      - DB_PASSWORD=${DB_PASSWORD:?Configura DB_PASSWORD}
       - DB_NAME=${DB_NAME:-taller}
-      - DB_SYNCHRONIZE=${DB_SYNCHRONIZE:-true}
-      - JWT_SECRET=${JWT_SECRET:-your_secret_key}
+      - JWT_SECRET=${JWT_SECRET:?Configura JWT_SECRET}
       - JWT_EXPIRE=${JWT_EXPIRE:-7d}
-      - PORT=${BACKEND_PORT:-3001}
-      - CORS_ORIGIN=${FRONTEND_ORIGIN:-http://localhost:3000}
-      - DATABASE_URL=postgresql://${DB_USERNAME:-postgres}:${DB_PASSWORD:-barcelona}@postgres:5432/${DB_NAME:-taller}
+      - PORT=3001
+      - CORS_ORIGIN=${CORS_ORIGIN:-${FRONTEND_ORIGIN:-http://localhost:3000}}
+      - DATABASE_URL=postgresql://${DB_USERNAME:-postgres}:${DB_PASSWORD:?Configura DB_PASSWORD}@postgres:5432/${DB_NAME:-taller}
     ports:
       - "${BACKEND_PORT:-3001}:3001"
     depends_on:
@@ -48,16 +45,47 @@ services:
     volumes:
       - ./backend/src:/app/src
       - ./backend/prisma:/app/prisma
-    command: sh -c "npx prisma db push --accept-data-loss && npm run db:seed && npm run dev"
+    command: npm run dev
+
+  # Explicit maintenance step: docker compose --profile maintenance run --rm migrate
+  migrate:
+    profiles: ["maintenance"]
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://${DB_USERNAME:-postgres}:${DB_PASSWORD:?Configura DB_PASSWORD}@postgres:5432/${DB_NAME:-taller}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - barberia_network
+    command: ["npx", "prisma", "migrate", "deploy"]
+
+  # Demo data is an explicit action and seed.ts refuses a populated database.
+  seed-demo:
+    profiles: ["demo"]
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://${DB_USERNAME:-postgres}:${DB_PASSWORD:?Configura DB_PASSWORD}@postgres:5432/${DB_NAME:-taller}
+      NODE_ENV: ${NODE_ENV:-development}
+      SEED_DEMO_PASSWORD: ${SEED_DEMO_PASSWORD:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - barberia_network
+    command: ["npm", "run", "db:seed"]
 
   # Frontend Service
   frontend:
     build:
       context: ./Frontend
       dockerfile: Dockerfile
-    container_name: barberia_frontend
     environment:
-      - VITE_API_URL=${VITE_API_URL:-http://localhost:3001/api}
+      - PUBLIC_API_URL=${PUBLIC_API_URL:-http://localhost:3001/api}
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     depends_on:

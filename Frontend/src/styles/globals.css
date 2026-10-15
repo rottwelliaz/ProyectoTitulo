@@ -23,6 +23,8 @@ html[data-theme='dark'] {
 
 body {
   background: #020b18;
+  color: #f8fafc;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
   margin: 0;
   min-width: 320px;
   overflow-x: hidden;
@@ -37,6 +39,7 @@ html[data-theme='dark'] body {
 }
 
 /* Temas globales. "Original" conserva la identidad azul existente. */
+html[data-theme='light'],
 html[data-theme='light'] :is(.profile-root, .booking-root, .admin-root, .pro-root, .barbers-page, .home-root) {
   --ink: #0f172a;
   --muted: #526175;
@@ -66,7 +69,7 @@ html[data-theme='light'] :is(.profile-root, .booking-root, .admin-root, .pro-roo
 }
 
 html[data-theme='light'] :is(.profile-main, .profile-topbar, .profile-sidebar, .admin-sidebar, .pro-sidebar, .barbers-header, .home-main) {
-  background-color: #f8fafc !important;
+  background: #f8fafc !important;
   color: #0f172a;
 }
 
@@ -131,6 +134,7 @@ html[data-theme='light'] body > main.min-h-screen:not([style]) :is(.text-\[\#C7D
   color: #526175 !important;
 }
 
+html[data-theme='dark'],
 html[data-theme='dark'] :is(.profile-root, .booking-root, .admin-root, .pro-root, .barbers-page, .home-root) {
   --navy: #08090c;
   --navy-2: #111318;
@@ -183,6 +187,21 @@ html[data-theme='dark'] body > main.min-h-screen:not([style]) :is(input, label.r
   border-color: #343842 !important;
 }
 
+html[data-theme='dark'] body > main.min-h-screen:not([style]) :is(h1, label, legend, .text-white) {
+  color: #f8fafc !important;
+}
+
+html[data-theme='dark'] body > main.min-h-screen:not([style]) :is(.text-\[\#C7D2E1\], .placeholder\:text-\[\#8798B3\]) {
+  color: #b8c2d0 !important;
+}
+
+html[data-theme='light'] body > main.min-h-screen:not([style]) :is(input, button):disabled,
+html[data-theme='dark'] body > main.min-h-screen:not([style]) :is(input, button):disabled {
+  cursor: wait;
+  filter: saturate(0.55);
+  opacity: 0.68;
+}
+
 img,
 svg,
 video,
@@ -201,3 +220,221 @@ section[id],
     scroll-behavior: auto;
   }
 }
+
+/* Visibility must take precedence over component flex/grid declarations. */
+[hidden], .hidden, .is-hidden { display: none !important; }
+:where(a, button, input, select, textarea):focus-visible { outline: 3px solid #4aa3ff; outline-offset: 3px; }
+:where(button, input, select, textarea) { font: inherit; }
+:where(button:not(:disabled), select) { cursor: pointer; }
+:where(button:disabled) { cursor: not-allowed; }
+:where(input, select, textarea) { max-width: 100%; }
+:where(p, h1, h2, h3, strong, a) { overflow-wrap: anywhere; }
+
+.session-gate { display: none; }
+html[data-private='true']:not([data-auth-state='ready']) body > :not(.session-gate):not(noscript):not(script) { display: none !important; }
+html[data-private='true']:not([data-auth-state='ready']) .session-gate {
+  min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 1rem; padding: 2rem; background: #020b18; color: #fff; text-align: center;
+}
+.session-gate button, .session-gate a { border: 1px solid #4aa3ff; border-radius: 8px; padding: .8rem 1.2rem; }
+html[data-auth-state='pending'] .session-gate button { display: none; }
+.session-noscript { position: fixed; inset: 0; display: grid; place-content: center; padding: 2rem; background: #020b18; color: #fff; z-index: 10000; }
+
+/* Intrinsic grid widths must not push content outside the viewport. */
+.pro-main, .pro-sidebar, .admin-main, .pro-grid > *, .profile-content > *, .booking-panel, .barber-grid > *, .home-nav { min-width: 0; }
+.profile-root { grid-template-columns: 300px minmax(0, 1fr); }
+.pro-root, .admin-root { grid-template-columns: 270px minmax(0, 1fr); }
+.profile-identity { gap: 2rem; grid-template-columns: 190px minmax(0, 1fr); }
+.profile-primary-button { grid-column: 2; justify-self: start; }
+.profile-field { grid-template-columns: 48px minmax(100px, .8fr) minmax(0, 1fr) auto; }
+.profile-chip-text { min-width: 0; }
+.profile-chip-text strong { overflow-wrap: anywhere; }
+.profile-topbar { min-height: 86px; height: auto; padding-block: 1rem; }
+.admin-modal { color: var(--admin-text); }
+.service-modal, .slot-modal { max-height: calc(100dvh - 2rem); overflow-y: auto; max-width: calc(100vw - 2rem); }
+/* Native dialogs provide focus containment, inert background and focus restoration. */
+dialog:is(.admin-modal-backdrop, .slot-modal-backdrop) {
+  border: 0; margin: 0; width: 100%; height: 100%; max-width: none; max-height: none;
+  color: inherit;
+}
+dialog:is(.admin-modal-backdrop, .slot-modal-backdrop):not([open]) { display: none; }
+dialog:is(.admin-modal-backdrop, .slot-modal-backdrop)::backdrop { background: transparent; }
+
+/* Keep dropdowns outside the navigation's scrolling/clipping region. */
+.home-hero-shell { overflow: clip; overflow-clip-margin: 0; }
+.home-header { z-index: 5; }
+.home-nav { flex-wrap: wrap; gap: 1rem; overflow: visible; }
+.home-nav .profile-dropdown { width: 210px; max-width: calc(100vw - 28px); }
+
+/* Light surfaces need matching text, including controls and modal siblings. */
+html[data-theme='light'] :is(.pro-hero-card, .appointment-card, .service-modal, .slot-modal, .admin-modal, .barber-card, .how-card, .profile-security, .admin-hero-card, .admin-stat-card, .admin-summary-grid article, .admin-user-card, .admin-empty) {
+  background: #fff; border-color: #cbd8eb; color: #0f172a;
+}
+html[data-theme='light'] :is(.pro-nav-link, .admin-nav-link):not(.is-active):not(:hover) { color: #334155; }
+html[data-theme='light'] :is(.pro-nav-link, .admin-nav-link):is(.is-active, :hover) { color: #fff; }
+html[data-theme='light'] :is(.pro-panel-header button, .appointment-actions .is-proof, .workplace-form label, .service-form label, .admin-edit-form label span, .profile-user-chip, .profile-security strong, .booking-proof-field, .booking-payment-actions button:first-child, .slot-modal-close) { color: #0f172a; }
+html[data-theme='light'] :is(.workplace-form input, .workplace-form input[readonly], .service-form input, .service-form textarea, .service-form select, .booking-proof-field input) { background: #f8fafc; color: #0f172a; border-color: #cbd8eb; }
+html[data-theme='light'] :is(.booking-barber-card, .booking-service-card, .booking-days button, .booking-slots button, .booking-week-nav button, .booking-summary, .booking-payment, .slot-status-option) { background: #f1f5f9; color: #0f172a; }
+html[data-theme='light'] :is(.booking-barber-card, .booking-service-card, .booking-days button, .booking-slots button, .slot-status-option).is-selected { background: #dbeafe; border-color: #1261d8; }
+html[data-theme='light'] :is(.booking-steps .is-current, .booking-header a, .booking-bank-grid span, .booking-summary span) { color: #1256b5; }
+html[data-theme='light'] :is(.booking-alert.is-success, .booking-steps .is-complete, .appointment-status.is-confirmada, .workplace-status.is-complete, .profile-message.is-success, .text-green-300) { color: #166534 !important; }
+html[data-theme='light'] :is(.booking-alert.is-error, .appointments-message.is-error, .profile-message.is-error, .text-red-300) { color: #b91c1c !important; }
+html[data-theme='light'] body > main.min-h-screen:not([style]) button[type='submit'] { color: #fff !important; }
+html[data-theme='light'] .admin-secondary-button { color: #1256b5; }
+html[data-theme='light'] :is(.admin-danger-ghost, .admin-delete-button, .admin-message.is-error, .admin-edit-message.is-error, .admin-modal-close) { color: #b91c1c; }
+html[data-theme='light'] :is(.admin-message.is-success, .admin-edit-message.is-success, .admin-pill.is-ok, .admin-service-chips span) { color: #166534; }
+html[data-theme='light'] :is(.admin-kicker, .admin-pill.is-warning) { color: #854d0e; }
+html[data-theme='light'] .profile-chip-text :is(strong, span) { color: #334155; }
+html[data-theme='light'] :is(.calendar-day-header strong, .calendar-day-header span, .calendar-time-column time, .calendar-corner, .calendar-toolbar-hint, .calendar-legend, .calendar-legend span) { color: #526175; }
+html[data-theme='light'] .calendar-settings { background: #f1f5f9; }
+html[data-theme='light'] .calendar-settings label { color: #0f172a; }
+html[data-theme='light'] .calendar-settings select { background: #fff; color: #0f172a; }
+html[data-theme='light'] .workplace-status:not(.is-complete) { color: #854d0e; }
+html[data-theme='light'] .workplace-actions .workplace-primary { color: #fff; }
+
+/* Contrast layer for the alternate themes. Every selector is theme-scoped so the
+   original visual identity remains byte-for-byte governed by the base styles. */
+html[data-theme='light'] {
+  --theme-surface: #ffffff;
+  --theme-surface-soft: #f1f5f9;
+  --theme-text: #0f172a;
+  --theme-muted: #475569;
+  --theme-border: #b8c7dc;
+  --theme-focus: #0b63ce;
+}
+
+html[data-theme='dark'] {
+  --theme-surface: #15171c;
+  --theme-surface-soft: #0c0e12;
+  --theme-text: #f8fafc;
+  --theme-muted: #b8c2d0;
+  --theme-border: #46505e;
+  --theme-focus: #60a5fa;
+}
+
+html[data-theme='light'] :is(.profile-dropdown, .barbers-profile-dropdown, .admin-modal, .service-modal, .slot-modal) {
+  background: var(--theme-surface) !important;
+  border-color: var(--theme-border) !important;
+  color: var(--theme-text) !important;
+}
+
+html[data-theme='dark'] :is(.profile-dropdown, .barbers-profile-dropdown, .admin-modal, .service-modal, .slot-modal) {
+  background: var(--theme-surface) !important;
+  border-color: var(--theme-border) !important;
+  color: var(--theme-text) !important;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.45) !important;
+}
+
+html[data-theme='light'] :is(.profile-dropdown-item, .barbers-profile-dropdown a, .barbers-profile-dropdown button) {
+  color: #1e293b !important;
+}
+
+html[data-theme='dark'] :is(.profile-dropdown-item, .barbers-profile-dropdown a, .barbers-profile-dropdown button) {
+  color: #e2e8f0 !important;
+}
+
+html[data-theme='light'] :is(.profile-dropdown-item, .barbers-profile-dropdown a, .barbers-profile-dropdown button):is(:hover, :focus-visible) {
+  background: #dbeafe !important;
+  color: #0b4eac !important;
+}
+
+html[data-theme='dark'] :is(.profile-dropdown-item, .barbers-profile-dropdown a, .barbers-profile-dropdown button):is(:hover, :focus-visible) {
+  background: #1c3150 !important;
+  color: #ffffff !important;
+}
+
+html[data-theme='light'] :is(.profile-root, .booking-root, .admin-root, .pro-root, .barbers-page, .messages-app, .settings-page) :is(input:not([type='checkbox']):not([type='radio']), select, textarea) {
+  background-color: #ffffff;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+html[data-theme='dark'] :is(.profile-root, .booking-root, .admin-root, .pro-root, .barbers-page, .messages-app, .settings-page) :is(input:not([type='checkbox']):not([type='radio']), select, textarea) {
+  background-color: #0c0e12;
+  border-color: #46505e;
+  color: #f8fafc;
+}
+
+html[data-theme='light'] :is(.profile-root, .booking-root, .admin-root, .pro-root, .barbers-page, .messages-app, .settings-page) :is(input, textarea)::placeholder {
+  color: #64748b;
+  opacity: 1;
+}
+
+html[data-theme='dark'] :is(.profile-root, .booking-root, .admin-root, .pro-root, .barbers-page, .messages-app, .settings-page) :is(input, textarea)::placeholder {
+  color: #9ca8b8;
+  opacity: 1;
+}
+
+html[data-theme='light'] :is(.profile-root, .booking-root, .admin-root, .pro-root, .barbers-page, .messages-app, .settings-page) :is(input, select, textarea):disabled {
+  background-color: #e2e8f0;
+  border-color: #cbd5e1;
+  color: #475569;
+  opacity: 1;
+}
+
+html[data-theme='dark'] :is(.profile-root, .booking-root, .admin-root, .pro-root, .barbers-page, .messages-app, .settings-page) :is(input, select, textarea):disabled {
+  background-color: #20232a;
+  border-color: #3d4654;
+  color: #aeb6c2;
+  opacity: 1;
+}
+
+html[data-theme='light'] :is(.profile-root, .booking-root, .admin-root, .pro-root, .barbers-page, .messages-app, .settings-page) :is(input, select, textarea):focus-visible {
+  border-color: #0b63ce;
+  outline-color: #0b63ce;
+  box-shadow: 0 0 0 3px rgba(11, 99, 206, 0.18);
+}
+
+html[data-theme='dark'] :is(.profile-root, .booking-root, .admin-root, .pro-root, .barbers-page, .messages-app, .settings-page) :is(input, select, textarea):focus-visible {
+  border-color: #60a5fa;
+  outline-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.24);
+}
+
+html[data-theme='light'] :is(.profile-root, .booking-root, .admin-root, .pro-root, .barbers-page, .messages-app, .settings-page) :is(button, a):focus-visible {
+  outline-color: #0b63ce;
+}
+
+html[data-theme='dark'] :is(.profile-root, .booking-root, .admin-root, .pro-root, .barbers-page, .messages-app, .settings-page) :is(button, a):focus-visible {
+  outline-color: #60a5fa;
+}
+
+@media (max-width: 1180px) { .pro-root { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 1100px) {
+  .profile-root { grid-template-columns: 230px minmax(0, 1fr); }
+  .profile-content { padding: 1.5rem; }
+  .profile-identity { grid-template-columns: 1fr; padding: 1.5rem; }
+  .profile-primary-button { grid-column: auto; }
+  .profile-field { grid-template-columns: 40px minmax(0, 1fr); gap: .8rem; }
+  .profile-field input, .profile-edit-button { grid-column: 2; }
+}
+@media (max-width: 820px) { .profile-root { display: block; } }
+@media (max-width: 640px) {
+  .profile-nav, .pro-nav, .barbers-nav { flex-wrap: wrap; overflow-x: visible; }
+  .profile-sidebar-link, .pro-nav-link { white-space: normal; }
+  .home-nav .profile-menu { margin-left: auto; }
+  .profile-content { padding: 1rem .75rem; }
+  .profile-topbar { justify-content: flex-end; }
+}
+@media (min-width: 641px) and (max-height: 820px) {
+  body > main.min-h-screen:not([style]) > section {
+    padding-block: 2rem !important;
+  }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+
+/* Preserve the original palette while meeting normal-text contrast in all themes. */
+body > main.min-h-screen:not([style]) a.text-\[\#1E6DFF\],
+body > main.min-h-screen:not([style]) a[href$='registro'],
+body > main.min-h-screen:not([style]) a[href$='login'] { color: #65a8ff !important; }
+html[data-theme='light'] body > main.min-h-screen:not([style]) :is(a.text-\[\#1E6DFF\], a[href$='registro'], a[href$='login']) { color: #1054ad !important; }
+html[data-theme='light'] body > main.min-h-screen:not([style]) .uppercase.text-\[\#ffc928\] { color: #815b00 !important; }
+html[data-theme='light'] body > main.min-h-screen:not([style]) #register-button-text { color: #172033 !important; }
+html[data-theme='light'] .barber-service-summary > strong { color: #765400 !important; }
+html[data-theme='light'] .booking-section-title > span { color: #fff !important; }
+html[data-theme='light'] .profile-kicker { color: #765400 !important; }
+html[data-theme='light'] .barber-slot.is-available span { color: #fff !important; }
+html[data-theme='light'] body > main.min-h-screen:not([style]) > section > div.rounded-lg,
+html[data-theme='light'] body > main.min-h-screen:not([style]) > section > div > div.rounded-lg { background: #fff !important; border-color: #cbd8eb !important; }
+html[data-theme='light'] body > main.min-h-screen:not([style]) #pending-barbers-list .rounded-lg { background: #f8fafc !important; color: #334155 !important; }
+html[data-theme='light'] body > main.min-h-screen:not([style]) .text-\[\#F2C230\] { color: #765400 !important; }

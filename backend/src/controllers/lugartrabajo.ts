@@ -1,13 +1,13 @@
 import { Response } from 'express';
 import prisma from '../config/prisma';
 import { AuthRequest } from '../middleware/auth';
+import { professionalSelect } from '../services/professionalPrivacy';
 
 const toInt = (value: unknown) => {
   if (typeof value === 'number') return value;
   if (typeof value === 'string' && value.trim() !== '') return Number(value);
   return NaN;
 };
-
 const getOwnBarberProfile = async (userId: number) => {
   return prisma.barberProfile.findUnique({
     where: { usuarioId: userId },
@@ -18,7 +18,7 @@ const canAccessLugarTrabajo = async (lugarTrabajoId: number, req: AuthRequest) =
   const lugarTrabajo = await prisma.lugarTrabajo.findUnique({
     where: { id: lugarTrabajoId },
     include: {
-      barberos: true,
+      barberos: { select: professionalSelect },
     },
   });
 
@@ -91,7 +91,7 @@ export const createLugarTrabajo = async (req: AuthRequest, res: Response) => {
 
       return tx.lugarTrabajo.findUnique({
         where: { id: lugarTrabajo.id },
-        include: { barberos: true },
+        include: { barberos: { select: professionalSelect } },
       });
     });
 
@@ -108,7 +108,8 @@ export const getLugaresTrabajo = async (req: AuthRequest, res: Response) => {
       const lugaresTrabajo = await prisma.lugarTrabajo.findMany({
         include: {
           barberos: {
-            include: {
+            select: {
+              ...professionalSelect,
               usuario: {
                 select: {
                   id: true,
@@ -132,7 +133,7 @@ export const getLugaresTrabajo = async (req: AuthRequest, res: Response) => {
 
     const lugarTrabajo = await prisma.lugarTrabajo.findUnique({
       where: { id: barberProfile.lugarTrabajoId },
-      include: { barberos: true },
+      include: { barberos: { select: professionalSelect } },
     });
 
     return res.json(lugarTrabajo ? [lugarTrabajo] : []);
@@ -228,12 +229,4 @@ export const deleteLugarTrabajo = async (req: AuthRequest, res: Response) => {
     console.error('deleteLugarTrabajo error', error);
     return res.status(500).json({ message: 'Error al eliminar lugar de trabajo' });
   }
-};
-
-export default {
-  createLugarTrabajo,
-  deleteLugarTrabajo,
-  getLugarTrabajoById,
-  getLugaresTrabajo,
-  updateLugarTrabajo,
 };

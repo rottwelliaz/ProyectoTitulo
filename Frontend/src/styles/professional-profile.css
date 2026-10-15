@@ -76,7 +76,6 @@
   stroke-width: 1.9;
 }
 
-.pro-nav-icon,
 .pro-stat-icon,
 .pro-service-item > span {
   align-items: center;
@@ -89,10 +88,6 @@
   justify-content: center;
   position: relative;
   width: 22px;
-}
-
-.icon-scissors {
-  border-radius: 50%;
 }
 
 .icon-star::before {
@@ -108,15 +103,6 @@
   box-shadow: 9px 3px 0 currentColor;
   height: 8px;
   width: 8px;
-}
-
-.icon-pencil {
-  border-bottom: 2px solid currentColor;
-  border-right: 2px solid currentColor;
-  display: inline-block;
-  height: 13px;
-  transform: rotate(45deg);
-  width: 7px;
 }
 
 .pro-sidebar-user {
@@ -239,7 +225,6 @@
 .pro-hero-card.is-minimal .pro-meta,
 .pro-hero-card.is-minimal .pro-rating,
 .pro-hero-card.is-minimal .pro-about,
-.pro-hero-card.is-minimal .pro-shop-photo,
 .pro-hero-card.is-minimal .pro-verified {
   display: none;
 }
@@ -364,25 +349,6 @@
   width: 34px;
 }
 
-.pro-shop-photo {
-  align-items: flex-end;
-  background-position: center;
-  background-size: cover;
-  border-radius: 7px;
-  display: flex;
-  height: 190px;
-  justify-content: flex-end;
-  overflow: hidden;
-  padding: 1.1rem;
-}
-
-.pro-shop-photo span {
-  background: rgba(3, 12, 24, 0.7);
-  border-radius: 999px;
-  font-weight: 900;
-  padding: 0.45rem 0.8rem;
-}
-
 .pro-stats {
   display: grid;
   gap: 1rem;
@@ -465,100 +431,6 @@
   min-height: 36px;
   padding: 0 0.9rem;
 }
-
-.pro-panel-actions {
-  display: flex;
-  gap: 0.55rem;
-}
-
-.agenda-board {
-  display: grid;
-  gap: 0.75rem;
-  grid-template-columns: 55px 1fr;
-}
-
-.agenda-hours,
-.agenda-day {
-  display: grid;
-  gap: 4px;
-  grid-template-rows: 32px repeat(9, 28px);
-}
-
-.agenda-hours span {
-  color: rgba(255, 255, 255, 0.86);
-  font-size: 0.82rem;
-}
-
-.agenda-days {
-  display: grid;
-  gap: 4px;
-  grid-template-columns: repeat(7, 1fr);
-}
-
-.agenda-day strong {
-  color: rgba(255, 255, 255, 0.92);
-  font-size: 0.82rem;
-  text-align: center;
-}
-
-.slot {
-  align-items: center;
-  border-radius: 5px;
-  display: flex;
-  font-size: 0.72rem;
-  font-weight: 800;
-  justify-content: center;
-  line-height: 1.15;
-  min-width: 0;
-}
-
-.slot.is-empty {
-  background: transparent;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.slot.is-free {
-  background: rgba(26, 158, 70, 0.75);
-}
-
-.slot.is-booked {
-  background: #0d5bd1;
-}
-
-.slot.is-reserved {
-  background: #db3f3f;
-}
-
-.slot.is-rest {
-  background: #e6b700;
-  color: #04101f;
-}
-
-.agenda-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1.4rem;
-  margin-top: 1.2rem;
-}
-
-.agenda-legend span {
-  align-items: center;
-  color: var(--pro-muted);
-  display: flex;
-  gap: 0.5rem;
-  font-size: 0.86rem;
-}
-
-.agenda-legend i {
-  border-radius: 50%;
-  height: 10px;
-  width: 10px;
-}
-
-.legend-free { background: var(--pro-green); }
-.legend-booked { background: var(--pro-blue); }
-.legend-reserved { background: var(--pro-red); }
-.legend-rest { background: var(--pro-yellow); }
 
 .barber-calendar {
   background: #061b33;
@@ -913,75 +785,6 @@
   border-color: #1e6dff;
 }
 
-.reservations-calendar {
-  background: #061b33;
-  border-color: #0d47a1;
-  grid-column: 1 / -1;
-  min-width: 0;
-}
-
-.reservations-calendar .calendar-scroll.is-loading {
-  opacity: 0.55;
-  pointer-events: none;
-}
-
-.reservation-calendar-slot {
-  align-items: center;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  display: flex;
-  flex-direction: column;
-  font-size: 0.67rem;
-  justify-content: center;
-  line-height: 1.15;
-  min-width: 0;
-  padding: 0.15rem;
-  text-align: center;
-  transition: filter 150ms ease, transform 150ms ease;
-}
-
-.reservation-calendar-slot:hover {
-  filter: brightness(1.12);
-  transform: translateY(-1px);
-}
-
-.reservation-calendar-slot.is-available {
-  background: #16803a;
-  color: #fff;
-}
-
-.reservation-calendar-slot.is-reserved {
-  background: #ef4444;
-  color: #fff;
-}
-
-.reservation-calendar-slot.is-unavailable {
-  background: rgba(2, 11, 24, 0.78);
-  border-color: rgba(13, 71, 161, 0.36);
-  color: rgba(199, 210, 225, 0.58);
-}
-
-.reservation-calendar-slot small {
-  display: block;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.calendar-legend i.is-unavailable {
-  background: #31445e;
-}
-
-.reservations-calendar-error {
-  background: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.5);
-  border-radius: 8px;
-  color: #ff9292;
-  margin: 0 0 1rem;
-  padding: 0.75rem;
-}
-
 .pro-service-list {
   display: grid;
   gap: 0.9rem;
@@ -1149,8 +952,151 @@
 }
 
 .pro-workplace,
-.pro-banking {
+.pro-banking,
+.pro-booking-settings {
   grid-column: 1 / -1;
+}
+
+.booking-settings-heading {
+  align-items: center;
+  border-bottom: 1px solid var(--pro-line);
+  display: flex;
+  gap: 0.6rem;
+  padding-bottom: 1rem;
+}
+
+.booking-settings-heading svg {
+  color: var(--pro-blue);
+  flex: 0 0 auto;
+}
+
+.booking-settings-heading h2 {
+  font-size: 1.05rem;
+  margin: 0;
+}
+
+.booking-settings-content {
+  display: grid;
+  gap: 1.15rem;
+  padding-top: 1.15rem;
+}
+
+.booking-setting-row {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  gap: 1.25rem;
+  justify-content: space-between;
+}
+
+.booking-setting-row > span:first-child,
+.booking-setting-state div {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.booking-setting-row strong,
+.booking-setting-state strong {
+  color: var(--pro-text);
+  font-size: 0.96rem;
+}
+
+.booking-setting-row small,
+.booking-setting-state p {
+  color: var(--pro-muted);
+  font-size: 0.84rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.booking-switch {
+  flex: 0 0 auto;
+  position: relative;
+}
+
+.booking-switch input {
+  height: 1px;
+  opacity: 0;
+  position: absolute;
+  width: 1px;
+}
+
+.booking-switch > span {
+  background: #46505e;
+  border: 1px solid #64748b;
+  border-radius: 999px;
+  display: block;
+  height: 28px;
+  position: relative;
+  transition: background 0.18s ease, border-color 0.18s ease;
+  width: 50px;
+}
+
+.booking-switch > span::after {
+  background: #ffffff;
+  border-radius: 50%;
+  content: '';
+  height: 20px;
+  left: 3px;
+  position: absolute;
+  top: 3px;
+  transition: transform 0.18s ease;
+  width: 20px;
+}
+
+.booking-switch input:checked + span {
+  background: #16a34a;
+  border-color: #22c55e;
+}
+
+.booking-switch input:checked + span::after {
+  transform: translateX(22px);
+}
+
+.booking-switch input:focus-visible + span {
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.35);
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
+}
+
+.booking-switch input:disabled + span {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+.booking-setting-state {
+  align-items: flex-start;
+  display: flex;
+  gap: 0.65rem;
+  padding-left: 0.75rem;
+}
+
+.booking-setting-state > svg {
+  color: #34d399;
+  flex: 0 0 auto;
+  margin-top: 0.05rem;
+}
+
+.booking-setting-message {
+  color: var(--pro-green);
+  font-size: 0.84rem;
+  margin: 0;
+  min-height: 1.2rem;
+}
+
+.booking-setting-message.is-error { color: #ff8585; }
+
+html[data-theme='light'] .booking-setting-row strong,
+html[data-theme='light'] .booking-setting-state strong {
+  color: #0f172a;
+}
+
+html[data-theme='light'] :is(.booking-setting-row small, .booking-setting-state p) {
+  color: #526175;
+}
+
+html[data-theme='dark'] .booking-switch > span {
+  border-color: #64748b;
 }
 
 .pro-appointments {
@@ -1270,6 +1216,23 @@
   color: #ffffff;
 }
 
+.appointment-no-proof {
+  align-items: center;
+  border: 1px solid var(--pro-line);
+  border-radius: 8px;
+  color: var(--pro-muted);
+  display: inline-flex;
+  font-size: 0.76rem;
+  font-weight: 750;
+  min-height: 38px;
+  padding: 0 0.75rem;
+}
+
+html[data-theme='light'] .appointment-no-proof {
+  border-color: #94a3b8;
+  color: #475569;
+}
+
 .appointment-actions button:disabled {
   cursor: wait;
   opacity: 0.6;
@@ -1383,14 +1346,179 @@
   opacity: 0.65;
 }
 
+html[data-theme='light'] :is(.pro-brand, .pro-sidebar-user, .pro-hero-card, .pro-stat-card, .pro-panel, .barber-calendar, .appointment-card) {
+  background: #ffffff;
+  border-color: #b8c7dc;
+  color: #0f172a;
+}
+
+html[data-theme='light'] :is(.pro-meta, .pro-rating, .pro-about p, .pro-stat-card p, .pro-stat-card small, .appointment-date span, .appointment-date time, .appointment-info span, .appointment-info small) {
+  color: #475569;
+}
+
+html[data-theme='light'] :is(.calendar-actions button, .service-form-actions button, .workplace-actions button, .appointment-actions button) {
+  background: #ffffff;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+html[data-theme='light'] :is(.calendar-actions .calendar-copy-button, .service-form-actions .service-save-button, .workplace-actions .workplace-primary) {
+  background: #1261d8;
+  border-color: #0b63ce;
+  color: #ffffff;
+}
+
+html[data-theme='light'] .calendar-actions .calendar-save-button {
+  background: #16803a;
+  border-color: #166534;
+  color: #ffffff;
+}
+
+html[data-theme='light'] :is(.slot-status-option, .calendar-settings) {
+  background: #f1f5f9;
+  border-color: #b8c7dc;
+  color: #0f172a;
+}
+
+html[data-theme='light'] .slot-status-option:is(:hover, .is-selected) {
+  background: #dbeafe;
+  border-color: #0b63ce;
+}
+
+html[data-theme='dark'] :is(.pro-brand, .pro-sidebar-user, .pro-hero-card, .pro-stat-card, .pro-panel, .barber-calendar, .appointment-card) {
+  background: #15171c;
+  border-color: #3d4654;
+  color: #f8fafc;
+}
+
+html[data-theme='dark'] :is(.calendar-actions button, .service-form-actions button, .workplace-actions button, .appointment-actions button, .slot-status-option) {
+  background: #0f172a;
+  border-color: #46505e;
+  color: #f8fafc;
+}
+
+html[data-theme='dark'] :is(.calendar-actions .calendar-copy-button, .service-form-actions .service-save-button, .workplace-actions .workplace-primary) {
+  background: #1261d8;
+  border-color: #60a5fa;
+  color: #ffffff;
+}
+
+html[data-theme='dark'] .calendar-actions .calendar-save-button {
+  background: #16803a;
+  border-color: #4ade80;
+  color: #ffffff;
+}
+
+html[data-theme='dark'] :is(.service-form-actions #cancel-service, .workplace-actions #cancel-workplace-edit, .workplace-actions #cancel-banking-edit, .workplace-actions .workplace-danger, .appointment-actions .is-cancel) {
+  background: transparent;
+  border-color: #ef4444;
+  color: #fca5a5;
+}
+
+html[data-theme='dark'] :is(.calendar-actions button, .slot-status-option):hover:not(:disabled) {
+  background: #1c3150;
+  border-color: #60a5fa;
+}
+
+html[data-theme='dark'] .slot-status-option.is-selected {
+  background: #132f55;
+  border-color: #60a5fa;
+}
+
+html[data-theme='dark'] .calendar-settings {
+  background: #0c0e12;
+  border-color: #3d4654;
+}
+
+html[data-theme='light'] :is(.calendar-actions button, .service-form-actions button, .workplace-actions button, .appointment-actions button):disabled,
+html[data-theme='dark'] :is(.calendar-actions button, .service-form-actions button, .workplace-actions button, .appointment-actions button):disabled {
+  filter: saturate(0.5);
+  opacity: 0.65;
+}
+
+@media (max-width: 1500px) and (min-width: 1181px) {
+  .pro-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pro-services,
+  .pro-workplace,
+  .pro-banking,
+  .pro-booking-settings,
+  .pro-appointments {
+    grid-column: auto;
+  }
+}
+
+@media (min-width: 1181px) and (max-height: 820px) {
+  .pro-sidebar {
+    gap: 0.75rem;
+    padding: 0.75rem;
+  }
+
+  .pro-brand {
+    min-height: 112px;
+  }
+
+  .pro-brand img {
+    height: 92px;
+    width: 110px;
+  }
+
+  .pro-nav {
+    gap: 0.25rem;
+  }
+
+  .pro-nav-link {
+    font-size: 0.9rem;
+    min-height: 44px;
+  }
+
+  .pro-sidebar-user {
+    padding: 0.7rem;
+  }
+
+  .pro-main {
+    padding: 1rem 1.35rem 1.5rem;
+  }
+
+  .pro-topbar {
+    margin-bottom: 0.85rem;
+  }
+
+  .pro-hero-card.is-minimal {
+    min-height: 118px;
+    padding: 1.15rem 1.5rem;
+  }
+}
+
 @media (max-width: 1180px) {
   .pro-root {
     grid-template-columns: 1fr;
   }
 
   .pro-sidebar {
+    gap: 0.8rem;
     min-height: auto;
+    padding: 0.8rem;
     position: static;
+  }
+
+  .pro-root,
+  .pro-sidebar,
+  .pro-main,
+  .pro-nav {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .pro-brand {
+    min-height: 96px;
+  }
+
+  .pro-brand img {
+    height: 82px;
+    width: 100px;
   }
 
   .pro-nav {
@@ -1399,7 +1527,13 @@
   }
 
   .pro-nav-link {
+    min-height: 46px;
     min-width: 150px;
+  }
+
+  .pro-sidebar-user {
+    margin-top: 0;
+    padding: 0.7rem;
   }
 
   .pro-hero-card,
@@ -1409,8 +1543,8 @@
 
   .pro-workplace,
   .pro-banking,
-  .pro-appointments,
-  .reservations-calendar {
+  .pro-booking-settings,
+  .pro-appointments {
     grid-column: auto;
   }
 }
@@ -1425,6 +1559,11 @@
     align-items: flex-start;
     flex-direction: column;
     gap: 0.8rem;
+  }
+
+  .pro-top-actions {
+    flex-wrap: wrap;
+    width: 100%;
   }
 
   .calendar-toolbar {
@@ -1457,7 +1596,6 @@
     display: flex;
   }
 
-  .agenda-board,
   .pro-service-item {
     grid-template-columns: 1fr;
   }
@@ -1481,13 +1619,6 @@
     justify-content: flex-start;
   }
 
-  .agenda-hours {
-    display: none;
-  }
-
-  .agenda-days {
-    overflow-x: auto;
-  }
 }
 
 @media (max-width: 520px) {
@@ -1501,7 +1632,6 @@
 
   .pro-topbar,
   .pro-panel,
-  .reservations-calendar,
   .pro-services,
   .pro-workplace,
   .pro-banking,
@@ -1517,8 +1647,7 @@
     font-size: 1.75rem;
   }
 
-  .pro-panel,
-  .reservations-calendar {
+  .pro-panel {
     padding: 1rem;
   }
 
@@ -1565,4 +1694,41 @@
   .service-form-row {
     grid-template-columns: 1fr;
   }
+
+  .booking-setting-row {
+    align-items: flex-start;
+  }
 }
+
+/* Professional tools inherit the existing panel palette in all three themes. */
+.professional-agenda { grid-column: 1 / -1; min-width: 0; }
+.professional-statistics { margin-block: 1rem; }
+.professional-stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: .7rem; }
+.professional-period, .professional-inline-actions { display: flex; flex-wrap: wrap; align-items: end; gap: .65rem; margin-block: .8rem; }
+.professional-period label, .professional-photo-label, .professional-agenda .pro-panel-header label { display: grid; gap: .4rem; min-width: 0; }
+.professional-period input, .professional-period select, .professional-agenda select, .professional-editor textarea, .professional-editor input { color: var(--pro-text); background: var(--pro-panel-soft); border: 1px solid var(--pro-line); border-radius: 8px; padding: .65rem; max-width: 100%; min-width: 0; }
+.professional-editor textarea { width: 100%; resize: vertical; }
+.professional-editor .workplace-form { grid-template-columns: 1fr; }
+.professional-photo-label { margin-top: 1rem; }
+.professional-photo-preview { width: 88px; height: 88px; border-radius: 50%; object-fit: cover; margin-top: 1rem; }
+.professional-calendar-grid { display: grid; gap: .5rem; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.professional-calendar-grid.view-dia { grid-template-columns: minmax(0, 1fr); }
+.professional-calendar-day { border: 1px solid var(--pro-line); border-radius: 8px; min-width: 0; padding: .5rem; overflow-wrap: anywhere; }
+.professional-calendar-day p { color: var(--pro-muted); font-size: .8rem; }
+.professional-event { display: grid; gap: .2rem; padding: .5rem; margin-top: .4rem; border-left: 3px solid var(--pro-blue); border-radius: 4px; background: var(--pro-panel-soft); font-size: .8rem; }
+.professional-event.is-cancelada, .professional-event.is-rechazada { border-color: var(--pro-red); }
+.professional-event.is-bloqueado, .professional-event.is-descanso { border-color: var(--pro-yellow); }
+.professional-event.is-finalizada, .professional-event.is-disponible { border-color: var(--pro-green); }
+.professional-event.is-inasistencia { border-color: #ae7ae8; }
+.professional-agenda button, .professional-period button, .professional-inline-actions button, .professional-editor button { background: var(--pro-panel-soft); color: var(--pro-text); border: 1px solid var(--pro-line); border-radius: 7px; padding: .55rem .7rem; font: inherit; cursor: pointer; }
+.professional-agenda button:disabled, .professional-period button:disabled, .professional-inline-actions button:disabled, .professional-editor button:disabled { opacity: .5; cursor: wait; }
+.professional-publisher { margin-top: 1rem; }
+.professional-publisher summary, .professional-block-form summary { padding: .8rem 0; cursor: pointer; }
+.professional-publisher .barber-calendar { margin-top: .5rem; }
+.pro-services .pro-service-item { grid-template-columns: minmax(0, 1fr) auto auto; }
+.pro-services .professional-inline-actions { grid-column: 1 / -1; }
+.pro-service-item strong, .pro-service-item small { overflow-wrap: anywhere; white-space: normal; }
+.professional-editor, .pro-services { min-width: 0; }
+html[data-theme='dark'] .professional-agenda, html[data-theme='dark'] .professional-statistics, html[data-theme='dark'] .professional-editor { --pro-panel-soft: #181d25; }
+@media (max-width: 900px) { .professional-calendar-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .professional-calendar-grid { grid-template-columns: minmax(0, 1fr); } .professional-period { align-items: stretch; } .professional-period > * { flex: 1 1 130px; } .professional-agenda .pro-panel-header { flex-wrap: wrap; gap: .7rem; } .pro-services .pro-service-item { grid-template-columns: minmax(0, 1fr); } .professional-editor .pro-panel-header { flex-wrap: wrap; gap: .7rem; } }

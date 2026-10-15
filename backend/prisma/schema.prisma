@@ -19,6 +19,8 @@ enum CitaEstado {
   confirmada
   cancelada
   finalizada
+  rechazada
+  inasistencia
 }
 
 model User {
@@ -30,32 +32,81 @@ model User {
   foto_perfil    String?
   rol            UserRole @default(cliente)
   aprobado       Boolean  @default(true)
+  activo         Boolean  @default(true)
   fecha_creacion DateTime @default(now())
+  fecha_actualizacion DateTime @default(now()) @updatedAt
+  cambiosCita CitaCambioEstado[]
 
   perfilBarbero         BarberProfile?
   citas                 Cita[]         @relation("ClienteCitas")
   conversacionesCliente Conversation[] @relation("ClientConversations")
   conversacionesBarbero Conversation[] @relation("BarberConversations")
   mensajesEnviados      Message[]      @relation("MessageSender")
+  solicitudProfesional SolicitudProfesional? @relation("Solicitante")
+  solicitudesResueltas SolicitudProfesional[] @relation("Revisor")
+}
+
+enum SolicitudEstado {
+  pendiente
+  aprobada
+  rechazada
+}
+
+model SolicitudProfesional {
+  id Int @id @default(autoincrement())
+  usuarioId Int @unique
+  usuario User @relation("Solicitante", fields: [usuarioId], references: [id], onDelete: Restrict)
+  estado SolicitudEstado @default(pendiente)
+  motivoRechazo String?
+  fechaSolicitud DateTime @default(now())
+  fechaResolucion DateTime?
+  revisorId Int?
+  revisor User? @relation("Revisor", fields: [revisorId], references: [id], onDelete: Restrict)
+}
+
+model AgendaSemana {
+  barberoId Int
+  barbero BarberProfile @relation(fields: [barberoId], references: [id], onDelete: Restrict)
+  inicio DateTime
+  configuracion Json
+  revision Int @default(1)
+  @@id([barberoId, inicio])
 }
 
 model BarberProfile {
-  id               Int           @id @default(autoincrement())
-  usuarioId        Int           @unique
-  usuario          User          @relation(fields: [usuarioId], references: [id])
-  biografia        String?
-  foto_perfil      String?
-  bancoNombre      String?
-  bancoRut         String?
-  bancoNombreBanco String?
-  bancoTipoCuenta  String?
-  bancoNroCuenta   String?
-  bancoCorreo      String?
-  lugarTrabajoId   Int?
-  lugarTrabajo     LugarTrabajo? @relation(fields: [lugarTrabajoId], references: [id])
+  id                  Int           @id @default(autoincrement())
+  usuarioId           Int           @unique
+  usuario             User          @relation(fields: [usuarioId], references: [id])
+  biografia           String?
+  especialidades      String[]      @default([])
+  foto_perfil         String?
+  bancoNombre         String?
+  bancoRut            String?
+  bancoNombreBanco    String?
+  bancoTipoCuenta     String?
+  bancoNroCuenta      String?
+  bancoCorreo         String?
+  requiereComprobante Boolean       @default(true)
+  lugarTrabajoId      Int?
+  lugarTrabajo        LugarTrabajo? @relation(fields: [lugarTrabajoId], references: [id])
 
   servicios Service[]
   citas     Cita[]    @relation("BarberoCitas")
+  bloqueos AgendaBloqueo[]
+  semanas AgendaSemana[]
+}
+
+model AgendaBloqueo {
+  id String @id @default(uuid())
+  barberoId Int
+  barbero BarberProfile @relation(fields: [barberoId], references: [id], onDelete: Restrict)
+  inicio DateTime
+  fin DateTime
+  tipo String @default("bloqueado")
+  origen String @default("manual")
+  fecha_creacion DateTime @default(now())
+
+  @@index([barberoId, inicio, fin])
 }
 
 model LugarTrabajo {
@@ -74,22 +125,50 @@ model Service {
   descripcion      String?
   precio           Int
   duracion_minutos Int
+  activo           Boolean @default(true)
+  fecha_creacion   DateTime @default(now())
+  fecha_actualizacion DateTime @default(now()) @updatedAt
   citas            Cita[]
 }
 
 model Cita {
   id                       String        @id @default(uuid())
   clienteId                Int?
-  cliente                  User?         @relation("ClienteCitas", fields: [clienteId], references: [id])
+  cliente                  User?         @relation("ClienteCitas", fields: [clienteId], references: [id], onDelete: Restrict)
   barberoId                Int
   barbero                  BarberProfile @relation("BarberoCitas", fields: [barberoId], references: [id])
   servicioId               String?
-  servicio                 Service?      @relation(fields: [servicioId], references: [id])
+  servicio                 Service?      @relation(fields: [servicioId], references: [id], onDelete: Restrict)
+  // UTC instants via Prisma. Keep existing timestamp(3) values unchanged;
+  // America/Santiago is applied at calendar/API boundaries, never by shifting rows.
   fecha_hora               DateTime
+  disponibleHasta          DateTime?
+  duracionReservada        Int?
+  nombreServicioReservado   String?
+  precioReservado           Int?
   estado                   CitaEstado    @default(disponible)
   comprobanteTransferencia String?
   comprobanteNombre        String?
   fecha_creacion           DateTime      @default(now())
+  fecha_actualizacion      DateTime      @default(now()) @updatedAt
+  cambiosEstado            CitaCambioEstado[]
+
+  @@index([barberoId, estado, fecha_hora])
+}
+
+model CitaCambioEstado {
+  id             String     @id @default(uuid())
+  citaId         String
+  cita           Cita       @relation(fields: [citaId], references: [id], onDelete: Restrict)
+  estadoAnterior CitaEstado?
+  estadoNuevo    CitaEstado
+  fecha          DateTime   @default(now())
+  responsableId  Int?
+  responsable    User?      @relation(fields: [responsableId], references: [id], onDelete: Restrict)
+  // "migracion" is a baseline, not a reconstructed historical transition.
+  origen         String     @default("aplicacion")
+
+  @@index([citaId, fecha])
 }
 
 model Conversation {

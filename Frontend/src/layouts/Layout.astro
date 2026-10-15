@@ -1,22 +1,25 @@
 ---
 import '../styles/globals.css';
+import { privateRoutes, normalizePath } from '../lib/access';
 
 interface Props {
   title: string;
 }
 
 const { title } = Astro.props;
+const isPrivate = Boolean(privateRoutes[normalizePath(Astro.url.pathname)]);
 ---
 
 <!doctype html>
-<html lang="es">
+<html lang="es" data-private={isPrivate ? 'true' : undefined} data-auth-state={isPrivate ? 'pending' : undefined}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
     <meta id="theme-color" name="theme-color" content="#020b18" />
     <script is:inline>
       (() => {
-        const savedTheme = localStorage.getItem('ui-theme');
+        let savedTheme;
+        try { savedTheme = localStorage.getItem('ui-theme'); } catch {}
         const theme = ['original', 'light', 'dark'].includes(savedTheme) ? savedTheme : 'original';
         document.documentElement.dataset.theme = theme;
       })();
@@ -24,9 +27,24 @@ const { title } = Astro.props;
     <title>{title}</title>
   </head>
   <body>
+    {isPrivate && <>
+      <div class="session-gate" role="status" aria-live="polite">
+        <p id="session-status">Comprobando tu sesión…</p>
+        <button type="button" id="session-retry">Volver a intentar</button>
+        <a href="/login">Iniciar sesión</a>
+      </div>
+      <noscript><div class="session-noscript">Activa JavaScript para iniciar sesión y acceder a tu cuenta. <a href="/login">Ir al inicio de sesión</a></div></noscript>
+    </>}
     <slot />
 
     <script>
+      import { requireSession, watchSession } from '../lib/session';
+      import { safePhotoUrl, setPhotoBackground } from '../lib/profilePhoto';
+      if (document.documentElement.dataset.private === 'true') {
+        void requireSession();
+        watchSession();
+        document.querySelector('#session-retry')?.addEventListener('click', () => location.reload());
+      }
       const updateThemeColor = () => {
         const colors: Record<string, string> = {
           original: '#020b18',
@@ -56,14 +74,14 @@ const { title } = Astro.props;
 
       const getCurrentProfilePhoto = () => {
         const user = getSavedUser();
-        if (!user?.id) return user?.foto_perfil || user?.perfilBarbero?.foto_perfil || null;
-        return localStorage.getItem(`profile-photo-${user.id}`) || user?.foto_perfil || user?.perfilBarbero?.foto_perfil || null;
+        if (!user?.id) return safePhotoUrl(user?.foto_perfil) || safePhotoUrl(user?.perfilBarbero?.foto_perfil);
+        return safePhotoUrl(user?.foto_perfil) || safePhotoUrl(user?.perfilBarbero?.foto_perfil);
       };
 
       const applyCurrentProfilePhoto = (photo = getCurrentProfilePhoto()) => {
+        photo = safePhotoUrl(photo);
         document.querySelectorAll<HTMLElement>('[data-user-avatar]').forEach((avatar) => {
-          avatar.classList.toggle('has-photo', Boolean(photo));
-          avatar.style.backgroundImage = photo ? `url(${JSON.stringify(photo)})` : '';
+          setPhotoBackground(avatar, photo);
           avatar.querySelector<HTMLElement>('[data-avatar-fallback]')?.classList.toggle('hidden', Boolean(photo));
         });
       };
@@ -95,7 +113,8 @@ const { title } = Astro.props;
 
       const scrollToHash = (hash: string, updateUrl = false) => {
         if (!hash || hash === '#') return false;
-        const target = document.querySelector<HTMLElement>(hash);
+        let target: HTMLElement | null = null;
+        try { target = document.getElementById(decodeURIComponent(hash.slice(1))); } catch { return false; }
         if (!target) return false;
 
         target.scrollIntoView({
@@ -127,6 +146,7 @@ const { title } = Astro.props;
         if (!href || href === '#') return;
 
         const url = new URL(href, window.location.href);
+        if (url.origin !== window.location.origin) return;
         const samePage =
           url.origin === window.location.origin &&
           url.pathname.replace(/\/$/, '') === window.location.pathname.replace(/\/$/, '');

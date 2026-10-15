@@ -1,13 +1,14 @@
+import { authFetch as fetch, API_URL } from '../lib/session';
 import { useEffect, useState } from 'react';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { businessTime, formatInstant } from '../lib/businessTime';
 
-type AppointmentStatus = 'confirmada' | 'cancelada' | 'finalizada';
+type AppointmentStatus = 'pendiente' | 'confirmada' | 'rechazada' | 'cancelada' | 'finalizada' | 'inasistencia';
 
 interface Appointment {
   id: string;
   fecha_hora: string;
   estado: AppointmentStatus;
+  duracionReservada?: number | null;
   comprobanteTransferencia: string | null;
   comprobanteNombre: string | null;
   cliente: {
@@ -22,9 +23,12 @@ interface Appointment {
   } | null;
 }
 
-const API_URL = 'http://localhost:3001/api';
+
 
 const STATUS_LABELS: Record<AppointmentStatus, string> = {
+  pendiente: 'Pendiente',
+  rechazada: 'Rechazada',
+  inasistencia: 'Inasistencia',
   confirmada: 'Confirmada',
   cancelada: 'Cancelada',
   finalizada: 'Finalizada',
@@ -64,8 +68,8 @@ export default function BarberAppointments() {
     void loadAppointments();
   }, []);
 
-  const updateStatus = async (appointment: Appointment, estado: 'cancelada' | 'finalizada') => {
-    const action = estado === 'cancelada' ? 'cancelar' : 'finalizar';
+  const updateStatus = async (appointment: Appointment, estado: AppointmentStatus) => {
+    const action = { confirmada: 'confirmar', rechazada: 'rechazar', cancelada: 'cancelar', finalizada: 'finalizar', inasistencia: 'marcar con inasistencia', pendiente: '' }[estado];
     if (!window.confirm(`¿Seguro que deseas ${action} esta cita?`)) return;
 
     const token = window.localStorage.getItem('token');
@@ -88,6 +92,7 @@ export default function BarberAppointments() {
       setAppointments((current) =>
         sortAppointmentsByNewest(current.map((item) => item.id === data.id ? data as Appointment : item)),
       );
+      window.dispatchEvent(new Event('professional-calendar-updated'));
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'No se pudo actualizar la cita.');
     } finally {
@@ -142,9 +147,9 @@ export default function BarberAppointments() {
           {appointments.map((appointment) => (
             <section key={appointment.id} className="appointment-card">
               <div className="appointment-date">
-                <strong>{format(new Date(appointment.fecha_hora), 'dd')}</strong>
-                <span>{format(new Date(appointment.fecha_hora), 'MMM', { locale: es })}</span>
-                <time>{format(new Date(appointment.fecha_hora), 'HH:mm')}</time>
+                <strong>{formatInstant(appointment.fecha_hora, { day: '2-digit' })}</strong>
+                <span>{formatInstant(appointment.fecha_hora, { month: 'short' })}</span>
+                <time>{businessTime(appointment.fecha_hora)}</time>
               </div>
 
               <div className="appointment-info">
@@ -168,26 +173,27 @@ export default function BarberAppointments() {
                   </button>
                 )}
 
-                {appointment.estado === 'confirmada' && (
-                  <>
-                  <button
-                    type="button"
-                    className="is-cancel"
-                    disabled={updatingId === appointment.id}
-                    onClick={() => void updateStatus(appointment, 'cancelada')}
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="button"
-                    className="is-finish"
-                    disabled={updatingId === appointment.id}
-                    onClick={() => void updateStatus(appointment, 'finalizada')}
-                  >
-                    Finalizar
-                  </button>
-                  </>
+                {!appointment.comprobanteTransferencia && (
+                  <span className="appointment-no-proof">Sin comprobante</span>
                 )}
+
+                {(() => {
+                  const start = new Date(appointment.fecha_hora).getTime();
+                  const duration = appointment.duracionReservada ?? appointment.servicio?.duracion_minutos;
+                  const ended = duration && start + duration * 60000 <= Date.now();
+                  const actions: AppointmentStatus[] = appointment.estado === 'pendiente' && start > Date.now()
+                    ? ['confirmada', 'rechazada', 'cancelada']
+                    : appointment.estado === 'confirmada'
+                      ? start > Date.now() ? ['cancelada'] : ended ? ['finalizada', 'inasistencia'] : []
+                      : [];
+                  const labels = { confirmada: 'Confirmar', rechazada: 'Rechazar', cancelada: 'Cancelar', finalizada: 'Finalizar', inasistencia: 'Marcar inasistencia', pendiente: '' };
+                  return actions.map(status => (
+                    <button key={status} type="button"
+                      className={['cancelada', 'rechazada'].includes(status) ? 'is-cancel' : 'is-finish'}
+                      disabled={updatingId !== null}
+                      onClick={() => void updateStatus(appointment, status)}>{labels[status]}</button>
+                  ));
+                })()}
               </div>
             </section>
           ))}
