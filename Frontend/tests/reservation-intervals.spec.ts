@@ -14,6 +14,7 @@ test('agenda publica intervalos con fin, respeta descansos y no crea inicio a la
     return route.fulfill({ json: [] });
   });
   await page.goto('/perfil-profesional');
+  await page.locator('.pro-nav-link[href="#organizacion"]').click();
   await page.getByLabel('Semana siguiente', { exact: true }).click();
   await page.getByRole('combobox', { name: 'Hora de entrada', exact: true }).selectOption('09:00');
   await page.getByRole('combobox', { name: 'Hora de cierre', exact: true }).selectOption('10:00');

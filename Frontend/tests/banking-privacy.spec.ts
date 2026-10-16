@@ -82,6 +82,7 @@ test('el propietario edita su cuenta sin persistirla en localStorage', async ({ 
   await expect(page.locator('input[name=nroCuenta]')).toHaveValue(bank.bancoNroCuenta);
   const stored = await page.evaluate(() => localStorage.getItem('user'));
   expect(stored).not.toContain('banco'); expect(stored).not.toContain(bank.bancoNroCuenta);
+  await page.locator('.pro-nav-link[href="#mi-negocio"]').click();
   await page.locator('#edit-banking').click();
   await page.locator('input[name=nroCuenta]').fill('123456');
   await page.locator('#banking-form button[type=submit]').click();

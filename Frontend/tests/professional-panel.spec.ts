@@ -48,6 +48,8 @@ async function fixture(page: Page, theme = 'original') {
 
 test('servicios completos: crear, editar, desactivar, activar y retirar con persistencia al recargar', async ({ page }) => {
   await fixture(page);
+  await page.locator('.pro-nav-link[href="#organizacion"]').click();
+  await page.getByRole('tab', { name: 'Servicios' }).click();
   await expect(page.locator('.pro-service-item')).toHaveCount(7);
   await page.getByRole('button', { name: 'Agregar servicio' }).click();
   const dialog = page.locator('#service-modal');
@@ -60,7 +62,7 @@ test('servicios completos: crear, editar, desactivar, activar y retirar con pers
   await dialog.getByLabel('Precio (CLP)').fill('20000'); await dialog.getByRole('button', { name: 'Guardar servicio' }).click();
   await card().getByRole('button', { name: 'Desactivar', exact: true }).click();
   await expect(card().getByText('Inactivo', { exact: true })).toBeVisible();
-  await page.reload(); await expect(card().getByText('Inactivo', { exact: true })).toBeVisible();
+  await page.reload(); await page.getByRole('tab', { name: 'Servicios' }).click(); await expect(card().getByText('Inactivo', { exact: true })).toBeVisible();
   await card().getByRole('button', { name: 'Activar', exact: true }).click();
   page.on('dialog', dialog => dialog.accept());
   await card().getByRole('button', { name: 'Retirar', exact: true }).click();
@@ -74,8 +76,12 @@ test('perfil, fotografía y lugar de trabajo guardan y conservan los valores al 
   await page.getByLabel('Especialidades', { exact: false }).fill('Barba, Corte clásico');
   await page.getByRole('button', { name: 'Guardar perfil profesional', exact: true }).click();
   await expect(page.getByText('Perfil profesional guardado.', { exact: true })).toBeVisible();
-  await page.locator('#professional-photo-input').setInputFiles('tests/fixtures/profile.png');
+  await expect(page.locator('.pro-verified')).toBeVisible();
+  const photoChooser = page.waitForEvent('filechooser');
+  await page.getByRole('button', { name: 'Cambiar foto de perfil' }).click();
+  await (await photoChooser).setFiles('tests/fixtures/profile.png');
   await expect(page.getByText('Fotografía guardada.', { exact: true })).toBeVisible();
+  await page.locator('.pro-nav-link[href="#mi-negocio"]').click();
   await page.getByRole('button', { name: 'Editar lugar', exact: true }).click();
   await page.locator('#workplace-form input[name="direccion"]').fill('Centro 456');
   await page.locator('#save-workplace').click();
@@ -96,8 +102,41 @@ test('un fallo de guardado no muestra éxito ni cambia valores persistidos', asy
   state.fail = ''; await page.reload(); await expect(page.getByLabel('Biografía', { exact: true })).toHaveValue('Biografía original');
 });
 
+test('navegación muestra un apartado a la vez y conserva enlaces directos', async ({ page }) => {
+  const state = await fixture(page);
+  state.appointments.push({ ...state.appointments[0], id: 'old', estado: 'finalizada', fecha_hora: '2029-12-01T14:00:00Z' });
+  await page.reload();
+  await expect(page.locator('#mi-perfil')).toBeVisible();
+  await expect(page.locator('#mi-negocio')).toBeHidden();
+  await expect(page.locator('#organizacion')).toBeHidden();
+  await expect(page.locator('#mis-citas')).toBeHidden();
+  await page.locator('.pro-nav-link[href="#mis-citas"]').click();
+  await expect(page.locator('#mi-perfil')).toBeHidden();
+  await expect(page.locator('#mis-citas')).toBeVisible();
+  await expect(page.locator('#pro-view-title')).toHaveText('Mis citas');
+  await expect(page.locator('.professional-statistics')).toBeVisible();
+  await expect(page.locator('#panel-calendario')).toBeVisible();
+  await expect(page.locator('#panel-reservas')).toBeHidden();
+  await page.getByRole('tab', { name: 'Calendario y bloqueos' }).focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(page.getByRole('tab', { name: 'Reservas' })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('#panel-reservas .appointment-card')).toHaveCount(1);
+  await page.getByRole('tab', { name: 'Historial' }).click();
+  await expect(page.locator('#panel-reservas .appointment-card')).toHaveCount(1);
+  await expect(page.locator('#panel-reservas')).toContainText('Historial de citas');
+  await expect(page.locator('.professional-statistics')).toBeVisible();
+  await page.reload();
+  await expect(page.locator('#mis-citas')).toBeVisible();
+  await expect(page.locator('#panel-calendario')).toBeVisible();
+  await page.goto('/perfil-profesional#servicios-profesional');
+  await expect(page.locator('#organizacion')).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Servicios' })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('#panel-servicios')).toBeVisible();
+});
+
 test('vistas diaria, semanal y mensual usan el backend; bloqueos y estadísticas se actualizan', async ({ page }) => {
   const state = await fixture(page);
+  await page.locator('.pro-nav-link[href="#mis-citas"]').click();
   await expect(page.locator('.professional-calendar-grid .is-confirmada')).toContainText('Cliente real');
   await expect(page.locator('.professional-calendar-grid .is-descanso')).toContainText('Descanso');
   const view = page.getByLabel('Vista del calendario', { exact: true });
@@ -121,6 +160,7 @@ test('vistas diaria, semanal y mensual usan el backend; bloqueos y estadísticas
   await expect(page.getByText('Bloqueo guardado.', { exact: true })).toBeVisible();
   await expect(page.locator('.professional-calendar-grid .is-bloqueado')).toHaveCount(1);
   const stats = page.locator('.professional-statistics');
+  await expect(stats).toBeVisible();
   await stats.getByLabel('Desde', { exact: true }).fill('2030-02-01'); await stats.getByLabel('Hasta', { exact: true }).fill('2030-02-28');
   await stats.getByRole('button', { name: 'Consultar estadísticas' }).click();
   await expect(stats.locator('.pro-stat-card').filter({ hasText: 'Total de citas' }).locator('strong')).toHaveText('0');
@@ -128,6 +168,7 @@ test('vistas diaria, semanal y mensual usan el backend; bloqueos y estadísticas
 
 test('descanso publicado en el editor semanal persiste sin depender de localStorage', async ({ page }) => {
   const state = await fixture(page);
+  await page.locator('.pro-nav-link[href="#organizacion"]').click();
   await page.getByRole('button', { name: 'Semana siguiente', exact: true }).click();
   await page.getByLabel('Hora de entrada', { exact: true }).selectOption('09:00');
   await page.getByLabel('Hora de cierre', { exact: true }).selectOption('10:00');
@@ -144,6 +185,7 @@ for (const theme of ['original', 'light', 'dark']) for (const width of [1920, 13
     await page.setViewportSize({ width, height: width === 1920 ? 1080 : 900 });
     await fixture(page, theme);
     await expect(page.locator('.pro-service-item')).toHaveCount(7);
+    await page.locator('.pro-nav-link[href="#mis-citas"]').click();
     await expect(page.locator('.professional-calendar-grid .is-confirmada')).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
     if ((width === 1920 || width === 390) && theme === 'light') await page.screenshot({ path: `test-results/professional-${theme}-${width}.png`, fullPage: true });

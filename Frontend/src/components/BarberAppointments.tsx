@@ -39,9 +39,20 @@ const sortAppointmentsByNewest = (items: Appointment[]) =>
 
 export default function BarberAppointments() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [listView, setListView] = useState<'reservas' | 'historial'>('reservas');
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    const changeView = (event: Event) => setListView((event as CustomEvent<string>).detail === 'historial' ? 'historial' : 'reservas');
+    window.addEventListener('professional-appointments-view', changeView);
+    return () => window.removeEventListener('professional-appointments-view', changeView);
+  }, []);
+  const visibleAppointments = appointments.filter(item => {
+    const historical = new Date(item.fecha_hora).getTime() < Date.now() || ['cancelada', 'rechazada', 'finalizada', 'inasistencia'].includes(item.estado);
+    return listView === 'historial' ? historical : !historical;
+  });
 
   useEffect(() => {
     const loadAppointments = async () => {
@@ -132,19 +143,19 @@ export default function BarberAppointments() {
     <article id="citas-profesional" className="pro-panel pro-appointments">
       <div className="pro-panel-header">
         <div>
-          <h2>Mis citas</h2>
-          <p className="appointments-helper">Las reservas de clientes se confirman automáticamente.</p>
+          <h2>{listView === 'historial' ? 'Historial de citas' : 'Reservas'}</h2>
+          <p className="appointments-helper">{listView === 'historial' ? 'Reservas anteriores y citas cerradas.' : 'Las reservas de clientes se confirman automáticamente.'}</p>
         </div>
       </div>
 
       {error && <p className="appointments-message is-error" role="alert">{error}</p>}
       {loading ? (
         <p className="pro-empty">Cargando citas...</p>
-      ) : appointments.length === 0 ? (
-        <p className="pro-empty">Aun no tienes citas de clientes.</p>
+      ) : visibleAppointments.length === 0 ? (
+        <p className="pro-empty">{listView === 'historial' ? 'Aún no tienes citas en el historial.' : 'Aún no tienes reservas activas.'}</p>
       ) : (
         <div className="appointments-list">
-          {appointments.map((appointment) => (
+          {visibleAppointments.map((appointment) => (
             <section key={appointment.id} className="appointment-card">
               <div className="appointment-date">
                 <strong>{formatInstant(appointment.fecha_hora, { day: '2-digit' })}</strong>

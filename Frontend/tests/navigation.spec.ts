@@ -266,6 +266,7 @@ test('El barbero configura y conserva la exigencia de comprobante', async ({ pag
   await session(page, 'barbero');
   await page.goto('/perfil-profesional');
   const toggle = page.locator('#requires-proof-switch');
+  await page.locator('.pro-nav-link[href="#configuracion-reservas"]').click();
   await expect(toggle).toBeEnabled();
   await expect(toggle).not.toBeChecked();
   await expect(page.locator('#proof-setting-title')).toHaveText('Reserva sin comprobante');
@@ -418,7 +419,7 @@ const readySelectors: Record<string, string> = {
   '/': 'main',
   '/perfil': '.profile-root',
   '/configuracion': '.settings-card',
-  '/perfil-profesional': '.barber-calendar',
+  '/perfil-profesional': '#mi-perfil',
   '/admin': '.admin-root',
   '/admin-barberos': '#pending-barbers-list',
   '/booking': '.booking-root',

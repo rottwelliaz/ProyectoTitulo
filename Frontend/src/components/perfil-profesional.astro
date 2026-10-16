@@ -1,6 +1,7 @@
 ---
 import logoConce from '../assets/logotesis.png';
 import ProfessionalCalendar from './calendar/ProfessionalCalendar';
+import BarberCalendar from './calendar/BarberCalendar';
 import ProfessionalServices from './ProfessionalServices';
 import ProfessionalProfileEditor from './ProfessionalProfileEditor';
 import ProfessionalStatistics from './ProfessionalStatistics';
@@ -8,13 +9,13 @@ import BarberAppointments from './BarberAppointments';
 import SessionNav from './SessionNav.astro';
 import {
   BriefcaseBusiness,
-  CalendarDays,
   ClipboardList,
-  CreditCard,
-  LayoutDashboard,
+  UserRound,
   Pencil,
   MessageCircle,
   FileCheck2,
+  BadgeCheck,
+  Camera,
   Scissors,
   Settings,
 } from 'lucide-astro';
@@ -27,37 +28,29 @@ import {
     </a>
 
     <nav class="pro-nav" aria-label="Menú profesional">
-      <a class="pro-nav-link is-active" href="#resumen-profesional">
-        <LayoutDashboard class="pro-nav-lucide" size={23} aria-hidden="true" />
-        Resumen
+      <a class="pro-nav-link is-active" href="#mi-perfil" data-pro-view="mi-perfil" aria-current="page">
+        <UserRound class="pro-nav-lucide" size={23} aria-hidden="true" />
+        Mi perfil
       </a>
-      <a class="pro-nav-link" href="#agenda-profesional">
-        <CalendarDays class="pro-nav-lucide" size={23} aria-hidden="true" />
-        Mi agenda
+      <a class="pro-nav-link" href="#mi-negocio" data-pro-view="mi-negocio">
+        <BriefcaseBusiness class="pro-nav-lucide" size={23} aria-hidden="true" />
+        Mi negocio
       </a>
-      <a class="pro-nav-link" href="#servicios-profesional">
+      <a class="pro-nav-link" href="#organizacion" data-pro-view="organizacion">
         <Scissors class="pro-nav-lucide" size={23} aria-hidden="true" />
-        Mis servicios
+        Organización
       </a>
-      <a class="pro-nav-link" href="#citas-profesional">
+      <a class="pro-nav-link" href="#mis-citas" data-pro-view="mis-citas">
         <ClipboardList class="pro-nav-lucide" size={23} aria-hidden="true" />
         Mis citas
-      </a>
-      <a class="pro-nav-link" href="#lugar-trabajo">
-        <BriefcaseBusiness class="pro-nav-lucide" size={23} aria-hidden="true" />
-        Lugar de trabajo
-      </a>
-      <a class="pro-nav-link" href="#datos-bancarios">
-        <CreditCard class="pro-nav-lucide" size={23} aria-hidden="true" />
-        Datos bancarios
-      </a>
-      <a class="pro-nav-link" href="#configuracion-reservas">
-        <Settings class="pro-nav-lucide" size={23} aria-hidden="true" />
-        Configuración
       </a>
       <a class="pro-nav-link" href="/mensajes">
         <MessageCircle class="pro-nav-lucide" size={23} aria-hidden="true" />
         Mensajes
+      </a>
+      <a class="pro-nav-link" href="#configuracion-reservas" data-pro-view="configuracion-reservas">
+        <Settings class="pro-nav-lucide" size={23} aria-hidden="true" />
+        Configuración
       </a>
     </nav>
 
@@ -74,12 +67,12 @@ import {
   <section class="pro-main">
     <header class="pro-topbar">
       <div>
-        <h1>Perfil profesional</h1>
-        <p>Gestiona tu negocio y agenda</p>
+        <h1 id="pro-view-title">Mi perfil</h1>
+        <p id="pro-view-description">Tu información profesional</p>
       </div>
 
       <div class="pro-top-actions">
-        <a class="pro-edit-button" href="#editar-perfil-profesional">
+        <a class="pro-edit-button" href="#editar-perfil-profesional" data-pro-view="mi-perfil">
           <Pencil size={18} aria-hidden="true" />
           Editar perfil
         </a>
@@ -87,20 +80,21 @@ import {
       </div>
     </header>
 
-    <section id="resumen-profesional" class="pro-hero-card is-minimal">
+    <section id="mi-perfil" class="pro-view" data-pro-panel="mi-perfil" aria-label="Mi perfil">
+    <section id="resumen-profesional" class="pro-hero-card">
       <div class="pro-avatar-wrap">
         <div class="pro-avatar" data-user-avatar aria-hidden="true"></div>
-        <button class="pro-camera" type="button" aria-label="Cambiar foto"></button>
+        <button class="pro-camera" type="button" aria-label="Cambiar foto de perfil" title="Cambiar foto de perfil">
+          <Camera size={21} strokeWidth={2.25} aria-hidden="true" />
+        </button>
       </div>
 
       <div class="pro-identity">
         <div class="pro-name-row">
           <h2 id="professional-name">Cargando...</h2>
-          <span class="pro-verified" aria-label="Verificado"></span>
+          <BadgeCheck class="pro-verified" size={25} strokeWidth={2.4} aria-label="Perfil verificado" role="img" />
         </div>
         <p id="professional-specialty" class="pro-specialty">Perfil profesional</p>
-        <p id="professional-shop" class="pro-meta"></p>
-        <p id="professional-location" class="pro-meta"></p>
       </div>
 
       <div class="pro-about">
@@ -109,13 +103,11 @@ import {
       </div>
     </section>
 
-    <ProfessionalStatistics client:only="react" />
-
-    <section class="pro-grid">
-      <ProfessionalCalendar client:only="react" />
       <ProfessionalProfileEditor client:only="react" />
+    </section>
 
-      <ProfessionalServices client:only="react" />
+    <section id="mi-negocio" class="pro-view" data-pro-panel="mi-negocio" aria-label="Mi negocio" hidden>
+    <div class="pro-grid">
 
       <article id="lugar-trabajo" class="pro-panel pro-workplace">
         <div class="pro-panel-header">
@@ -192,11 +184,45 @@ import {
         </form>
       </article>
 
-      <article id="configuracion-reservas" class="pro-panel pro-booking-settings">
+    </div>
+    </section>
+
+    <section id="organizacion" class="pro-view" data-pro-panel="organizacion" aria-label="Organización" hidden>
+      <div class="pro-subnav" role="tablist" aria-label="Organización">
+        <button type="button" role="tab" id="tab-horarios" aria-controls="panel-horarios" data-pro-tab="horarios" aria-selected="true">Semana laboral</button>
+        <button type="button" role="tab" id="tab-servicios" aria-controls="panel-servicios" data-pro-tab="servicios" aria-selected="false">Servicios</button>
+      </div>
+      <div id="panel-horarios" class="pro-tab-panel" role="tabpanel" aria-labelledby="tab-horarios" data-pro-tab-panel="horarios">
+        <article class="pro-panel"><div class="pro-panel-header"><h2>Organización semanal</h2></div><p>Configura los días, horarios, disponibilidad y descansos de tu semana laboral.</p></article>
+        <BarberCalendar client:only="react" />
+      </div>
+      <div id="panel-servicios" class="pro-tab-panel" role="tabpanel" aria-labelledby="tab-servicios" data-pro-tab-panel="servicios" hidden>
+        <ProfessionalServices client:only="react" />
+      </div>
+    </section>
+
+    <section id="mis-citas" class="pro-view" data-pro-panel="mis-citas" aria-label="Mis citas" hidden>
+      <div class="pro-subnav" role="tablist" aria-label="Mis citas">
+        <button type="button" role="tab" id="tab-calendario" aria-controls="panel-calendario" data-pro-tab="calendario" aria-selected="true">Calendario y bloqueos</button>
+        <button type="button" role="tab" id="tab-reservas" aria-controls="panel-reservas" data-pro-tab="reservas" aria-selected="false">Reservas</button>
+        <button type="button" role="tab" id="tab-historial" aria-controls="panel-reservas" data-pro-tab="historial" aria-selected="false">Historial</button>
+      </div>
+      <ProfessionalStatistics client:only="react" />
+      <div id="panel-calendario" class="pro-tab-panel" role="tabpanel" aria-labelledby="tab-calendario" data-pro-tab-panel="calendario">
+        <ProfessionalCalendar client:only="react" />
+      </div>
+      <div id="panel-reservas" class="pro-tab-panel" role="tabpanel" aria-labelledby="tab-reservas" data-pro-tab-panel="reservas" hidden>
+        <BarberAppointments client:only="react" />
+      </div>
+    </section>
+
+    <section id="configuracion-reservas" class="pro-view" data-pro-panel="configuracion-reservas" aria-label="Configuración de reservas" hidden>
+      <article class="pro-panel pro-booking-settings">
         <div class="booking-settings-heading">
           <Settings size={20} aria-hidden="true" />
           <h2>Configuración de reservas</h2>
         </div>
+        <p><a href="/configuracion">Abrir configuración de cuenta</a></p>
 
         <div class="booking-settings-content">
           <label class="booking-setting-row" for="requires-proof-switch">
@@ -222,7 +248,6 @@ import {
         </div>
       </article>
 
-      <BarberAppointments client:only="react" />
     </section>
   </section>
 
@@ -235,11 +260,84 @@ import {
     if (!(await requireSession())) return;
 
   const token = localStorage.getItem('token');
-  const navLinks = document.querySelectorAll<HTMLAnchorElement>('.pro-nav-link');
+  const navLinks = document.querySelectorAll<HTMLAnchorElement>('.pro-nav-link[data-pro-view]');
+  const views = document.querySelectorAll<HTMLElement>('[data-pro-panel]');
+  const titles: Record<string, [string, string]> = {
+    'mi-perfil': ['Mi perfil', 'Tu información profesional'],
+    'mi-negocio': ['Mi negocio', 'Establecimiento y datos bancarios'],
+    organizacion: ['Organización', 'Semana laboral y servicios'],
+    'mis-citas': ['Mis citas', 'Reservas, calendario, historial y estadísticas'],
+    'configuracion-reservas': ['Configuración', 'Preferencias de reservas'],
+  };
+  const aliases: Record<string, [string, string?]> = {
+    'resumen-profesional': ['mi-perfil'],
+    'editar-perfil-profesional': ['mi-perfil'],
+    'lugar-trabajo': ['mi-negocio'],
+    'datos-bancarios': ['mi-negocio'],
+    'agenda-profesional': ['mis-citas', 'calendario'],
+    'citas-profesional': ['mis-citas', 'reservas'],
+    'servicios-profesional': ['organizacion', 'servicios'],
+  };
+  const activeTabs: Record<string, string> = { organizacion: 'horarios', 'mis-citas': 'calendario' };
+  const selectTab = (view: string, tab: string) => {
+    activeTabs[view] = tab;
+    const container = document.querySelector<HTMLElement>(`[data-pro-panel="${view}"]`);
+    if (!container) return;
+    container.querySelectorAll<HTMLElement>('[data-pro-tab]').forEach(button => {
+      button.setAttribute('aria-selected', String(button.dataset.proTab === tab));
+      button.tabIndex = button.dataset.proTab === tab ? 0 : -1;
+    });
+    container.querySelectorAll<HTMLElement>('[data-pro-tab-panel]').forEach(panel => {
+      panel.hidden = panel.dataset.proTabPanel !== tab && !(tab === 'historial' && panel.dataset.proTabPanel === 'reservas');
+      if (panel.dataset.proTabPanel === 'reservas' && view === 'mis-citas') panel.setAttribute('aria-labelledby', tab === 'historial' ? 'tab-historial' : 'tab-reservas');
+    });
+    if (view === 'mis-citas') window.dispatchEvent(new CustomEvent('professional-appointments-view', { detail: tab === 'historial' ? 'historial' : 'reservas' }));
+  };
+  const showView = () => {
+    const target = decodeURIComponent(location.hash.slice(1));
+    const [view, tab] = titles[target] ? [target, undefined] : aliases[target] || ['mi-perfil'];
+    views.forEach(panel => { panel.hidden = panel.dataset.proPanel !== view; });
+    navLinks.forEach(link => {
+      const active = link.dataset.proView === view;
+      link.classList.toggle('is-active', active);
+      if (active) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current');
+    });
+    const title = document.querySelector<HTMLElement>('#pro-view-title');
+    const description = document.querySelector<HTMLElement>('#pro-view-description');
+    if (title) title.textContent = titles[view][0];
+    if (description) description.textContent = titles[view][1];
+    if (activeTabs[view]) selectTab(view, tab || activeTabs[view]);
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  };
+  document.querySelectorAll<HTMLButtonElement>('[data-pro-tab]').forEach(button => {
+    button.addEventListener('click', () => {
+      const view = button.closest<HTMLElement>('[data-pro-panel]')?.dataset.proPanel;
+      if (view && button.dataset.proTab) selectTab(view, button.dataset.proTab);
+    });
+    button.addEventListener('keydown', event => {
+      if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+      const tabs = Array.from(button.closest<HTMLElement>('[role="tablist"]')?.querySelectorAll<HTMLButtonElement>('[data-pro-tab]') || []);
+      if (!tabs.length) return;
+      event.preventDefault();
+      const index = tabs.indexOf(button);
+      const next = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : (index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+      tabs[next].focus();
+      tabs[next].click();
+    });
+  });
+  document.querySelectorAll<HTMLAnchorElement>('a[data-pro-view]').forEach(link => {
+    link.addEventListener('click', event => {
+      event.preventDefault();
+      history.pushState(null, '', link.getAttribute('href') || '#mi-perfil');
+      showView();
+    });
+  });
+  window.addEventListener('hashchange', showView);
+  window.addEventListener('popstate', showView);
+  showView();
 
   const professionalName = document.querySelector<HTMLElement>('#professional-name');
   const professionalSpecialty = document.querySelector<HTMLElement>('#professional-specialty');
-  const professionalShop = document.querySelector<HTMLElement>('#professional-shop');
   const professionalBio = document.querySelector<HTMLElement>('#professional-bio');
   const sidebarName = document.querySelector<HTMLElement>('#sidebar-name');
   const sidebarSpecialty = document.querySelector<HTMLElement>('#sidebar-specialty');
@@ -281,24 +379,14 @@ import {
   let currentRequiresProof = true;
 
 
-  navLinks.forEach((link) => {
-    link.addEventListener('click', () => {
-      navLinks.forEach((item) => item.classList.toggle('is-active', item === link));
-    });
-  });
-
   const renderUser = (user: any) => {
     const name = user?.nombre || 'Barbero';
     const profile = user?.perfilBarbero;
-    const shop = profile?.lugarTrabajo?.nombre_barberia || 'Sin lugar de trabajo registrado';
     const specialty = profile?.especialidades?.join(' · ') || 'Barbero profesional';
 
     if (professionalName) professionalName.textContent = name;
     if (professionalSpecialty) professionalSpecialty.textContent = specialty;
-    if (professionalShop) professionalShop.textContent = shop;
     if (professionalBio) professionalBio.textContent = profile?.biografia || 'Sin biografía registrada.';
-    const location = document.querySelector('#professional-location');
-    if (location) location.textContent = profile?.lugarTrabajo?.direccion || '';
     if (sidebarName) sidebarName.textContent = name;
     if (sidebarSpecialty) sidebarSpecialty.textContent = specialty;
     renderBanking(profile || null);

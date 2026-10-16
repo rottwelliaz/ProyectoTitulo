@@ -65,12 +65,15 @@ for (const timezoneId of ['UTC', 'America/Santiago', 'Asia/Tokyo']) {
         return route.fulfill({ json: [] });
       });
       await page.goto('/perfil-profesional');
+      await page.locator('.pro-nav-link[href="#organizacion"]').click();
       await page.getByRole('button', { name: 'Semana siguiente', exact: true }).click();
       await page.getByRole('button', { name: 'Guardar agenda', exact: true }).click();
       await expect.poll(() => payload?.fechaInicio).toBe('2026-08-31T04:00:00.000Z');
       expect(payload?.fechaFin).toBe('2026-09-07T03:00:00.000Z');
       expect(payload?.bloques.some(block => block.inicio === '2026-09-05T13:00:00.000Z')).toBe(true);
       expect(payload?.bloques.some(block => block.inicio === '2026-09-06T12:00:00.000Z')).toBe(true);
+      await page.locator('.pro-nav-link[href="#mis-citas"]').click();
+      await page.getByRole('tab', { name: 'Reservas' }).click();
       await expect(page.locator('.appointment-date strong')).toHaveText('06');
       await expect(page.locator('.appointment-date time')).toHaveText('23:30');
     });

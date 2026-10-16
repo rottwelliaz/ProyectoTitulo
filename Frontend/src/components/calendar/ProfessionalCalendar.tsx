@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { Temporal } from '@js-temporal/polyfill';
 import { addDays, businessDate, businessTime, dayStart, formatDay, slotInstant, startOfWeek } from '../../lib/businessTime';
 import { professionalApi, errorMessage, reservationLabels } from '../../lib/professionalApi';
-import BarberCalendar from './BarberCalendar';
 type Entry = { id: string; inicio: string; fin: string; estado: string; cliente?: { nombre: string } | null; servicio?: { nombre_servicio: string } | null; block?: boolean };
 type View = 'dia' | 'semana' | 'mes';
 
@@ -74,6 +73,5 @@ export default function ProfessionalCalendar() {
         }}><label>Día del bloqueo<input type="date" name="dia" defaultValue={date} min={businessDate()} required /></label><label>Inicio del bloqueo<input type="time" name="inicio" required /></label><label>Fin del bloqueo<input type="time" name="fin" required /></label><label>Tipo<select name="tipo"><option value="bloqueado">Bloqueo</option><option value="descanso">Descanso</option></select></label><button disabled={busy}>Guardar bloqueo</button></form>
       </details>
     </article>
-    <details className="professional-publisher" open={view === 'semana'}><summary>Editar y publicar disponibilidad semanal</summary><BarberCalendar /></details>
   </section>;
 }

@@ -249,22 +249,18 @@
   border: 0;
   border-radius: 50%;
   bottom: 0.3rem;
+  color: #061426;
+  cursor: pointer;
+  display: grid;
   height: 44px;
+  place-items: center;
   position: absolute;
   right: 0.3rem;
   width: 44px;
 }
 
-.pro-camera::before {
-  border: 2px solid #061426;
-  border-radius: 5px;
-  content: '';
-  height: 16px;
-  left: 12px;
-  position: absolute;
-  top: 14px;
-  width: 20px;
-}
+.pro-camera:hover { background: #dbeafe; }
+.pro-camera:focus-visible { outline: 3px solid var(--pro-yellow); outline-offset: 3px; }
 
 .pro-name-row {
   align-items: center;
@@ -278,23 +274,8 @@
 }
 
 .pro-verified {
-  background: var(--pro-green);
-  border-radius: 50%;
-  height: 22px;
-  position: relative;
-  width: 22px;
-}
-
-.pro-verified::before {
-  border-bottom: 2px solid #fff;
-  border-right: 2px solid #fff;
-  content: '';
-  height: 9px;
-  left: 7px;
-  position: absolute;
-  top: 4px;
-  transform: rotate(45deg);
-  width: 5px;
+  color: var(--pro-green);
+  flex: 0 0 auto;
 }
 
 .pro-specialty {
@@ -1732,3 +1713,28 @@ html[data-theme='dark'] :is(.calendar-actions button, .service-form-actions butt
 html[data-theme='dark'] .professional-agenda, html[data-theme='dark'] .professional-statistics, html[data-theme='dark'] .professional-editor { --pro-panel-soft: #181d25; }
 @media (max-width: 900px) { .professional-calendar-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 600px) { .professional-calendar-grid { grid-template-columns: minmax(0, 1fr); } .professional-period { align-items: stretch; } .professional-period > * { flex: 1 1 130px; } .professional-agenda .pro-panel-header { flex-wrap: wrap; gap: .7rem; } .pro-services .pro-service-item { grid-template-columns: minmax(0, 1fr); } .professional-editor .pro-panel-header { flex-wrap: wrap; gap: .7rem; } }
+
+/* Vistas y pestañas del panel profesional. Los componentes permanecen montados al navegar. */
+.pro-root [hidden] { display: none !important; }
+.pro-view { min-width: 0; }
+.pro-view > .pro-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+#mi-perfil { display: grid; gap: 1rem; }
+#mi-perfil .pro-hero-card { grid-template-columns: auto minmax(0, 1fr); gap: 1.25rem; padding: 1.25rem; }
+#mi-perfil .pro-avatar { width: 110px; height: 110px; }
+#mi-perfil .pro-about { grid-column: 1 / -1; }
+#mi-perfil .pro-about h3 { margin-top: 0; }
+#mi-perfil .professional-editor { width: 100%; }
+.pro-tab-panel { min-width: 0; }
+.pro-tab-panel > .pro-panel, .pro-tab-panel > .professional-agenda { width: 100%; }
+.pro-tab-panel > .pro-panel + * { margin-top: 1rem; }
+.pro-subnav { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1rem; }
+.pro-subnav button { border: 1px solid var(--pro-line); border-radius: 8px; background: var(--pro-panel-soft); color: var(--pro-text); cursor: pointer; font: inherit; font-weight: 700; padding: .7rem 1rem; }
+.pro-subnav button[aria-selected='true'] { background: #0d5bd1; border-color: #1679ff; color: #fff; }
+.pro-subnav button:focus-visible, .pro-nav-link:focus-visible { outline: 2px solid var(--pro-yellow); outline-offset: 2px; }
+.pro-view .professional-statistics { margin: 0; }
+/* Las estadísticas permanecen visibles bajo las pestañas de Mis citas. */
+#mis-citas > .professional-statistics { margin-bottom: 1rem; }
+html[data-theme='dark'] #mi-perfil .pro-specialty { color: #75b4ff; }
+@media (max-width: 1180px) { .pro-view > .pro-grid { grid-template-columns: 1fr; } }
+@media (max-width: 760px) { #mi-perfil .pro-hero-card { grid-template-columns: 1fr; } #mi-perfil .pro-about { grid-column: auto; } .pro-subnav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .pro-subnav { grid-template-columns: 1fr; } }

@@ -22,19 +22,22 @@ test('mis citas ofrece únicamente acciones correspondientes al estado y la fech
     return route.fulfill({ json: [] });
   });
   await page.goto('/perfil-profesional');
+  await page.locator('.pro-nav-link[href="#mis-citas"]').click();
+  await page.getByRole('tab', { name: 'Reservas' }).click();
   const card = (name: string) => page.locator('.appointment-card').filter({ has: page.locator('.appointment-info strong', { hasText: name }) });
   await expect(card('pending').getByRole('button', { name: 'Confirmar', exact: true })).toBeVisible();
   await expect(card('future').getByRole('button', { name: 'Cancelar', exact: true })).toBeVisible();
   await expect(card('future').getByRole('button', { name: 'Finalizar', exact: true })).toHaveCount(0);
+  page.on('dialog', d => d.accept());
+  await card('pending').getByRole('button', { name: 'Rechazar', exact: true }).click();
+  await page.getByRole('tab', { name: 'Historial' }).click();
+  await expect(card('pending').locator('.appointment-status')).toHaveText('Rechazada');
+  await expect(card('pending').getByRole('button')).toHaveCount(0);
   await expect(card('past').getByRole('button', { name: 'Cancelar', exact: true })).toHaveCount(0);
   await expect(card('past').getByRole('button', { name: 'Finalizar', exact: true })).toBeVisible();
   await expect(card('past').getByRole('button', { name: 'Marcar inasistencia', exact: true })).toBeVisible();
   await expect(card('absent').getByRole('button')).toHaveCount(0);
   await expect(card('rejected').getByRole('button')).toHaveCount(0);
-  page.on('dialog', d => d.accept());
-  await card('pending').getByRole('button', { name: 'Rechazar', exact: true }).click();
-  await expect(card('pending').locator('.appointment-status')).toHaveText('Rechazada');
-  await expect(card('pending').getByRole('button')).toHaveCount(0);
 });
 
 test('cliente conserva etiquetas de rechazo e inasistencia sin acciones de cancelación', async ({ page }) => {

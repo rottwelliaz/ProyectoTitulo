@@ -128,6 +128,7 @@ test('agenda usa configuración del servidor, conserva copia y rechaza sobrescri
     return route.fulfill({ json: [] });
   });
   await page.goto('/perfil-profesional');
+  await page.locator('.pro-nav-link[href="#organizacion"]').click();
   const calendar = page.locator('#disponibilidad-profesional');
   await expect(calendar.getByLabel('Hora de entrada', { exact: true })).toHaveValue('10:00');
   await calendar.getByRole('button', { name: 'Guardar agenda', exact: true }).click();

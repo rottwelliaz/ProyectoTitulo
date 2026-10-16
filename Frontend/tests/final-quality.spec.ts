@@ -51,6 +51,8 @@ for (const kind of ['service', 'slot', 'admin']) {
   test(`RNF11 teclado modal ${kind}`, async ({ page }) => {
     await qualityFixture(page, kind === 'admin' ? 'admin' : 'barbero');
     await ready(page, kind === 'admin' ? '/admin' : '/perfil-profesional');
+    if (kind === 'service' || kind === 'slot') await page.locator('.pro-nav-link[href="#organizacion"]').click();
+    if (kind === 'service') await page.getByRole('tab', { name: 'Servicios' }).click();
     if (kind === 'admin') await page.getByRole('button', { name: 'Clientes', exact: true }).click();
     const trigger = kind === 'service' ? page.locator('#open-service-modal') : kind === 'slot' ? page.locator('.barber-slot:not(:disabled)').first() : page.locator('[data-edit-id]').first();
     await trigger.focus(); await page.keyboard.press('Enter');
