@@ -4,9 +4,9 @@ import { ShieldCheck } from 'lucide-astro';
 import SessionNav from './SessionNav.astro';
 ---
 
-<main class="profile-root profile-dashboard">
-  <aside class="profile-sidebar">
-    <a class="profile-brand" href="/home" aria-label="Conce Barber Club">
+<main class="panel-layout profile-root profile-dashboard">
+  <aside class="profile-sidebar panel-sidebar">
+    <a class="profile-brand panel-sidebar-brand" href="/home" aria-label="Conce Barber Club">
       <img
         class="profile-brand-logo"
         src={logoConce.src}
@@ -14,7 +14,7 @@ import SessionNav from './SessionNav.astro';
       />
     </a>
 
-    <nav class="profile-nav" aria-label="Navegación de perfil">
+    <nav class="profile-nav panel-sidebar-nav" aria-label="Navegación de perfil">
       <a class="profile-sidebar-link is-active" href="/perfil">
         <span class="profile-link-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/></svg>
@@ -35,7 +35,7 @@ import SessionNav from './SessionNav.astro';
       </a>
     </nav>
 
-    <div class="profile-sidebar-card">
+    <div class="profile-sidebar-card panel-sidebar-footer">
       <ShieldCheck size={22} aria-hidden="true" />
       <div>
         <strong>Cuenta personal</strong>

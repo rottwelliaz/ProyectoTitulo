@@ -14,6 +14,15 @@ export function businessDate(value: Date): string {
   return Temporal.Instant.fromEpochMilliseconds(value.getTime()).toZonedDateTimeISO(BUSINESS_TIME_ZONE).toPlainDate().toString();
 }
 
+export function businessTime(value: Date): string {
+  return Temporal.Instant.fromEpochMilliseconds(value.getTime()).toZonedDateTimeISO(BUSINESS_TIME_ZONE).toPlainTime().toString({ smallestUnit: 'minute' });
+}
+
+export function slotInstant(day: string, time: string): Date {
+  return new Date(Temporal.PlainDate.from(day).toPlainDateTime(Temporal.PlainTime.from(time))
+    .toZonedDateTime(BUSINESS_TIME_ZONE, { disambiguation: 'reject' }).epochMilliseconds);
+}
+
 export function businessRange(value: unknown, days = 1): { start: Date; end: Date } {
   if (typeof value !== 'string') throw new RangeError('Indica una fecha válida');
   const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(value);

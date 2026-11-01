@@ -1,3 +1,4 @@
+import { bookingAvailability } from './booking-fixture';
 import { test, expect } from '@playwright/test';
 import { addDays, businessDate, businessTime, dayStart, slotInstant, startOfWeek } from '../src/lib/businessTime';
 
@@ -20,6 +21,38 @@ for (const timezoneId of ['UTC', 'America/Santiago', 'Asia/Tokyo']) {
   test.describe(timezoneId, () => {
     test.use({ timezoneId });
 
+    test('semanas civiles al cruzar mes, año y horario de verano', async ({ page }) => {
+      await page.addInitScript(() => localStorage.setItem('token', 'test'));
+      let query: URLSearchParams | undefined;
+      await page.route('**/api/**', async route => {
+        const url = new URL(route.request().url());
+        if (url.pathname.endsWith('/auth/me')) return route.fulfill({ json: { id: 1, nombre: 'Cliente', rol: 'cliente', aprobado: true } });
+        if (url.pathname.endsWith('/citas/barberos')) return route.fulfill({ json: [{ id: 10, usuario: { nombre: 'Barbero' }, requiereComprobante: false, servicios: [{ id: 'cut', nombre_servicio: 'Corte', precio: 10000, duracion_minutos: 30 }] }] });
+        if (url.pathname.includes('/citas/disponibilidad/')) {
+          query = url.searchParams;
+          expect([...query.keys()].sort()).toEqual(['fecha', 'servicioId', 'vista']);
+          return route.fulfill({ json: bookingAvailability(query, []) });
+        }
+        return route.fulfill({ json: [] });
+      });
+      for (const [today, monday] of [['2026-10-29', '2026-10-26'], ['2026-12-31', '2026-12-28'], ['2026-04-02', '2026-03-30'], ['2026-09-03', '2026-08-31']]) {
+        await page.clock.setFixedTime(slotInstant(today, 9 * 60));
+        await page.goto('/booking');
+        await page.locator('.booking-barber-card').click();
+        await page.locator('.booking-service-card').click();
+        await expect.poll(() => query?.get('fecha')).toBe(monday);
+        await expect(page.locator('.booking-calendar-table')).toBeVisible();
+        expect(query?.get('vista')).toBe('semana');
+        await page.getByRole('button', { name: 'Semana siguiente', exact: true }).click();
+        await expect.poll(() => query?.get('fecha')).toBe(addDays(monday, 7));
+        await page.getByRole('button', { name: 'Semana anterior', exact: true }).click();
+        await expect.poll(() => query?.get('fecha')).toBe(monday);
+        await expect(page.getByRole('button', { name: 'Semana anterior', exact: true })).toBeDisabled();
+        expect(query?.get('fecha')).toBe(monday);
+        await expect(page.locator('.booking-calendar-error')).toHaveCount(0);
+      }
+    });
+
     test('fecha seleccionada, consulta y reserva nocturna usan Santiago', async ({ page }) => {
       await page.clock.setFixedTime(new Date('2026-09-06T02:30:00Z')); // Saturday 23:30 in Chile
       await page.addInitScript(() => localStorage.setItem('token', 'test'));
@@ -31,7 +64,7 @@ for (const timezoneId of ['UTC', 'America/Santiago', 'Asia/Tokyo']) {
         if (url.pathname.endsWith('/citas/barberos')) return route.fulfill({ json: [{ id: 10, usuario: { nombre: 'Barbero' }, requiereComprobante: false, servicios: [{ id: 'cut', nombre_servicio: 'Corte', precio: 10000, duracion_minutos: 30 }] }] });
         if (url.pathname.includes('/citas/disponibilidad/')) {
           query = url.searchParams;
-          return route.fulfill({ json: { citas: query.get('fecha') === '2026-09-06' ? [{ id: 'night', fecha_hora: '2026-09-07T02:30:00Z' }] : [], servicios: [] } });
+          return route.fulfill({ json: bookingAvailability(query, [{ id: 'night', fecha_hora: '2026-09-07T02:30:00Z' }]) });
         }
         if (url.pathname.endsWith('/night/agendar')) { booked = true; return route.fulfill({ json: { id: 'reservation', estado: 'confirmada' } }); }
         return route.fulfill({ json: [] });
@@ -39,13 +72,14 @@ for (const timezoneId of ['UTC', 'America/Santiago', 'Asia/Tokyo']) {
       await page.goto('/booking');
       await page.locator('.booking-barber-card').click();
       await page.locator('.booking-service-card').click();
-      await expect(page.locator('.booking-days .is-selected strong')).toHaveText('5');
-      await expect.poll(() => query?.get('fecha')).toBe('2026-09-05');
-      await page.locator('.booking-days button').nth(1).click();
-      await expect.poll(() => query?.get('fecha')).toBe('2026-09-06');
-      expect(query?.get('desde')).toBe('2026-09-06T04:00:00.000Z');
-      expect(query?.get('hasta')).toBe('2026-09-07T03:00:00.000Z');
-      await page.locator('.booking-slots button').getByText('23:30', { exact: true }).click();
+      await expect(page.locator('.booking-calendar-days .is-selected strong')).toHaveText('5');
+      await expect.poll(() => query?.get('fecha')).toBe('2026-08-31');
+      await page.locator('.booking-calendar-table thead button').last().click();
+      expect(query?.get('fecha')).toBe('2026-08-31');
+      expect(query?.has('desde')).toBe(false);
+      expect(query?.has('hasta')).toBe(false);
+      expect(query?.get('vista')).toBe('semana');
+      await page.getByRole('button', { name: /domingo, 6 de septiembre, 23:30: Disponible/ }).click();
       await expect(page.locator('.booking-summary p')).toContainText('domingo, 6 de septiembre');
       await page.getByRole('button', { name: 'Reservar ahora' }).click();
       await expect.poll(() => booked).toBe(true);

@@ -40,6 +40,28 @@ export function covers(start: Date, end: Date, windows: { fecha_hora: Date; disp
   return false;
 }
 
+export interface ScheduleIntervals {
+  windows: { fecha_hora: Date; disponibleHasta: Date | null }[];
+  occupied: { fecha_hora: Date; duracionReservada: number | null; servicio: { duracion_minutos: number } | null }[];
+  blocked: { inicio: Date; fin: Date }[];
+}
+
+export type IntervalIssue = 'duration' | 'blocked' | 'occupied' | 'unverified' | 'coverage';
+
+// The public calendar and the final reservation use the same interval rules.
+export function intervalIssue(start: Date, minutes: number, data: ScheduleIntervals): IntervalIssue | null {
+  if (!Number.isInteger(minutes) || minutes <= 0) return 'duration';
+  const end = endOf(start, minutes);
+  if (data.blocked.some(block => overlaps(start, end, block.inicio, block.fin))) return 'blocked';
+  for (const appointment of data.occupied) {
+    if (appointment.fecha_hora >= end) continue;
+    const duration = durationOf(appointment);
+    if (duration === null) return 'unverified';
+    if (overlaps(start, end, appointment.fecha_hora, endOf(appointment.fecha_hora, duration))) return 'occupied';
+  }
+  return covers(start, end, data.windows) ? null : 'coverage';
+}
+
 export async function validateInterval(tx: Prisma.TransactionClient, barberId: number, start: Date, minutes: number, excludeId?: string) {
   if (!Number.isInteger(minutes) || minutes <= 0) throw new ScheduleError(409, 'No se puede determinar la duración del servicio');
   const end = endOf(start, minutes);
@@ -49,21 +71,18 @@ export async function validateInterval(tx: Prisma.TransactionClient, barberId: n
     where: { barberoId: barberId, estado: { in: activeStates }, fecha_hora: { lt: end }, ...(excludeId ? { NOT: { id: excludeId } } : {}) },
     include: { servicio: true },
   });
-  for (const appointment of occupied) {
-    const duration = durationOf(appointment);
-    // An orphaned legacy reservation must be reviewed, never treated as a free interval.
-    if (duration === null) throw new ScheduleError(409, 'Hay una reserva existente sin duración verificable; el profesional debe revisar su agenda');
-    if (overlaps(start, end, appointment.fecha_hora, endOf(appointment.fecha_hora, duration))) {
-      throw new ScheduleError(409, 'El horario se superpone con otra reserva del profesional');
-    }
-  }
   const windows = await tx.cita.findMany({
     where: { barberoId: barberId, estado: CitaEstado.disponible, fecha_hora: { lt: end }, disponibleHasta: { gt: start } },
     select: { fecha_hora: true, disponibleHasta: true },
   });
-  if (!covers(start, end, windows)) {
-    throw new ScheduleError(409, 'El servicio completo no cabe en la disponibilidad publicada o cruza un descanso/bloqueo');
-  }
+  const issue = intervalIssue(start, minutes, { windows, occupied, blocked: [] });
+  if (issue) throw new ScheduleError(409, {
+    duration: 'No se puede determinar la duración del servicio',
+    blocked: 'El horario coincide con un bloqueo o descanso del profesional',
+    unverified: 'Hay una reserva existente sin duración verificable; el profesional debe revisar su agenda',
+    occupied: 'El horario se superpone con otra reserva del profesional',
+    coverage: 'El servicio completo no cabe en la disponibilidad publicada o cruza un descanso/bloqueo',
+  }[issue]);
 }
 
 export function scheduleFailure(error: unknown): { status: number; message: string } | null {

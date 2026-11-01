@@ -242,8 +242,6 @@ html[data-auth-state='pending'] .session-gate button { display: none; }
 
 /* Intrinsic grid widths must not push content outside the viewport. */
 .pro-main, .pro-sidebar, .admin-main, .pro-grid > *, .profile-content > *, .booking-panel, .barber-grid > *, .home-nav { min-width: 0; }
-.profile-root { grid-template-columns: 300px minmax(0, 1fr); }
-.pro-root, .admin-root { grid-template-columns: 270px minmax(0, 1fr); }
 .profile-identity { gap: 2rem; grid-template-columns: 190px minmax(0, 1fr); }
 .profile-primary-button { grid-column: 2; justify-self: start; }
 .profile-field { grid-template-columns: 48px minmax(100px, .8fr) minmax(0, 1fr) auto; }
@@ -398,19 +396,15 @@ html[data-theme='light'] :is(.profile-root, .booking-root, .admin-root, .pro-roo
 html[data-theme='dark'] :is(.profile-root, .booking-root, .admin-root, .pro-root, .barbers-page, .messages-app, .settings-page) :is(button, a):focus-visible {
   outline-color: #60a5fa;
 }
-
-@media (max-width: 1180px) { .pro-root { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 1100px) {
-  .profile-root { grid-template-columns: 230px minmax(0, 1fr); }
   .profile-content { padding: 1.5rem; }
   .profile-identity { grid-template-columns: 1fr; padding: 1.5rem; }
   .profile-primary-button { grid-column: auto; }
   .profile-field { grid-template-columns: 40px minmax(0, 1fr); gap: .8rem; }
   .profile-field input, .profile-edit-button { grid-column: 2; }
 }
-@media (max-width: 820px) { .profile-root { display: block; } }
 @media (max-width: 640px) {
-  .profile-nav, .pro-nav, .barbers-nav { flex-wrap: wrap; overflow-x: visible; }
+  .barbers-nav { flex-wrap: wrap; overflow-x: visible; }
   .profile-sidebar-link, .pro-nav-link { white-space: normal; }
   .home-nav .profile-menu { margin-left: auto; }
   .profile-content { padding: 1rem .75rem; }

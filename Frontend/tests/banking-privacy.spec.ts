@@ -1,3 +1,4 @@
+import { bookingAvailability } from './booking-fixture';
 import { test, expect, type Page } from '@playwright/test';
 
 const bank = { bancoNombre: 'Titular Privado', bancoRut: '12345678-5', bancoNombreBanco: 'Banco Privado', bancoTipoCuenta: 'Cuenta Corriente', bancoNroCuenta: '987654321', bancoCorreo: 'privado@example.com' };
@@ -10,7 +11,7 @@ async function prepare(page: Page, requiresProof = true, paymentStatus = 200, de
     const path = new URL(route.request().url()).pathname;
     if (path.endsWith('/auth/me')) return route.fulfill({ json: { id: 1, rol: 'cliente', nombre: 'Cliente', aprobado: true } });
     if (path.endsWith('/citas/barberos')) return route.fulfill({ json: [10, 20].map(id => ({ id, usuario: { nombre: `Barbero ${id}` }, requiereComprobante: requiresProof, servicios: [{ id: `service-${id}`, nombre_servicio: 'Corte', precio: 12000, duracion_minutos: 30 }] })) });
-    if (path.includes('/citas/disponibilidad/')) return route.fulfill({ json: { citas: [{ id: `slot-${path.split('/').pop()}`, fecha_hora: slot }] } });
+    if (path.includes('/citas/disponibilidad/')) return route.fulfill({ json: bookingAvailability(new URL(route.request().url()).searchParams, [{ id: `slot-${path.split('/').pop()}`, fecha_hora: slot }]) });
     if (path.endsWith('/pago')) {
       payments.push({ path, body: route.request().postDataJSON() });
       if (delay) await new Promise(resolve => setTimeout(resolve, delay));
@@ -24,7 +25,7 @@ async function prepare(page: Page, requiresProof = true, paymentStatus = 200, de
   await page.goto('/booking');
   await page.locator('.booking-barber-card').first().click();
   await page.locator('.booking-service-card').click();
-  await page.locator('.booking-slots button').click();
+  await page.locator('.booking-calendar-cell.is-available').click();
   return { payments, bookings };
 }
 

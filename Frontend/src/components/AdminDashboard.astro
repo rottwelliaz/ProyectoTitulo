@@ -12,13 +12,13 @@ import {
 } from 'lucide-astro';
 ---
 
-<main class="admin-root">
-  <aside class="admin-sidebar">
-    <a class="admin-brand" href="/home" aria-label="Conce Barber Club">
+<main class="panel-layout admin-root">
+  <aside class="admin-sidebar panel-sidebar">
+    <a class="admin-brand panel-sidebar-brand" href="/home" aria-label="Conce Barber Club">
       <img src={logoConce.src} alt="Conce Barber Club" />
     </a>
 
-    <nav class="admin-nav" aria-label="Panel administrador">
+    <nav class="admin-nav panel-sidebar-nav" aria-label="Panel administrador">
       <button class="admin-nav-link is-active" type="button" data-admin-tab="resumen">
         <LayoutDashboard size={22} aria-hidden="true" />
         Resumen
@@ -41,7 +41,7 @@ import {
       </button>
     </nav>
 
-    <div class="admin-sidebar-card">
+    <div class="admin-sidebar-card panel-sidebar-footer">
       <ShieldCheck size={22} aria-hidden="true" />
       <div>
         <strong>Modo admin</strong>

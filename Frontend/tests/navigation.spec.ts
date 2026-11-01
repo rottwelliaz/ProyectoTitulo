@@ -1,3 +1,4 @@
+import { bookingAvailability } from './booking-fixture';
 import { test, expect, type Page } from '@playwright/test';
 import { privateRoutes, roles, roleHome, loginDestination, type Role } from '../src/lib/access';
 
@@ -301,7 +302,7 @@ async function prepareBooking(page: Page, requiresProof: boolean) {
       }] });
     }
     if (path.includes('/citas/disponibilidad/')) {
-      return route.fulfill({ json: { citas: [{ id: 'slot-1', fecha_hora: slotDate }], servicios: [] } });
+      return route.fulfill({ json: bookingAvailability(new URL(request.url()).searchParams, [{ id: 'slot-1', fecha_hora: slotDate }]) });
     }
     if (path.endsWith('/citas/slot-1/pago')) {
       return route.fulfill({ json: {
@@ -320,7 +321,7 @@ async function prepareBooking(page: Page, requiresProof: boolean) {
   await page.goto('/booking');
   await page.locator('.booking-barber-card').click();
   await page.locator('.booking-service-card').click();
-  await page.locator('.booking-slots button').click();
+  await page.locator('.booking-calendar-cell.is-available').click();
   return () => bookingPayload;
 }
 

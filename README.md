@@ -187,6 +187,32 @@ npm --prefix Frontend test
 Remove-Item Env:TEST_PREVIEW
 ```
 
+### Calendario semanal de reservas
+
+La selección de horarios muestra una semana de lunes a domingo, con estados disponible, reservado, no disponible y seleccionado. En móvil se consulta un día a la vez, manteniendo el selector de los siete días y el calendario mensual. Se utiliza `America/Santiago`, incluidos sus cambios de hora.
+
+La consulta existente acepta `vista=semana`, `fecha` (lunes) y `servicioId`:
+
+```text
+GET /api/citas/disponibilidad/:barberoId?fecha=2035-01-15&vista=semana&servicioId=...
+```
+
+Conserva `citas` y `servicios`, y agrega `calendario` con días, horas y estados. La ruta pública equivalente `/api/usuarios/barberos/:barberoId/disponibilidad` utiliza la misma proyección. Las celdas reservadas contienen únicamente fecha, hora y estado; no incluyen identificadores de reservas ni datos de clientes. Sin `vista=semana`, la consulta diaria conserva su contrato.
+
+`fecha` es una fecha civil `YYYY-MM-DD` de `America/Santiago`. El frontend envía esa fecha y la vista; el backend calcula el inicio inclusivo y el lunes siguiente exclusivo con días de calendario, sin sumar 168 horas ni usar un desplazamiento UTC fijo. Por ejemplo, la semana del 26 de octubre al 1 de noviembre de 2026 abarca `[2026-10-26T03:00:00Z, 2026-11-02T03:00:00Z)`. Los parámetros opcionales `desde` y `hasta` siguen siendo compatibles y se validan contra esos límites; no sustituyen a `vista=semana`.
+
+Después de actualizar el backend hay que reiniciar cualquier proceso iniciado con `npm.cmd run start`, que no recarga el código. Para desarrollo local, `cd backend` y `npm.cmd run dev` activa la recarga automática. Una API anterior que solo conoce períodos diarios rechazará el término semanal aunque las conversiones de zona horaria sean correctas.
+
+La duración completa se valida con las mismas reglas en la consulta y al confirmar, bajo el bloqueo transaccional del profesional. Se comprueban también los intervalos que terminan en el día o semana siguiente. Cancelar libera únicamente disponibilidad que siga publicada. La interfaz actualiza la agenda cada 30 segundos, al volver a la ventana, manualmente y tras reservar o recibir un conflicto. No se requieren nuevas migraciones.
+
+Las suites `*-postgres.test.cjs` se habilitan únicamente con `SCHEDULE_TEST_DATABASE_URL`, apuntando a una base desechable llamada `schedule_tests` con las migraciones aplicadas. Crean datos de prueba y no deben ejecutarse contra la base del software. Para incluir el flujo de navegador con API y PostgreSQL reales, configura también `CALENDAR_TEST_FRONTEND_URL` con la URL del frontend ya compilado y en ejecución:
+
+```powershell
+$env:SCHEDULE_TEST_DATABASE_URL = 'postgresql://USUARIO:CLAVE@127.0.0.1:PUERTO/schedule_tests'
+$env:CALENDAR_TEST_FRONTEND_URL = 'http://127.0.0.1:4322'
+node --test --test-concurrency=2 backend/tests/*.test.cjs
+```
+
 ### Página 404 en despliegues estáticos
 
 `src/pages/404.astro` genera `dist/404.html`. Astro utiliza esta página en desarrollo y en preview. En producción, configura el hosting para servir `404.html` con estado HTTP **404** cuando no encuentre la URL, sin redirigir todas las rutas al inicio. Se incluye `Frontend/nginx.conf` para Nginx, con `dist` como raíz pública. El Dockerfile existente continúa destinado a desarrollo.

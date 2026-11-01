@@ -16,40 +16,18 @@
     radial-gradient(circle at 72% 12%, rgba(20, 91, 187, 0.28), transparent 26rem),
     linear-gradient(135deg, #061426 0%, #030b18 100%);
   color: var(--pro-text);
-  display: grid;
   font-family: 'Inter', system-ui, sans-serif;
-  grid-template-columns: 270px 1fr;
-  min-height: 100vh;
 }
 
 .pro-sidebar {
   background: rgba(2, 13, 29, 0.86);
   border-right: 1px solid var(--pro-line);
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  min-height: 100vh;
-  padding: 1rem;
 }
 
 .pro-brand {
   background: linear-gradient(145deg, rgba(9, 33, 62, 0.9), rgba(3, 12, 28, 0.9));
   border: 1px solid var(--pro-line);
   border-radius: 8px;
-  display: grid;
-  min-height: 170px;
-  place-items: center;
-}
-
-.pro-brand img {
-  height: 138px;
-  object-fit: contain;
-  width: 158px;
-}
-
-.pro-nav {
-  display: grid;
-  gap: 0.45rem;
 }
 
 .pro-nav-link {
@@ -57,11 +35,7 @@
   border-radius: 8px;
   color: rgba(255, 255, 255, 0.92);
   display: flex;
-  font-size: 0.98rem;
   font-weight: 750;
-  gap: 0.95rem;
-  min-height: 56px;
-  padding: 0 1rem;
   text-decoration: none;
 }
 
@@ -109,10 +83,7 @@
   align-items: center;
   border: 1px solid var(--pro-line);
   border-radius: 8px;
-  display: flex;
   gap: 0.8rem;
-  margin-top: auto;
-  padding: 1rem;
 }
 
 .pro-mini-avatar {
@@ -1432,33 +1403,6 @@ html[data-theme='dark'] :is(.calendar-actions button, .service-form-actions butt
 }
 
 @media (min-width: 1181px) and (max-height: 820px) {
-  .pro-sidebar {
-    gap: 0.75rem;
-    padding: 0.75rem;
-  }
-
-  .pro-brand {
-    min-height: 112px;
-  }
-
-  .pro-brand img {
-    height: 92px;
-    width: 110px;
-  }
-
-  .pro-nav {
-    gap: 0.25rem;
-  }
-
-  .pro-nav-link {
-    font-size: 0.9rem;
-    min-height: 44px;
-  }
-
-  .pro-sidebar-user {
-    padding: 0.7rem;
-  }
-
   .pro-main {
     padding: 1rem 1.35rem 1.5rem;
   }
@@ -1474,47 +1418,16 @@ html[data-theme='dark'] :is(.calendar-actions button, .service-form-actions butt
 }
 
 @media (max-width: 1180px) {
-  .pro-root {
-    grid-template-columns: 1fr;
-  }
-
-  .pro-sidebar {
-    gap: 0.8rem;
-    min-height: auto;
-    padding: 0.8rem;
-    position: static;
-  }
-
-  .pro-root,
-  .pro-sidebar,
-  .pro-main,
-  .pro-nav {
+  .pro-main {
     max-width: 100%;
     min-width: 0;
   }
 
-  .pro-brand {
-    min-height: 96px;
-  }
-
-  .pro-brand img {
-    height: 82px;
-    width: 100px;
-  }
-
+  .pro-root,
+  .pro-sidebar,
   .pro-nav {
-    grid-template-columns: repeat(4, 1fr);
-    overflow-x: auto;
-  }
-
-  .pro-nav-link {
-    min-height: 46px;
-    min-width: 150px;
-  }
-
-  .pro-sidebar-user {
-    margin-top: 0;
-    padding: 0.7rem;
+    max-width: 100%;
+    min-width: 0;
   }
 
   .pro-hero-card,
@@ -1568,13 +1481,8 @@ html[data-theme='dark'] :is(.calendar-actions button, .service-form-actions butt
     grid-template-columns: 1fr;
   }
 
-  .pro-nav,
   .pro-stats {
     grid-template-columns: 1fr;
-  }
-
-  .pro-nav {
-    display: flex;
   }
 
   .pro-service-item {
@@ -1603,14 +1511,6 @@ html[data-theme='dark'] :is(.calendar-actions button, .service-form-actions butt
 }
 
 @media (max-width: 520px) {
-  .pro-sidebar {
-    padding: 0.85rem;
-  }
-
-  .pro-brand img {
-    height: 92px;
-  }
-
   .pro-topbar,
   .pro-panel,
   .pro-services,

@@ -24,10 +24,14 @@ for (const tz of ['UTC', 'America/Santiago', 'America/New_York', 'Asia/Tokyo']) 
         assert.equal((range.end - range.start) / 3600000, hours);
         assert.equal(businessDate(new Date(range.end - 1)), day);
       }
-      for (const [day, hours] of [['2026-03-30', 169], ['2026-08-31', 167]]) {
+      for (const [day, hours] of [['2026-03-30', 169], ['2026-08-31', 167], ['2026-10-26', 168], ['2026-11-02', 168], ['2026-12-28', 168], ['2027-01-04', 168]]) {
         const { start, end } = businessRange(day, 7);
         assert.equal((end - start) / 3600000, hours);
         assert.deepEqual(businessRange(start.toISOString(), 7), { start, end });
+        checkRangeEnd(start.toISOString(), start);
+        checkRangeEnd(end.toISOString(), end);
+        checkRangeEnd(businessDate(end), end);
+        assert.throws(() => checkRangeEnd(businessRange(day).end.toISOString(), end), RangeError);
       }
     } finally { if (previous === undefined) delete process.env.TZ; else process.env.TZ = previous; }
   });
@@ -40,6 +44,14 @@ test('entradas ambiguas, fechas inexistentes y límites UTC incorrectos se recha
   assert.throws(() => parseInstant('2026-04-04T23:30:00'), RangeError);
   assert.notEqual(parseInstant('2026-04-04T23:30:00-03:00').getTime(), parseInstant('2026-04-04T23:30:00-04:00').getTime());
   assert.throws(() => checkRangeEnd('2026-01-16T00:00:00Z', businessRange('2026-01-15').end), RangeError);
+});
+
+test('26 de octubre a 1 de noviembre incluye el domingo y excluye el siguiente lunes', () => {
+  const { start, end } = businessRange('2026-10-26', 7);
+  assert.equal(start.toISOString(), '2026-10-26T03:00:00.000Z');
+  assert.equal(end.toISOString(), '2026-11-02T03:00:00.000Z');
+  assert.equal(businessDate(new Date(end - 1)), '2026-11-01');
+  assert.equal(businessDate(end), '2026-11-02');
 });
 
 test('la duración transcurrida sigue siendo exacta al repetir o saltar una hora', () => {

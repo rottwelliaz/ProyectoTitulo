@@ -4,6 +4,7 @@ import prisma from '../config/prisma';
 import { AuthRequest } from '../middleware/auth';
 import { ScheduleError, withSchedule, validateInterval, durationOf, scheduleFailure } from '../services/schedule';
 import { availabilitySnapshot, configurationValidation } from '../services/availability';
+import { publicAvailability } from '../services/publicAvailability';
 import { parseInstant, businessRange, checkRangeEnd } from '../services/businessTime';
 import { bankingSelect } from '../services/professionalPrivacy';
 import { paymentAccess, PaymentAccessLimit } from '../services/paymentAccess';
@@ -160,30 +161,24 @@ export const getDisponibilidad = async (req: AuthRequest, res: Response) => {
   res.set('Cache-Control', 'no-store');
   try {
     const barberId = Number(req.params.barberoId);
-    const { start, end } = businessRange(req.query.fecha ?? req.query.desde);
+    if (req.query.vista !== undefined && req.query.vista !== 'semana') throw new RangeError('Vista de disponibilidad inválida');
+    const weekly = req.query.vista === 'semana';
+    const { start, end } = businessRange(req.query.fecha ?? req.query.desde, weekly ? 7 : 1);
     checkRangeEnd(req.query.desde, start);
     checkRangeEnd(req.query.hasta, end);
-    if (!Number.isInteger(barberId) || !Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || end <= start || end.getTime() - start.getTime() > 25 * 3600000) {
+    if (!Number.isInteger(barberId) || barberId <= 0 || barberId > 2147483647 || !Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || end <= start) {
       return res.status(400).json({ message: 'Indica un profesional y un día válidos' });
     }
     const result = await withSchedule(barberId, async tx => {
       await requireBookableProfessional(tx, barberId);
       const servicios = await tx.service.findMany({ where: { perfilBarberoId: barberId, activo: true } });
       const serviceId = typeof req.query.servicioId === 'string' ? req.query.servicioId : null;
+      if (weekly && !serviceId) throw new ScheduleError(400, 'Selecciona un servicio para consultar la semana');
       const services = serviceId ? servicios.filter(service => service.id === serviceId) : servicios;
       if (serviceId && !services.length) throw new ScheduleError(404, 'Servicio no encontrado para este profesional');
-      const candidates = await tx.cita.findMany({ where: { barberoId: barberId, estado: CitaEstado.disponible, disponibleHasta: { not: null }, fecha_hora: { gte: new Date(Math.max(start.getTime(), Date.now())), lt: end } }, orderBy: { fecha_hora: 'asc' } });
-      const citas = [];
-      for (const candidate of candidates) {
-        for (const service of services) {
-          try {
-            await validateInterval(tx, barberId, candidate.fecha_hora, service.duracion_minutos);
-            citas.push(candidate);
-            break;
-          } catch (error) { if (!(error instanceof ScheduleError && error.status === 409)) throw error; }
-        }
-      }
+      const { citas, ...calendar } = await publicAvailability(tx, barberId, start, end, services, weekly);
       return {
+        ...calendar,
         citas: citas.map(({ id, fecha_hora, disponibleHasta }) => ({ id, fecha_hora, disponibleHasta })),
         servicios: servicios.map(({ id, nombre_servicio, descripcion, precio, duracion_minutos }) => ({ id, nombre_servicio, descripcion, precio, duracion_minutos })),
       };

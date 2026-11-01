@@ -17,39 +17,18 @@
     radial-gradient(circle at 76% 8%, rgba(18, 97, 216, 0.22), transparent 28rem),
     linear-gradient(135deg, #061426 0%, var(--admin-bg) 100%);
   color: var(--admin-text);
-  display: grid;
   font-family: 'Inter', system-ui, sans-serif;
-  grid-template-columns: 270px 1fr;
-  min-height: 100vh;
 }
 
 .admin-sidebar {
   background: rgba(2, 13, 29, 0.9);
   border-right: 1px solid var(--admin-border);
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  padding: 1rem;
 }
 
 .admin-brand {
   background: linear-gradient(145deg, rgba(9, 33, 62, 0.95), rgba(3, 12, 28, 0.95));
   border: 1px solid var(--admin-border);
   border-radius: 8px;
-  display: grid;
-  min-height: 170px;
-  place-items: center;
-}
-
-.admin-brand img {
-  height: 138px;
-  object-fit: contain;
-  width: 158px;
-}
-
-.admin-nav {
-  display: grid;
-  gap: 0.5rem;
 }
 
 .admin-nav-link {
@@ -61,11 +40,7 @@
   cursor: pointer;
   display: flex;
   font: inherit;
-  font-size: 0.98rem;
   font-weight: 850;
-  gap: 0.95rem;
-  min-height: 56px;
-  padding: 0 1rem;
   text-align: left;
 }
 
@@ -80,10 +55,7 @@
   background: rgba(6, 27, 51, 0.9);
   border: 1px solid var(--admin-border);
   border-radius: 8px;
-  display: flex;
   gap: 0.85rem;
-  margin-top: auto;
-  padding: 1rem;
 }
 
 .admin-sidebar-card svg {
@@ -693,32 +665,6 @@ html[data-theme='dark'] .admin-secondary-button {
 }
 
 @media (min-width: 1101px) and (max-height: 820px) {
-  .admin-sidebar {
-    gap: 0.75rem;
-    padding: 0.75rem;
-  }
-
-  .admin-brand {
-    min-height: 112px;
-  }
-
-  .admin-brand img {
-    height: 92px;
-  }
-
-  .admin-nav {
-    gap: 0.25rem;
-  }
-
-  .admin-nav-link {
-    font-size: 0.9rem;
-    min-height: 46px;
-  }
-
-  .admin-sidebar-card {
-    padding: 0.75rem;
-  }
-
   .admin-main {
     padding: 1rem 1.35rem 1.5rem;
   }
@@ -738,37 +684,6 @@ html[data-theme='dark'] .admin-secondary-button {
 }
 
 @media (max-width: 1100px) {
-  .admin-root {
-    grid-template-columns: 1fr;
-  }
-
-  .admin-sidebar {
-    min-height: auto;
-    position: static;
-  }
-
-  .admin-brand {
-    min-height: 110px;
-  }
-
-  .admin-brand img {
-    height: 92px;
-  }
-
-  .admin-nav {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    overflow-x: auto;
-  }
-
-  .admin-nav-link {
-    justify-content: center;
-    min-width: 145px;
-  }
-
-  .admin-sidebar-card {
-    display: none;
-  }
-
   .admin-stats-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -827,29 +742,6 @@ html[data-theme='dark'] .admin-secondary-button {
 }
 
 @media (max-width: 520px) {
-  .admin-sidebar {
-    padding: 0.85rem;
-  }
-
-  .admin-brand {
-    min-height: 92px;
-  }
-
-  .admin-brand img {
-    height: 76px;
-  }
-
-  .admin-nav {
-    grid-template-columns: 1fr;
-    overflow-x: visible;
-  }
-
-  .admin-nav-link {
-    justify-content: flex-start;
-    min-width: 0;
-    width: 100%;
-  }
-
   .admin-topbar h1,
   .admin-hero-card h2 {
     font-size: 1.8rem;

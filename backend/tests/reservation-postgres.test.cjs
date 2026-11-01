@@ -152,7 +152,8 @@ describe('reservas con transacciones PostgreSQL reales', { skip: !databaseUrl },
     const f = await fixture();
     await prisma.barberProfile.update({ where: { id: f.profile.id }, data: { requiereComprobante: true } });
     assert.equal((await book(f)).status, 400);
-    const result = await book(f, 0, 0, { comprobanteTransferencia: 'data:image/png;base64,AA==', comprobanteNombre: 'pago.png' });
+    const png = await require('sharp')({ create: { width: 4, height: 4, channels: 3, background: '#123456' } }).png().toBuffer();
+    const result = await book(f, 0, 0, { comprobanteTransferencia: 'data:image/png;base64,' + png.toString('base64'), comprobanteNombre: 'pago.png' });
     assert.equal(result.status, 200); assert.equal(result.body.comprobanteNombre, 'pago.png');
     await prisma.barberProfile.update({ where: { id: f.profile.id }, data: { requiereComprobante: false } });
     assert.equal((await book(f, 2, 1)).status, 200);

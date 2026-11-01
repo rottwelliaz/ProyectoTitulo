@@ -21,13 +21,13 @@ import {
 } from 'lucide-astro';
 ---
 
-<main class="pro-root">
-  <aside class="pro-sidebar">
-    <a class="pro-brand" href="/home" aria-label="Conce Barber Club">
+<main class="panel-layout pro-root">
+  <aside class="pro-sidebar panel-sidebar">
+    <a class="pro-brand panel-sidebar-brand" href="/home" aria-label="Conce Barber Club">
       <img src={logoConce.src} alt="Conce Barber Club" />
     </a>
 
-    <nav class="pro-nav" aria-label="Menú profesional">
+    <nav class="pro-nav panel-sidebar-nav" aria-label="Menú profesional">
       <a class="pro-nav-link is-active" href="#mi-perfil" data-pro-view="mi-perfil" aria-current="page">
         <UserRound class="pro-nav-lucide" size={23} aria-hidden="true" />
         Mi perfil
@@ -54,7 +54,7 @@ import {
       </a>
     </nav>
 
-    <div class="pro-sidebar-user">
+    <div class="pro-sidebar-user panel-sidebar-footer">
       <div class="pro-mini-avatar" data-user-avatar aria-hidden="true"></div>
       <div>
         <strong id="sidebar-name">Barbero</strong>

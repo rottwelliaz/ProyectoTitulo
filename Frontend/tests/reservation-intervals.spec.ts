@@ -1,3 +1,4 @@
+import { bookingAvailability } from './booking-fixture';
 import { test, expect } from '@playwright/test';
 
 test('agenda publica intervalos con fin, respeta descansos y no crea inicio a la hora de cierre', async ({ page }) => {
@@ -45,10 +46,12 @@ test('disponibilidad se consulta de nuevo por servicio y no conserva respuestas 
     if (url.pathname.includes('/citas/disponibilidad/')) {
       const service = url.searchParams.get('servicioId')!;
       selected.push(service);
-      expect(url.searchParams.get('desde')).toMatch(/Z$/);
-      expect(url.searchParams.get('hasta')).toMatch(/Z$/);
+      expect(url.searchParams.get('fecha')).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(url.searchParams.get('vista')).toBe('semana');
+      expect(url.searchParams.has('desde')).toBe(false);
+      expect(url.searchParams.has('hasta')).toBe(false);
       if (service === 'short') await new Promise(resolve => setTimeout(resolve, 300));
-      return route.fulfill({ json: { citas: service === 'short' ? [{ id: 'slot', fecha_hora: new Date(Date.now() + 86400000).toISOString() }] : [], servicios: [] } });
+      return route.fulfill({ json: bookingAvailability(url.searchParams, service === 'short' ? [{ id: 'slot', fecha_hora: new Date(Date.now() + 86400000).toISOString() }] : []) });
     }
     return route.fulfill({ json: [] });
   });
@@ -59,5 +62,5 @@ test('disponibilidad se consulta de nuevo por servicio y no conserva respuestas 
   await page.locator('.booking-service-card').filter({ hasText: 'Largo' }).click();
   await expect.poll(() => selected.includes('long')).toBe(true);
   await page.waitForTimeout(400);
-  await expect(page.locator('.booking-slots button')).toHaveCount(0);
+  await expect(page.locator('.booking-calendar-cell.is-available')).toHaveCount(0);
 });

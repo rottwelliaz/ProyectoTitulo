@@ -1,7 +1,8 @@
 import { authFetch as fetch, API_URL } from '../lib/session';
 import { type ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { addDays, addWeeks, businessDate, businessTime, dayStart, formatDay, formatInstant } from '../lib/businessTime';
+import { businessDate, formatInstant, startOfWeek } from '../lib/businessTime';
 import { safePhotoUrl, photoBackground } from '../lib/profilePhoto';
+import BookingCalendar, { type BookingCalendarCell, type BookingCalendarData } from './calendar/BookingCalendar';
 
 interface Service {
   id: string;
@@ -48,6 +49,7 @@ interface PaymentDetails {
 interface AvailabilityResponse {
   citas: AppointmentSlot[];
   servicios: Service[];
+  calendario: BookingCalendarData;
   message?: string;
 }
 
@@ -79,8 +81,14 @@ export default function BookingFlow() {
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [slots, setSlots] = useState<AppointmentSlot[]>([]);
-  const [weekOffset, setWeekOffset] = useState(0);
+  const [now, setNow] = useState(() => Date.now());
+  const today = businessDate(new Date(now));
+  const [weekStart, setWeekStart] = useState(() => startOfWeek(businessDate()));
   const [selectedDate, setSelectedDate] = useState(() => businessDate());
+  const [calendar, setCalendar] = useState<BookingCalendarData | null>(null);
+  const [calendarError, setCalendarError] = useState('');
+  const [availabilityVersion, setAvailabilityVersion] = useState(0);
+  const selectionRef = useRef<string | null>(null);
   const [loadingBarbers, setLoadingBarbers] = useState(true);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [booking, setBooking] = useState(false);
@@ -97,17 +105,50 @@ export default function BookingFlow() {
     return Number(new URLSearchParams(window.location.search).get('barbero')) || null;
   }, []);
 
-  const weekStart = useMemo(() => addWeeks(businessDate(), weekOffset), [weekOffset]);
-  const weekDays = useMemo(
-    () => Array.from({ length: 7 }, (_, index) => addDays(weekStart, index)),
-    [weekStart],
-  );
   const selectedBarber = barbers.find((barber) => barber.id === selectedBarberId) ?? null;
   const selectedService = selectedBarber?.servicios.find((service) => service.id === selectedServiceId) ?? null;
   const selectedSlot = slots.find((slot) => slot.id === selectedSlotId) ?? null;
   const requiresProof = selectedBarber?.requiereComprobante ?? true;
   const hasBankingData = paymentDetails?.citaId === selectedSlotId &&
     paymentDetails?.servicioId === selectedServiceId && paymentDetails?.barberoId === selectedBarberId;
+
+  useEffect(() => { selectionRef.current = selectedSlotId; }, [selectedSlotId]);
+
+  useEffect(() => {
+    const tick = () => setNow(Date.now());
+    const interval = window.setInterval(tick, 1000);
+    window.addEventListener('focus', tick);
+    document.addEventListener('visibilitychange', tick);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('focus', tick);
+      document.removeEventListener('visibilitychange', tick);
+    };
+  }, []);
+
+  useEffect(() => {
+    setWeekStart(week => week < startOfWeek(today) ? startOfWeek(today) : week);
+    setSelectedDate(date => date < today ? today : date);
+  }, [today]);
+
+  useEffect(() => {
+    if (selectedSlot && new Date(selectedSlot.fecha_hora).getTime() <= now) {
+      setSelectedSlotId(null);
+      setShowPayment(false);
+    }
+  }, [now, selectedSlot]);
+
+  useEffect(() => {
+    const refresh = () => { if (!document.hidden) setAvailabilityVersion(version => version + 1); };
+    const interval = window.setInterval(refresh, 30_000);
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', refresh);
+    };
+  }, []);
 
   useEffect(() => {
     paymentRequest.current++;
@@ -180,33 +221,46 @@ export default function BookingFlow() {
   useEffect(() => {
     if (!token || !selectedBarberId || !selectedServiceId) {
       setSlots([]);
+      setCalendar(null);
       return;
     }
 
     let active = true;
+    const controller = new AbortController();
     const loadAvailability = async () => {
       setLoadingSlots(true);
-      setError('');
-      setSelectedSlotId(null);
+      setCalendarError('');
 
       try {
         const params = new URLSearchParams({
-          fecha: selectedDate,
-          desde: dayStart(selectedDate).toISOString(),
-          hasta: dayStart(addDays(selectedDate, 1)).toISOString(),
+          // The API derives the period bounds in America/Santiago.
+          // Keep the selected week as a civil date, independent of browser TZ.
+          fecha: weekStart,
           servicioId: selectedServiceId,
+          vista: 'semana',
         });
         const response = await fetch(
           `${API_URL}/citas/disponibilidad/${selectedBarberId}?${params}`,
-          { headers: { Authorization: `Bearer ${token}` } },
+          { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store', signal: controller.signal },
         );
         const data = await response.json().catch(() => ({})) as AvailabilityResponse;
         if (!response.ok) throw new Error(data.message || 'No se pudo cargar la disponibilidad.');
-        if (active) setSlots(Array.isArray(data.citas) ? data.citas.filter(isFutureSlot) : []);
+        if (!Array.isArray(data.citas) || !Array.isArray(data.calendario?.horarios) || !Array.isArray(data.calendario?.horas)) throw new Error('No se pudo cargar el calendario. Vuelve a consultar la agenda.');
+        if (active) {
+          const nextSlots = data.citas.filter(isFutureSlot);
+          setSlots(nextSlots);
+          setCalendar(data.calendario);
+          if (selectionRef.current && !nextSlots.some(slot => slot.id === selectionRef.current)) {
+            setSelectedSlotId(null);
+            setError('El horario seleccionado dejó de estar disponible. Elige otra hora de la agenda actualizada.');
+          }
+        }
       } catch (requestError) {
         if (active) {
           setSlots([]);
-          setError(requestError instanceof Error ? requestError.message : 'No se pudo cargar la disponibilidad.');
+          setCalendar(null);
+          setSelectedSlotId(null);
+          setCalendarError(requestError instanceof Error ? requestError.message : 'No se pudo cargar la disponibilidad.');
         }
       } finally {
         if (active) setLoadingSlots(false);
@@ -214,8 +268,8 @@ export default function BookingFlow() {
     };
 
     void loadAvailability();
-    return () => { active = false; };
-  }, [selectedBarberId, selectedServiceId, selectedDate, token]);
+    return () => { active = false; controller.abort(); };
+  }, [selectedBarberId, selectedServiceId, weekStart, token, availabilityVersion]);
 
   useEffect(() => {
     if (selectedBarber) {
@@ -233,7 +287,7 @@ export default function BookingFlow() {
     if (selectedSlot) {
       scrollToElement(summaryRef.current);
     }
-  }, [selectedSlotId, selectedSlot]);
+  }, [selectedSlotId, selectedSlot?.id]);
 
   useEffect(() => {
     if (showPayment) {
@@ -262,13 +316,41 @@ export default function BookingFlow() {
     setProofName('');
     setMessage('');
     setError('');
+    setWeekStart(startOfWeek(businessDate()));
+    setSelectedDate(businessDate());
   };
 
-  const moveWeek = (direction: number) => {
-    const nextOffset = Math.max(0, weekOffset + direction);
-    const nextStart = addWeeks(businessDate(), nextOffset);
-    setWeekOffset(nextOffset);
-    setSelectedDate(nextStart);
+  const changeDate = (date: string) => {
+    if (date < businessDate()) return;
+    setSelectedDate(date);
+    setSelectedSlotId(null);
+  };
+
+  const changeWeek = (date: string) => {
+    const today = businessDate();
+    const week = startOfWeek(date);
+    if (week < startOfWeek(today)) return;
+    setWeekStart(week);
+    changeDate(week < today ? today : week);
+  };
+
+  const invalidateSelection = () => {
+    setSelectedSlotId(null);
+    setShowPayment(false);
+    setProofData('');
+    setProofName('');
+    setAvailabilityVersion(version => version + 1);
+  };
+
+  const selectCalendarSlot = (cell: BookingCalendarCell) => {
+    if (cell.estado !== 'available' || !cell.citaId || !cell.fecha_hora || new Date(cell.fecha_hora).getTime() <= Date.now()) return;
+    setSelectedDate(cell.fecha);
+    setSelectedSlotId(cell.citaId);
+    setShowPayment(false);
+    setProofData('');
+    setProofName('');
+    setMessage('');
+    setError('');
   };
 
   const openPaymentStep = async () => {
@@ -299,7 +381,10 @@ export default function BookingFlow() {
       });
       const data = await response.json().catch(() => ({}));
       if (requestId !== paymentRequest.current) return;
-      if (!response.ok) throw new Error(data.message || 'No se pudieron cargar los datos de pago.');
+      if (!response.ok) {
+        if ([404, 409].includes(response.status)) invalidateSelection();
+        throw new Error(data.message || 'No se pudieron cargar los datos de pago.');
+      }
       if (data.citaId !== selectedSlotId || data.servicioId !== selectedServiceId || data.barberoId !== selectedBarberId) {
         throw new Error('Los datos de pago no corresponden a la selección actual.');
       }
@@ -373,7 +458,13 @@ export default function BookingFlow() {
         }),
       });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.message || 'No se pudo completar la reserva.');
+      if (!response.ok) {
+        if ([404, 409].includes(response.status)) {
+          invalidateSelection();
+          throw new Error('El horario dejó de estar disponible. La agenda se ha actualizado; selecciona otra hora.');
+        }
+        throw new Error(data.message || 'No se pudo completar la reserva.');
+      }
 
       setSlots((current) => current.filter((slot) => slot.id !== selectedSlotId));
       setSelectedSlotId(null);
@@ -381,6 +472,7 @@ export default function BookingFlow() {
       setProofData('');
       setProofName('');
       setMessage('Hora reservada y confirmada correctamente.');
+      setAvailabilityVersion(version => version + 1);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'No se pudo completar la reserva.');
     } finally {
@@ -489,57 +581,16 @@ export default function BookingFlow() {
         <section className="booking-panel" ref={schedulePanelRef} id="horarios">
           <div className="booking-section-title">
             <span>03</span>
-            <div><h2>Selecciona fecha y hora</h2><p>Solo se muestran bloques disponibles en la agenda.</p></div>
+            <div><h2>Selecciona fecha y hora</h2><p>Consulta la agenda semanal y elige una hora disponible para tu servicio.</p></div>
           </div>
 
-          <div className="booking-week-nav">
-            <button type="button" onClick={() => moveWeek(-1)} disabled={weekOffset === 0}>← Semana anterior</button>
-            <strong>{formatDay(weekDays[0], { day: 'numeric', month: 'short' })} – {formatDay(weekDays[6], { day: 'numeric', month: 'short', year: 'numeric' })}</strong>
-            <button type="button" onClick={() => moveWeek(1)}>Semana siguiente →</button>
-          </div>
-
-          <div className="booking-days">
-            {weekDays.map((day) => {
-              const key = day;
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  className={selectedDate === key ? 'is-selected' : ''}
-                  onClick={() => setSelectedDate(day)}
-                >
-                  <span>{formatDay(day, { weekday: 'short' })}</span>
-                  <strong>{formatDay(day, { day: 'numeric' })}</strong>
-                  <small>{formatDay(day, { month: 'short' })}</small>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="booking-slots">
-            {loadingSlots ? (
-              <p className="booking-empty">Consultando agenda...</p>
-            ) : slots.length === 0 ? (
-              <p className="booking-empty">No hay horas disponibles para esta fecha.</p>
-            ) : (
-              slots.map((slot) => (
-                <button
-                  key={slot.id}
-                  type="button"
-                  className={selectedSlotId === slot.id ? 'is-selected' : ''}
-                  onClick={() => {
-                    setSelectedSlotId(slot.id);
-                    setShowPayment(false);
-                    setProofData('');
-                    setProofName('');
-                    setMessage('');
-                  }}
-                >
-                  {businessTime(slot.fecha_hora)}
-                </button>
-              ))
-            )}
-          </div>
+          <BookingCalendar
+            now={now}
+            weekStart={weekStart} selectedDate={selectedDate} selectedSlotId={selectedSlotId}
+            data={calendar} loading={loadingSlots} error={calendarError} disabled={booking || loadingPayment}
+            onDateChange={changeDate} onWeekChange={changeWeek} onSelect={selectCalendarSlot}
+            onRefresh={() => setAvailabilityVersion(version => version + 1)}
+          />
 
           {selectedSlot && (
             <div className="booking-summary" ref={summaryRef} id="resumen-reserva">
@@ -549,7 +600,7 @@ export default function BookingFlow() {
                 <p>{formatInstant(selectedSlot.fecha_hora, { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })}</p>
                 {!requiresProof && <small className="booking-payment-note">Este profesional permite reservar sin comprobante de pago.</small>}
               </div>
-              <button type="button" disabled={booking || loadingPayment} onClick={() => void openPaymentStep()}>
+              <button type="button" disabled={booking || loadingPayment || loadingSlots} onClick={() => void openPaymentStep()}>
                 {booking ? 'Reservando...' : loadingPayment ? 'Consultando datos de pago...' : requiresProof ? 'Continuar al pago' : 'Reservar ahora'}
               </button>
             </div>
