@@ -228,6 +228,7 @@ import {
 </dialog>
 
 <script>
+  import { escapeHtmlValue as escapeHtml } from '../lib/html';
   import { newPasswordError } from '../lib/registration';
   import { requireSession, authFetch as fetch, API_URL } from '../lib/session';
   import { setPhotoBackground } from '../lib/profilePhoto';
@@ -314,14 +315,6 @@ import {
       return null;
     }
   };
-
-  const escapeHtml = (value: unknown) =>
-    String(value ?? '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
 
   const formatDate = (value: string) => {
     if (!value) return '-';
@@ -745,7 +738,8 @@ import {
     await updateUser();
   });
 
-  editForm?.elements.namedItem('rol')?.addEventListener('change', toggleApprovedField);
+  const roleSelect = editForm?.elements.namedItem('rol') as HTMLSelectElement | null | undefined;
+  roleSelect?.addEventListener('change', toggleApprovedField);
   editCloseButton?.addEventListener('click', closeEditModal);
   editCancelButton?.addEventListener('click', closeEditModal);
   editModal?.addEventListener('mousedown', (event) => {

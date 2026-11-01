@@ -4,22 +4,12 @@ import { AuthRequest } from '../middleware/auth';
 import { ScheduleError, scheduleFailure, withSchedule } from '../services/schedule';
 import { freezeServiceHistory } from '../services/reservationLifecycle';
 import { professionalSelect } from '../services/professionalPrivacy';
+import { getOwnBarberProfile } from '../services/barberProfile';
+import { toNumber } from '../utils/number';
 import {
   createServiceValidation,
   updateServiceValidation,
 } from '../validations/servicios';
-
-const toInt = (value: unknown) => {
-  if (typeof value === 'number') return value;
-  if (typeof value === 'string' && value.trim() !== '') return Number(value);
-  return NaN;
-};
-
-const getOwnBarberProfile = async (userId: number) => {
-  return prisma.barberProfile.findUnique({
-    where: { usuarioId: userId },
-  });
-};
 
 const canAccessService = async (serviceId: string, userId: number) => {
   const service = await prisma.service.findUnique({
@@ -51,8 +41,8 @@ export const createService = async (req: AuthRequest, res: Response) => {
     }
 
     const { nombre_servicio, descripcion, precio, duracion_minutos } = value;
-    const priceValue = toInt(precio);
-    const durationValue = toInt(duracion_minutos);
+    const priceValue = toNumber(precio);
+    const durationValue = toNumber(duracion_minutos);
 
     const barberProfile = await getOwnBarberProfile(req.user.id);
     if (!barberProfile) {
@@ -174,8 +164,8 @@ export const updateService = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: error.details[0].message });
     }
 
-    const priceValue = value.precio !== undefined ? toInt(value.precio) : undefined;
-    const durationValue = value.duracion_minutos !== undefined ? toInt(value.duracion_minutos) : undefined;
+    const priceValue = value.precio !== undefined ? toNumber(value.precio) : undefined;
+    const durationValue = value.duracion_minutos !== undefined ? toNumber(value.duracion_minutos) : undefined;
 
     const updated = await withSchedule(service.perfilBarberoId, async tx => {
       const current = await tx.service.findUnique({ where: { id } });
@@ -186,7 +176,7 @@ export const updateService = async (req: AuthRequest, res: Response) => {
         data: {
           activo: value.activo ?? undefined,
           nombre_servicio: value.nombre_servicio ?? undefined,
-          descripcion: value.descripcion !== undefined ? value.descripcion : undefined,
+          descripcion: value.descripcion,
           precio: priceValue ?? undefined,
           duracion_minutos: durationValue ?? undefined,
         },

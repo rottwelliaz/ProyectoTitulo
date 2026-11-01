@@ -79,6 +79,7 @@ import '../styles/messages.css';
 </Layout>
 
 <script>
+  import { escapeHtmlValue as escapeHtml } from '../lib/html';
   import { requireSession, authFetch as fetch, API_URL } from '../lib/session';
   import { safePhotoUrl, setPhotoBackground } from '../lib/profilePhoto';
   void (async () => {
@@ -166,11 +167,6 @@ import '../styles/messages.css';
   let mobileChatOpen = false;
   let messagesPollingId: number | undefined;
   let conversationsPollingId: number | undefined;
-
-  const escapeHtml = (value: unknown) =>
-    String(value ?? '').replace(/[&<>"']/g, (character) => ({
-      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;',
-    }[character] || character));
 
   const initials = (name: string) =>
     name.split(' ').filter(Boolean).slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join('') || 'U';

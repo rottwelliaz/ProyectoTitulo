@@ -10,14 +10,9 @@ import { bankingSelect } from '../services/professionalPrivacy';
 import { paymentAccess, PaymentAccessLimit } from '../services/paymentAccess';
 import { requireBookableProfessional, assertReservationAccess, validateTransition, historicalAppointment } from '../services/reservationLifecycle';
 import { normalizePaymentProof } from '../services/paymentProof';
+import { getOwnBarberProfile } from '../services/barberProfile';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
-
-const getOwnBarberProfile = async (userId: number) => {
-  return prisma.barberProfile.findUnique({
-    where: { usuarioId: userId },
-  });
-};
 
 const isValidAvailabilityBlock = (date: Date): boolean =>
   date.getUTCMinutes() % 5 === 0 && date.getUTCSeconds() === 0 && date.getUTCMilliseconds() === 0;

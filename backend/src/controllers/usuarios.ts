@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import type { UserRole } from '@prisma/client';
 import prisma from '../config/prisma';
 import bcrypt from 'bcryptjs';
 import { AuthRequest } from '../middleware/auth';
@@ -60,9 +61,9 @@ export const getUsers = async (req: Request, res: Response) => {
 
     const where =
       rol === 'barbero'
-        ? { rol: rol as any, aprobado: true, activo: true }
+        ? { rol: rol as UserRole, aprobado: true, activo: true }
         : rol
-          ? { rol: rol as any }
+          ? { rol: rol as UserRole }
           : undefined;
 
     const users = await prisma.user.findMany({

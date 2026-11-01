@@ -75,7 +75,6 @@ const isPrivate = Boolean(privateRoutes[normalizePath(Astro.url.pathname)]);
 
       const getCurrentProfilePhoto = () => {
         const user = getSavedUser();
-        if (!user?.id) return safePhotoUrl(user?.foto_perfil) || safePhotoUrl(user?.perfilBarbero?.foto_perfil);
         return safePhotoUrl(user?.foto_perfil) || safePhotoUrl(user?.perfilBarbero?.foto_perfil);
       };
 
@@ -149,7 +148,6 @@ const isPrivate = Boolean(privateRoutes[normalizePath(Astro.url.pathname)]);
         const url = new URL(href, window.location.href);
         if (url.origin !== window.location.origin) return;
         const samePage =
-          url.origin === window.location.origin &&
           url.pathname.replace(/\/$/, '') === window.location.pathname.replace(/\/$/, '');
 
         if (!samePage) {

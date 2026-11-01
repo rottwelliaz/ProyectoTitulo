@@ -10,6 +10,7 @@
 </section>
 
 <script>
+  import { escapeHtml } from '../lib/html';
   import { API_URL } from '../lib/session';
   import { safePhotoUrl, setPhotoBackground } from '../lib/profilePhoto';
   const barberGrid = document.querySelector<HTMLDivElement>('#barber-grid');
@@ -48,19 +49,6 @@
     [...barbers]
       .sort(() => Math.random() - 0.5)
       .slice(0, limit);
-
-  const escapeHtml = (value: string) =>
-    value.replace(/[&<>"']/g, (char) => {
-      const entities: Record<string, string> = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;',
-      };
-
-      return entities[char];
-    });
 
   const renderBarbers = (barbers: BarberUser[]) => {
     if (!barberGrid) return;

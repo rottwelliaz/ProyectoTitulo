@@ -256,12 +256,3 @@ export const updateBookingSettings = async (req: AuthRequest, res: Response) => 
     return res.status(500).json({ message: 'Error al actualizar la configuración de reservas' });
   }
 };
-
-export default {
-  login,
-  getMe,
-  updateMe,
-  updateProfilePhoto,
-  updateBankingData,
-  updateBookingSettings,
-};

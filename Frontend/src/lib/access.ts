@@ -14,7 +14,10 @@ export const privateRoutes: Record<string, readonly Role[]> = {
 export const normalizePath = (path: string) => path.replace(/\/index\.html$/, '').replace(/\/+$/, '') || '/';
 export const isRole = (role: unknown): role is Role => roles.includes(role as Role);
 export const roleHome = (role: Role) => role === 'admin' ? '/admin' : role === 'barbero' ? '/perfil-profesional' : '/home';
-export const canAccess = (path: string, role: Role) => !privateRoutes[normalizePath(path)] || privateRoutes[normalizePath(path)].includes(role);
+export const canAccess = (path: string, role: Role) => {
+  const allowedRoles = privateRoutes[normalizePath(path)];
+  return !allowedRoles || allowedRoles.includes(role);
+};
 
 /** Only known, same-origin destinations are accepted, including their query/hash. */
 export function loginDestination(requested: string | null, role: Role): string {

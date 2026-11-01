@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import type { Prisma } from '@prisma/client';
 import prisma from '../config/prisma';
 import { AuthRequest } from '../middleware/auth';
 
@@ -30,7 +31,9 @@ const conversationInclude = {
   },
 } as const;
 
-const formatConversation = (conversation: any, currentUserId: number) => {
+type ConversationWithParticipants = Prisma.ConversationGetPayload<{ include: typeof conversationInclude }>;
+
+const formatConversation = (conversation: ConversationWithParticipants, currentUserId: number) => {
   const otherUser = conversation.clientId === currentUserId
     ? conversation.barber
     : conversation.client;

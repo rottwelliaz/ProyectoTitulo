@@ -2,17 +2,8 @@ import { Response } from 'express';
 import prisma from '../config/prisma';
 import { AuthRequest } from '../middleware/auth';
 import { professionalSelect } from '../services/professionalPrivacy';
-
-const toInt = (value: unknown) => {
-  if (typeof value === 'number') return value;
-  if (typeof value === 'string' && value.trim() !== '') return Number(value);
-  return NaN;
-};
-const getOwnBarberProfile = async (userId: number) => {
-  return prisma.barberProfile.findUnique({
-    where: { usuarioId: userId },
-  });
-};
+import { getOwnBarberProfile } from '../services/barberProfile';
+import { toNumber } from '../utils/number';
 
 const canAccessLugarTrabajo = async (lugarTrabajoId: number, req: AuthRequest) => {
   const lugarTrabajo = await prisma.lugarTrabajo.findUnique({
@@ -38,7 +29,8 @@ export const createLugarTrabajo = async (req: AuthRequest, res: Response) => {
   try {
     const { nombre_barberia, direccion, perfilBarberoId } = req.body;
 
-    if (!nombre_barberia?.trim() || !direccion?.trim()) {
+    if (typeof nombre_barberia !== 'string' || !nombre_barberia.trim() ||
+        typeof direccion !== 'string' || !direccion.trim()) {
       return res.status(400).json({ message: 'Nombre de la barbería y dirección son requeridos' });
     }
 
@@ -56,8 +48,8 @@ export const createLugarTrabajo = async (req: AuthRequest, res: Response) => {
         });
       }
     } else {
-      barberProfileId = toInt(perfilBarberoId);
-      if (Number.isNaN(barberProfileId)) {
+      barberProfileId = toNumber(perfilBarberoId);
+      if (!Number.isSafeInteger(barberProfileId) || barberProfileId <= 0) {
         return res.status(400).json({ message: 'perfilBarberoId debe ser válido' });
       }
 
@@ -145,8 +137,8 @@ export const getLugaresTrabajo = async (req: AuthRequest, res: Response) => {
 
 export const getLugarTrabajoById = async (req: AuthRequest, res: Response) => {
   try {
-    const id = toInt(req.params.id);
-    if (Number.isNaN(id)) {
+    const id = toNumber(req.params.id);
+    if (!Number.isSafeInteger(id) || id <= 0) {
       return res.status(400).json({ message: 'ID inválido' });
     }
 
@@ -169,8 +161,8 @@ export const getLugarTrabajoById = async (req: AuthRequest, res: Response) => {
 
 export const updateLugarTrabajo = async (req: AuthRequest, res: Response) => {
   try {
-    const id = toInt(req.params.id);
-    if (Number.isNaN(id)) {
+    const id = toNumber(req.params.id);
+    if (!Number.isSafeInteger(id) || id <= 0) {
       return res.status(400).json({ message: 'ID inválido' });
     }
 
@@ -208,8 +200,8 @@ export const updateLugarTrabajo = async (req: AuthRequest, res: Response) => {
 
 export const deleteLugarTrabajo = async (req: AuthRequest, res: Response) => {
   try {
-    const id = toInt(req.params.id);
-    if (Number.isNaN(id)) {
+    const id = toNumber(req.params.id);
+    if (!Number.isSafeInteger(id) || id <= 0) {
       return res.status(400).json({ message: 'ID inválido' });
     }
 

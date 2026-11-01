@@ -96,6 +96,7 @@ import '../styles/barberos.css';
 </Layout>
 
 <script>
+  import { escapeHtml } from '../lib/html';
   import { API_URL, getSession } from '../lib/session';
   import { safePhotoUrl, setPhotoBackground } from '../lib/profilePhoto';
   const PAGE_SIZE = 8;
@@ -151,18 +152,6 @@ import '../styles/barberos.css';
 
   const normalize = (value: string) =>
     value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-
-  const escapeHtml = (value: string) =>
-    value.replace(/[&<>"']/g, (char) => {
-      const entities: Record<string, string> = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;',
-      };
-      return entities[char];
-    });
 
   const getStoredUser = () => {
     const storedUser = localStorage.getItem('user');

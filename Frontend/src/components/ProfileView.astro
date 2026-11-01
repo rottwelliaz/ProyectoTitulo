@@ -184,6 +184,7 @@ import SessionNav from './SessionNav.astro';
 </main>
 
 <script>
+  import { escapeHtml } from '../lib/html';
   import { BUSINESS_TIME_ZONE } from '../lib/businessTime';
   import { safePhotoUrl, setPhotoBackground } from '../lib/profilePhoto';
   import { requireSession, authFetch as fetch, API_URL, cacheSessionUser } from '../lib/session';
@@ -267,18 +268,6 @@ import SessionNav from './SessionNav.astro';
       day: 'numeric',
     }).format(new Date(value));
   };
-
-  const escapeHtml = (value: string) =>
-    value.replace(/[&<>"']/g, (character) => {
-      const entities: Record<string, string> = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;',
-      };
-      return entities[character];
-    });
 
   const renderClientAppointments = (appointments: any[]) => {
     if (!clientAppointmentsList) return;
