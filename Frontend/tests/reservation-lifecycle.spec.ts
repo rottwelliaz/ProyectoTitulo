@@ -55,3 +55,38 @@ test('cliente conserva etiquetas de rechazo e inasistencia sin acciones de cance
   await expect(page.locator('.client-appointment-status.is-inasistencia')).toHaveText('Inasistencia');
   await expect(page.locator('.client-appointment-cancel')).toHaveCount(0);
 });
+
+test('cliente: cancelar retira la reserva de próximas y conserva sus datos en el historial', async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2030-01-07T12:00:00Z'));
+  const appointment = { id: 'cancel-client', estado: 'confirmada', fecha_hora: '2030-01-08T14:00:00Z', duracionReservada: 45,
+    servicio: { nombre_servicio: 'Corte histórico' }, barbero: { usuario: { nombre: 'Barbero original' } } };
+  await page.addInitScript(() => localStorage.setItem('token', 'test'));
+  await page.route('**/api/**', async route => {
+    const path = new URL(route.request().url()).pathname;
+    if (path.endsWith('/auth/me')) return fulfillDataTable(route, { json: { id: 1, rol: 'cliente', nombre: 'Cliente', email: 'cliente@test.invalid', fecha_creacion: '2025-01-01T12:00:00Z' } });
+    if (path.endsWith('/citas/cliente/mias')) return fulfillDataTable(route, { json: [appointment] });
+    if (path.endsWith('/citas/cliente/cancel-client/cancelar')) {
+      expect(route.request().method()).toBe('PATCH');
+      appointment.estado = 'cancelada';
+      return fulfillDataTable(route, { json: appointment });
+    }
+    return fulfillDataTable(route, { json: [] });
+  });
+  await page.goto('/mis-citas');
+  const view = page.getByLabel('Mostrar citas:', { exact: true });
+  const list = page.locator('#client-appointments-list');
+  await view.selectOption('proximas');
+  await expect(list.locator('.client-appointment-status')).toHaveText('Confirmada');
+  await list.getByRole('button', { name: 'Cancelar', exact: true }).click();
+  await page.locator('.swal2-confirm').click();
+  await expect(list.locator('.client-appointment-item')).toHaveCount(0);
+  await view.selectOption('historial');
+  await expect(list.locator('.client-appointment-status')).toHaveText('Cancelada');
+  await expect(list.locator('.client-appointment-date strong')).toHaveText('11:00–11:45');
+  await expect(list.locator('.client-appointment-date span')).toContainText('8 de enero de 2030');
+  await expect(list.locator('.client-appointment-detail')).toContainText('Corte histórico');
+  await expect(list.locator('.client-appointment-detail')).toContainText('Barbero original');
+  await expect(list.locator('.client-appointment-cancel')).toHaveCount(0);
+  await view.selectOption('todas');
+  await expect(list.locator('.client-appointment-status')).toHaveText('Cancelada');
+});

@@ -5,6 +5,7 @@ const photo = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91Jp
 async function fixture(page: Page, theme = 'original') {
   const state = {
     fail: '', requests: [] as string[],
+    availability: [] as { inicio: string; fin: string }[],
     configuration: { startTime: '09:00', endTime: '19:00', blockMinutes: 60 },
     profile: { id: 10, biografia: 'Biografía original', especialidades: ['Barba'], foto_perfil: photo, requiereComprobante: false, lugarTrabajo: { id: 3, nombre_barberia: 'Conce Club', direccion: 'Centro 123' } },
     services: Array.from({ length: 7 }, (_, i) => ({ id: `s${i}`, nombre_servicio: `Servicio ${String.fromCharCode(65 + i)}`, descripcion: 'Corte profesional', precio: 12000, activo: i !== 6 })),
@@ -21,7 +22,14 @@ async function fixture(page: Page, theme = 'original') {
     if (path === '/auth/me/photo') { state.profile.foto_perfil = photo; return fulfillDataTable(route, { json: { foto_perfil: photo } }); }
     if (path === '/profesional/perfil') { Object.assign(state.profile, request.postDataJSON()); return fulfillDataTable(route, { json: state.profile }); }
     if (path === '/profesional/estadisticas') return fulfillDataTable(route, { json: { total: url.searchParams.get('desde') === '2030-02-01' ? 0 : 3, estados: { pendiente: 0, confirmada: url.searchParams.get('desde') === '2030-02-01' ? 0 : 1, cancelada: url.searchParams.get('desde') === '2030-02-01' ? 0 : 1, rechazada: 0, finalizada: url.searchParams.get('desde') === '2030-02-01' ? 0 : 1, inasistencia: 0 } } });
-    if (path === '/profesional/calendario') return fulfillDataTable(route, { json: { citas: state.appointments, bloqueos: state.blocks, revision: 'test-revision', configuracion: state.configuration } });
+    if (path === '/profesional/calendario') return fulfillDataTable(route, { json: { citas: state.appointments, disponibilidad: state.availability, bloqueos: state.blocks, revision: 'test-revision', configuracion: state.configuration } });
+    if (path === '/citas/c1/estado' && request.method() === 'PATCH') {
+      expect(request.postDataJSON()).toEqual({ estado: 'cancelada' });
+      const appointment = state.appointments.find(c => c.id === 'c1')!;
+      appointment.estado = 'cancelada';
+      state.availability = [{ inicio: appointment.fecha_hora, fin: new Date(+new Date(appointment.fecha_hora) + appointment.duracionReservada * 60000).toISOString() }];
+      return fulfillDataTable(route, { json: appointment });
+    }
     if (path === '/profesional/bloqueos') { const block = { id: 'new-block', ...request.postDataJSON(), origen: 'manual' }; state.blocks.push(block); return fulfillDataTable(route, { status: 201, json: block }); }
     if (path.startsWith('/profesional/bloqueos/')) { state.blocks = state.blocks.filter(b => b.id !== path.split('/').pop()); return fulfillDataTable(route, { status: 204 }); }
     if (path === '/citas/mias') return fulfillDataTable(route, { json: state.appointments.filter(c => c.estado !== 'disponible') });
@@ -45,6 +53,61 @@ async function fixture(page: Page, theme = 'original') {
   await page.goto('/perfil-profesional');
   await expect(page.locator('#professional-name')).toHaveText('Barbero real');
   return state;
+}
+
+for (const theme of ['light', 'dark']) for (const minutes of [30, 45, 60]) {
+  test(`cancelación oculta la cita en las tres vistas y conserva historial en ${theme}, bloque de ${minutes} min`, async ({ page }) => {
+    const state = await fixture(page, theme);
+    const appointment = state.appointments[0];
+    appointment.duracionReservada = minutes;
+    state.appointments.push(
+      { ...appointment, id: 'cancelled', estado: 'cancelada', fecha_hora: '2030-01-08T12:00:00Z', cliente: { nombre: 'Cliente cancelado' } },
+      { ...appointment, id: 'completed', estado: 'finalizada', fecha_hora: '2030-01-08T15:00:00Z', cliente: { nombre: 'Cliente atendido' } },
+      ...Array.from({ length: 10 }, (_, i) => ({ ...appointment, id: `history-${i}`, estado: 'cancelada', fecha_hora: `2030-01-${String(9 + i).padStart(2, '0')}T14:00:00Z`, cliente: { nombre: `Histórico ${i}` } })),
+    );
+    state.blocks.push({ id: 'blocked', inicio: '2030-01-08T17:00:00Z', fin: '2030-01-08T18:00:00Z', tipo: 'bloqueado', origen: 'manual' });
+    await page.locator('.pro-nav-link[href="#mis-citas"]').click();
+    await page.getByLabel('Fecha del calendario', { exact: true }).fill('2030-01-08');
+    const calendar = page.locator('.professional-calendar-grid');
+    const day = calendar.locator('.professional-calendar-day[aria-label="2030-01-08"]');
+    await expect(day.locator('.is-confirmada')).toContainText('Cliente real');
+    await day.locator('.is-confirmada').getByRole('button', { name: 'Ver cita' }).click();
+    await page.getByRole('button', { name: 'Cancelar cita', exact: true }).click();
+    await page.locator('.swal2-confirm').click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(day.locator('.is-confirmada')).toHaveCount(0);
+
+    const expectedTime = `11:00–${minutes === 60 ? '12:00' : `11:${minutes}`}`;
+    for (const view of ['dia', 'semana', 'mes']) {
+      await page.getByLabel('Vista del calendario', { exact: true }).selectOption(view);
+      await expect(calendar).toHaveClass(new RegExp(`view-${view}`));
+      await expect(calendar.locator('.is-cancelada')).toHaveCount(0);
+      await expect(calendar.getByText('Cancelada', { exact: true })).toHaveCount(0);
+      await expect(day.locator('.is-disponible time')).toHaveText(expectedTime);
+      await expect(day.locator('.is-finalizada')).toContainText('Cliente atendido');
+      await expect(day.locator('.is-descanso')).toBeVisible();
+      await expect(day.locator('.professional-event')).toHaveCount(view === 'mes' ? 3 : 4);
+      if (view === 'mes') await expect(day.getByRole('button', { name: 'Ver 4 registros', exact: true })).toBeVisible();
+      else await expect(day.locator('.is-bloqueado')).toBeVisible();
+    }
+    await page.getByRole('tab', { name: 'Reservas', exact: true }).click();
+    await expect(page.locator('#citas-profesional .appointment-card')).toHaveCount(0);
+    await page.getByRole('tab', { name: 'Historial', exact: true }).click();
+    const history = page.locator('#citas-profesional');
+    await expect(history.locator('.dt-info')).toHaveText('Mostrando 1 a 10 de 13 registros');
+    await history.getByRole('link', { name: 'Página 2', exact: true }).click();
+    await expect(history.locator('.appointment-card')).toHaveCount(3);
+    await history.getByLabel('Buscar:', { exact: true }).fill('Cliente real');
+    await expect(history.locator('.appointment-card')).toHaveCount(1);
+    await expect(history.locator('.appointment-status')).toHaveText('Cancelada');
+    await expect(history.locator('.appointment-info')).toContainText('Corte histórico');
+    await expect(history.locator('.appointment-date strong')).toHaveText('08');
+    await expect(history.locator('.appointment-date span')).toContainText('ene');
+    await expect(history.locator('.appointment-date time')).toHaveText(expectedTime);
+    expect(appointment).toMatchObject({ id: 'c1', estado: 'cancelada', fecha_hora: '2030-01-08T14:00:00Z', duracionReservada: minutes, cliente: { nombre: 'Cliente real' }, servicio: { nombre_servicio: 'Corte histórico' } });
+    await history.getByLabel('Buscar:', { exact: true }).fill('');
+    await expect(history.locator('.dt-info')).toContainText('de 13 registros');
+  });
 }
 
 test('Organización carga la semana autenticada con su configuración y reservas sin guardar cambios', async ({ page }) => {

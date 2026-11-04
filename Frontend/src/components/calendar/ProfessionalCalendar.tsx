@@ -35,7 +35,7 @@ export default function ProfessionalCalendar() {
         if (!Array.isArray(data?.citas) || !Array.isArray(data?.bloqueos)) throw new Error('No se pudo leer el calendario.');
         setConfigurations(data.configuraciones || (data.configuracion ? { [startOfWeek(range.start)]: data.configuracion } : {}));
         setEvents([
-          ...data.citas.filter((c: any) => c.estado !== 'disponible').map((c: any) => ({ ...c, inicio: c.fecha_hora, fin: c.fin || reservationEnd(c)?.toISOString() || null })),
+          ...data.citas.filter((c: any) => c.estado !== 'disponible' && c.estado !== 'cancelada').map((c: any) => ({ ...c, inicio: c.fecha_hora, fin: c.fin || reservationEnd(c)?.toISOString() || null })),
           ...(data.disponibilidad || []).map((c: any) => ({ ...c, id: `available-${c.inicio}`, estado: 'disponible' })),
           ...data.bloqueos.map((b: any) => ({ ...b, estado: b.tipo, block: true })),
         ].sort((a, b) => a.inicio.localeCompare(b.inicio)));

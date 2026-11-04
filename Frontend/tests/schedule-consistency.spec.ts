@@ -84,7 +84,8 @@ for (const duration of [30, 60]) for (const theme of ['light', 'dark']) test(`ci
   await details.getByRole('button', { name: 'Cancelar cita', exact: true }).click();
   await page.getByRole('button', { name: 'Sí, cancelar cita', exact: true }).click();
   await expect(details).toHaveCount(0); expect(state.cancellations).toBe(1);
-  await expect(page.locator('.professional-event.is-cancelada')).toContainText('Cancelada');
+  await expect(page.locator('.professional-event.is-cancelada')).toHaveCount(0);
+  await expect(page.locator('.professional-event.is-disponible time')).toHaveText('09:00–11:00');
   await page.locator('.pro-nav-link[href="#organizacion"]').click();
   await expect(calendar.locator('.barber-slot.is-reserved')).toHaveCount(0);
   await expect(calendar.locator('.calendar-day').first().locator('.barber-slot.is-available')).toHaveCount(4);
