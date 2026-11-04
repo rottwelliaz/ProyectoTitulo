@@ -40,9 +40,8 @@ export const createService = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: error.details[0].message });
     }
 
-    const { nombre_servicio, descripcion, precio, duracion_minutos } = value;
+    const { nombre_servicio, descripcion, precio } = value;
     const priceValue = toNumber(precio);
-    const durationValue = toNumber(duracion_minutos);
 
     const barberProfile = await getOwnBarberProfile(req.user.id);
     if (!barberProfile) {
@@ -55,7 +54,6 @@ export const createService = async (req: AuthRequest, res: Response) => {
         nombre_servicio,
         descripcion: descripcion || null,
         precio: priceValue,
-        duracion_minutos: durationValue,
       },
     });
 
@@ -165,7 +163,6 @@ export const updateService = async (req: AuthRequest, res: Response) => {
     }
 
     const priceValue = value.precio !== undefined ? toNumber(value.precio) : undefined;
-    const durationValue = value.duracion_minutos !== undefined ? toNumber(value.duracion_minutos) : undefined;
 
     const updated = await withSchedule(service.perfilBarberoId, async tx => {
       const current = await tx.service.findUnique({ where: { id } });
@@ -178,7 +175,6 @@ export const updateService = async (req: AuthRequest, res: Response) => {
           nombre_servicio: value.nombre_servicio ?? undefined,
           descripcion: value.descripcion,
           precio: priceValue ?? undefined,
-          duracion_minutos: durationValue ?? undefined,
         },
       });
     });

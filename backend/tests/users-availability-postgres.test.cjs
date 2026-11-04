@@ -20,7 +20,7 @@ describe('Grupo 4: persistencia y permisos con PostgreSQL y HTTP', { skip: !url 
   const fixture = async () => {
     const owner = await user('barbero');
     const profile = await prisma.barberProfile.create({ data: { usuarioId: owner.id, requiereComprobante: false } });
-    const service = await prisma.service.create({ data: { perfilBarberoId: profile.id, nombre_servicio: 'Corte', precio: 10000, duracion_minutos: 30 } });
+    const service = await prisma.service.create({ data: { perfilBarberoId: profile.id, nombre_servicio: 'Corte', precio: 10000 } });
     return { owner, profile, service };
   };
   const calendarPath = '/profesional/calendario?desde=2035-01-15&hasta=2035-01-21';
@@ -35,31 +35,29 @@ describe('Grupo 4: persistencia y permisos con PostgreSQL y HTTP', { skip: !url 
   });
   after(async () => { if (server) await new Promise(resolve => server.close(resolve)); await Promise.all([prisma.$disconnect(), independent.$disconnect()]); });
 
-  test('solicitudes duplicadas concurrentes, rechazo con motivo y resultado inmutable', async () => {
+  test('solicitudes duplicadas concurrentes y rechazo eliminan solo la cuenta pendiente', async () => {
     const client = await user();
     const results = await Promise.all([request(client, '/usuarios/solicitud-profesional', 'POST'), request(client, '/usuarios/solicitud-profesional', 'POST')]);
-    assert.deepEqual(results.map(r => r.status).sort(), [201, 409]);
+    assert.equal(results.filter(r => r.status === 201).length, 1);
+    assert.ok(results.every(r => [201, 403, 409].includes(r.status)));
     assert.equal((await request(client, '/usuarios/solicitud-profesional')).body.estado, 'pendiente');
     assert.equal((await request(client, '/profesional/calendario?desde=2035-01-15&hasta=2035-01-21')).status, 403);
-    assert.equal((await request(admin, `/usuarios/${client.id}/rechazar-barbero`, 'PATCH', { motivoRechazo: '  ' })).status, 400);
-    assert.equal((await request(admin, `/usuarios/${client.id}`, 'PUT', { rol: 'barbero' })).status, 409);
-    assert.equal((await request(admin, `/usuarios/${client.id}/rechazar-barbero`, 'PATCH', { motivoRechazo: 'Antecedentes incompletos' })).status, 200);
-    const loaded = (await request(client, '/usuarios/solicitud-profesional')).body;
-    assert.equal(loaded.estado, 'rechazada'); assert.equal(loaded.motivoRechazo, 'Antecedentes incompletos'); assert.equal(loaded.revisorId, admin.id); assert.ok(loaded.fechaResolucion);
-    assert.equal((await request(client, '/auth/me')).body.rol, 'cliente');
-    assert.equal((await request(client, '/usuarios/solicitud-profesional', 'POST')).status, 409);
-    assert.equal((await request(admin, `/usuarios/${client.id}/aprobar-barbero`, 'PATCH')).status, 409);
-    assert.equal((await independent.solicitudProfesional.findUnique({ where: { usuarioId: client.id } })).motivoRechazo, loaded.motivoRechazo);
+    assert.equal((await request(admin, `/usuarios/${client.id}`, 'PUT', { aprobado: true })).status, 409);
+    assert.equal((await request(admin, `/usuarios/${client.id}/rechazar-barbero`, 'PATCH')).status, 200);
+    assert.equal((await request(client, '/auth/me')).status, 401);
+    assert.equal((await request(admin, `/usuarios/${client.id}/aprobar-barbero`, 'PATCH')).status, 404);
+    assert.equal(await independent.solicitudProfesional.findUnique({ where: { usuarioId: client.id } }), null);
+    assert.equal(await independent.user.findUnique({ where: { id: client.id } }), null);
   });
   test('aprobación atómica, listado administrativo y acceso profesional solo después de aprobar', async () => {
     const client = await user(); await request(client, '/usuarios/solicitud-profesional', 'POST');
     const pending = await request(admin, '/usuarios/barberos/pendientes'); assert.ok(pending.body.some(u => u.id === client.id));
     assert.ok((await request(admin, '/usuarios/admin/dashboard')).body.barberosPendientes.some(u => u.id === client.id));
-    const outcomes = await Promise.all([request(admin, `/usuarios/${client.id}/aprobar-barbero`, 'PATCH'), request(admin, `/usuarios/${client.id}/rechazar-barbero`, 'PATCH', { motivoRechazo: 'Revisión' })]);
+    const outcomes = await Promise.all([request(admin, `/usuarios/${client.id}/aprobar-barbero`, 'PATCH'), request(admin, `/usuarios/${client.id}/aprobar-barbero`, 'PATCH')]);
     assert.deepEqual(outcomes.map(r => r.status).sort(), [200, 409]);
     const application = (await request(client, '/usuarios/solicitud-profesional')).body;
     const me = (await request(client, '/auth/me')).body;
-    assert.equal(me.rol, application.estado === 'aprobada' ? 'barbero' : 'cliente');
+    assert.equal(me.rol, 'barbero'); assert.equal(application.estado, 'aprobada');
     if (application.estado === 'aprobada') { assert.ok(me.perfilBarbero.id); assert.equal((await request(client, calendarPath)).status, 200); }
     const another = await user(); await request(another, '/usuarios/solicitud-profesional', 'POST');
     await prisma.user.update({ where: { id: another.id }, data: { foto_perfil: 'foto-actual-del-cliente' } });
@@ -70,9 +68,9 @@ describe('Grupo 4: persistencia y permisos con PostgreSQL y HTTP', { skip: !url 
     assert.equal(profile.foto_perfil, 'foto-actual-del-cliente'); assert.equal(profile.bancoNroCuenta, 'conservar');
     assert.equal((await independent.solicitudProfesional.findUnique({ where: { usuarioId: another.id } })).estado, 'aprobada');
   });
-  test('registro como barbero crea cliente y solicitud, sin habilitar funciones profesionales', async () => {
+  test('registro como barbero crea barbero pendiente, sin habilitar funciones profesionales', async () => {
     const result = await request(null, '/usuarios', 'POST', { nombre: 'Nuevo Cliente', email: `new-${Date.now()}@test.invalid`, password: 'test-password', telefono: '912345678', rol: 'barbero' });
-    assert.equal(result.status, 201); assert.equal(result.body.rol, 'cliente');
+    assert.equal(result.status, 201); assert.equal(result.body.rol, 'barbero'); assert.equal(result.body.aprobado, false);
     assert.equal((await request(result.body, '/usuarios/solicitud-profesional')).body.estado, 'pendiente');
     assert.equal((await request(result.body, calendarPath)).status, 403);
   });
@@ -132,7 +130,7 @@ describe('Grupo 4: persistencia y permisos con PostgreSQL y HTTP', { skip: !url 
     assert.equal((await request(f.owner, '/citas/disponibilidad/semana', 'PUT', week(snapshot.revision))).status, 409);
     snapshot = (await request(f.owner, calendarPath)).body;
     const old = await independent.cita.findUnique({ where: { id: booking.body.id } });
-    assert.equal((await request(f.owner, '/citas/disponibilidad/semana', 'PUT', { ...week(snapshot.revision), bloques: [], bloqueos: [{ ...window, tipo: 'bloqueado' }] })).status, 200);
+    assert.equal((await request(f.owner, '/citas/disponibilidad/semana', 'PUT', { ...week(snapshot.revision), bloques: [], bloqueos: [{ ...window, tipo: 'bloqueado' }], conservarReservas: true })).status, 200);
     assert.deepEqual(await independent.cita.findUnique({ where: { id: old.id } }), old);
     // An individual available window cannot bypass the persistent block.
     const underneath = await prisma.cita.create({ data: { barberoId: f.profile.id, fecha_hora: new Date('2035-01-15T15:30:00Z'), disponibleHasta: new Date(window.fin) } });

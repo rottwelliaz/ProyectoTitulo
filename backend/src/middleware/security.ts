@@ -2,6 +2,7 @@ import { RequestHandler, ErrorRequestHandler } from 'express';
 import { createHash } from 'crypto';
 import cors from 'cors';
 import { corsOrigins } from '../config/security';
+import type { AuthRequest } from './auth';
 
 // Per-process, bounded fixed windows. Do not trust arbitrary X-Forwarded-For.
 // Multiple replicas need a shared gateway/store with equivalent limits.
@@ -30,6 +31,8 @@ const ip = (req: Parameters<RequestHandler>[0]) => req.ip || req.socket.remoteAd
 export const loginIpLimit = rateLimit(30, 15 * 60_000, ip);
 export const loginAccountLimit = rateLimit(10, 15 * 60_000, req =>
   typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : ip(req));
+export const passwordChangeIpLimit = rateLimit(30, 15 * 60_000, ip);
+export const passwordChangeAccountLimit = rateLimit(10, 15 * 60_000, (req: AuthRequest) => String(req.user!.id));
 export const registrationLimit = rateLimit(20, 60 * 60_000, ip);
 export const publicAvailabilityLimit = rateLimit(120, 60_000, ip);
 

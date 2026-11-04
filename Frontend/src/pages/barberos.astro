@@ -59,8 +59,6 @@ import '../styles/barberos.css';
             <option value="price-desc">Precio: mayor a menor</option>
             <option value="services-desc">Más servicios</option>
             <option value="services-asc">Menos servicios</option>
-            <option value="duration-asc">Duración: menor a mayor</option>
-            <option value="duration-desc">Duración: mayor a menor</option>
           </select>
           <SlidersHorizontal size={17} aria-hidden="true" />
         </label>
@@ -116,7 +114,6 @@ import '../styles/barberos.css';
     nombre_servicio: string;
     descripcion?: string | null;
     precio?: number;
-    duracion_minutos?: number;
   }
 
   interface BarberUser {
@@ -176,14 +173,6 @@ import '../styles/barberos.css';
       .filter((price) => Number.isFinite(price));
 
     return prices.length > 0 ? Math.min(...prices) : null;
-  };
-
-  const getShortestDuration = (barber: BarberUser) => {
-    const durations = getServices(barber)
-      .map((service) => Number(service.duracion_minutos))
-      .filter((duration) => Number.isFinite(duration));
-
-    return durations.length > 0 ? Math.min(...durations) : null;
   };
 
   const formatPrice = (price: number) =>
@@ -270,13 +259,6 @@ import '../styles/barberos.css';
             sort === 'price-asc' ? 'asc' : 'desc',
           ) || nameComparison;
         }
-        if (sort === 'duration-asc' || sort === 'duration-desc') {
-          return compareOptionalNumber(
-            getShortestDuration(a),
-            getShortestDuration(b),
-            sort === 'duration-asc' ? 'asc' : 'desc',
-          ) || nameComparison;
-        }
 
         return nameComparison;
       });
@@ -328,7 +310,6 @@ import '../styles/barberos.css';
       const hasServices = services.length > 0;
       const isFavorite = favorites.has(barber.id);
       const lowestPrice = getLowestPrice(barber);
-      const shortestDuration = getShortestDuration(barber);
       const canMessage = isAuthenticated && getStoredUser()?.rol === 'cliente';
       const profileAction = `<a class="profile-button" href="/barbero?barbero=${profileId}" data-profile-id="${profileId}">Ver perfil</a>`;
       return `
@@ -355,7 +336,6 @@ import '../styles/barberos.css';
             ${hasServices ? `
               <p class="barber-service-summary">
                 <strong>${lowestPrice !== null ? `Desde ${formatPrice(lowestPrice)}` : 'Precio no informado'}</strong>
-                <span>${shortestDuration !== null ? `Desde ${shortestDuration} min` : 'Duración no informada'}</span>
               </p>
             ` : ''}
             <div class="barber-card-actions ${canMessage ? '' : 'is-single'}">

@@ -34,17 +34,6 @@ const precio = Joi.number()
     'number.max': 'El precio no puede ser mayor a 50000',
   });
 
-const duracionMinutos = Joi.number()
-  .integer()
-  .min(10)
-  .max(60)
-  .messages({
-    'number.base': 'La duración debe ser un número',
-    'number.integer': 'La duración debe ser un número entero',
-    'number.min': 'La duración mínima es 10 minutos',
-    'number.max': 'La duración máxima es 60 minutos',
-  });
-
 export const createServiceValidation = Joi.object({
   nombre_servicio: nombreServicio.required().messages({
     'any.required': 'El nombre del servicio es obligatorio',
@@ -52,9 +41,6 @@ export const createServiceValidation = Joi.object({
   descripcion: descripcion.optional(),
   precio: precio.required().messages({
     'any.required': 'El precio es obligatorio',
-  }),
-  duracion_minutos: duracionMinutos.required().messages({
-    'any.required': 'La duración es obligatoria',
   }),
 }).unknown(false).messages({
   'object.unknown': 'No se permiten campos adicionales en la creación de servicio',
@@ -65,7 +51,6 @@ export const updateServiceValidation = Joi.object({
   nombre_servicio: nombreServicio.optional(),
   descripcion: descripcion.optional(),
   precio: precio.optional(),
-  duracion_minutos: duracionMinutos.optional(),
 }).unknown(false).messages({
   'object.unknown': 'No se permiten campos adicionales en la edición de servicio',
 });

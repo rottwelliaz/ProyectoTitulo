@@ -3,15 +3,15 @@ import Joi from 'joi';
 import { Temporal } from '@js-temporal/polyfill';
 import prisma from '../config/prisma';
 import { AuthRequest } from '../middleware/auth';
-import { businessRange, parseInstant } from '../services/businessTime';
-import { ScheduleError, scheduleFailure, withSchedule } from '../services/schedule';
+import { businessDate, businessRange, parseInstant } from '../services/businessTime';
+import { ScheduleError, scheduleFailure, withSchedule, durationOf, endOf, freeIntervals, activeStates, overlaps } from '../services/schedule';
 import { historicalAppointment } from '../services/reservationLifecycle';
 import { availabilitySnapshot } from '../services/availability';
 
 const failure = (res: Response, error: unknown) => {
   if (error instanceof RangeError) return res.status(400).json({ message: error.message });
   const known = scheduleFailure(error);
-  if (known) return res.status(known.status).json({ message: known.message });
+  if (known) return res.status(known.status).json({ message: known.message, ...(error instanceof ScheduleError && error.conflictos ? { conflictos: error.conflictos } : {}) });
   console.error('professional panel', error);
   return res.status(500).json({ message: 'No se pudo completar la operación del panel profesional' });
 };
@@ -51,17 +51,26 @@ export const getProfessionalCalendar = async (req: AuthRequest, res: Response) =
   try {
     const profile = await ownProfile(req), { start, end } = period(req.query);
     const result = await withSchedule(profile.id, async tx => {
-      const duration = await tx.cita.aggregate({ where: { barberoId: profile.id }, _max: { duracionReservada: true } });
-      const earliest = new Date(+start - (duration._max.duracionReservada ?? 1) * 60000);
       const citas = await tx.cita.findMany({ where: { barberoId: profile.id, OR: [
-        { fecha_hora: { gte: earliest, lt: end } },
+        { estado: { not: 'disponible' }, fecha_hora: { lt: end } },
+        { fecha_hora: { gte: start, lt: end } },
         { estado: 'disponible', fecha_hora: { lt: start }, disponibleHasta: { gt: start } },
-      ] }, include: { cliente: { select: { id: true, nombre: true } } }, orderBy: { fecha_hora: 'asc' } });
+      ] }, include: { cliente: { select: { id: true, nombre: true } }, servicio: true }, orderBy: { fecha_hora: 'asc' } });
       const bloqueos = await tx.agendaBloqueo.findMany({ where: { barberoId: profile.id, inicio: { lt: end }, fin: { gt: start } }, orderBy: { inicio: 'asc' } });
+      const firstDay = Temporal.PlainDate.from(businessDate(start));
+      const firstMonday = firstDay.subtract({ days: firstDay.dayOfWeek - 1 }).toString();
+      const weeks = await tx.agendaSemana.findMany({ where: { barberoId: profile.id, inicio: { gte: businessRange(firstMonday).start, lt: end } }, select: { inicio: true, configuracion: true } });
+      const snapshot = await availabilitySnapshot(tx, profile.id, start, end);
+      const applicable = weeks.find(week => businessDate(week.inicio) === firstMonday);
       // Explicit projection keeps payment proofs and private client data out of calendars.
-      return { citas: citas.filter(c => +(c.disponibleHasta ?? new Date(+c.fecha_hora + (c.duracionReservada ?? 1) * 60000)) > +start).map(c => ({ id: c.id, fecha_hora: c.fecha_hora, disponibleHasta: c.disponibleHasta,
-        duracionReservada: c.duracionReservada, estado: c.estado, cliente: c.cliente,
-        servicio: historicalAppointment(c).servicio })), bloqueos, ...await availabilitySnapshot(tx, profile.id, start, end) };
+      const visible = citas.filter(c => c.estado === 'disponible' ? c.disponibleHasta && c.disponibleHasta > start : durationOf(c) ? endOf(c.fecha_hora, durationOf(c)!) > start : c.fecha_hora >= start);
+      return { configuraciones: Object.fromEntries(weeks.map(week => [businessDate(week.inicio), week.configuracion])),
+        disponibilidad: freeIntervals(citas.filter(c => c.estado === 'disponible'), citas.filter(c => activeStates.includes(c.estado)), bloqueos),
+        citas: visible.map(c => ({ id: c.id, fecha_hora: c.fecha_hora, disponibleHasta: c.disponibleHasta,
+        fin: c.estado === 'disponible' ? c.disponibleHasta : durationOf(c) ? endOf(c.fecha_hora, durationOf(c)!) : null,
+        duracionReservada: durationOf(c), estado: c.estado, cliente: c.cliente,
+        servicio: historicalAppointment(c).servicio })), bloqueos, ...snapshot,
+        configuracion: applicable?.configuracion ?? snapshot.configuracion, publicada: Boolean(applicable) };
     });
     return res.json(result);
   } catch (error) { return failure(res, error); }
@@ -82,7 +91,7 @@ export const createProfessionalBlock = async (req: AuthRequest, res: Response) =
   try {
     const profile = await ownProfile(req);
     const { inicio, fin, tipo } = req.body ?? {};
-    if (Object.keys(req.body ?? {}).some(key => !['inicio', 'fin', 'tipo'].includes(key)) || !['bloqueado', 'descanso'].includes(tipo)) throw new RangeError('Indica inicio, fin y tipo de bloqueo válidos');
+    if (Object.keys(req.body ?? {}).some(key => !['inicio', 'fin', 'tipo', 'conservarReservas'].includes(key)) || !['bloqueado', 'descanso'].includes(tipo)) throw new RangeError('Indica inicio, fin y tipo de bloqueo válidos');
     const start = parseInstant(inicio), end = parseInstant(fin);
     if (+start <= Date.now() || end <= start || +end - +start > 86400000) throw new RangeError('El bloqueo debe ser futuro y durar como máximo 24 horas');
     const result = await withSchedule(profile.id, async tx => {
@@ -90,6 +99,9 @@ export const createProfessionalBlock = async (req: AuthRequest, res: Response) =
       // reservation interval validator enforces it for every booking endpoint.
       const existing = await tx.agendaBloqueo.findFirst({ where: { barberoId: profile.id, inicio: { lt: end }, fin: { gt: start } } });
       if (existing) throw new ScheduleError(409, 'Ya existe un bloqueo en ese intervalo');
+      const appointments = await tx.cita.findMany({ where: { barberoId: profile.id, estado: { in: activeStates }, fecha_hora: { lt: end } }, include: { servicio: true } });
+      const conflicts = appointments.filter(c => !durationOf(c) || overlaps(start, end, c.fecha_hora, endOf(c.fecha_hora, durationOf(c)!))).map(c => c.id);
+      if (conflicts.length && req.body.conservarReservas !== true) throw new ScheduleError(409, 'El bloqueo afecta citas activas. Se conservarán como excepciones, sin cancelarlas ni modificarlas.', conflicts);
       return tx.agendaBloqueo.create({ data: { barberoId: profile.id, inicio: start, fin: end, tipo } });
     });
     return res.status(201).json(result);

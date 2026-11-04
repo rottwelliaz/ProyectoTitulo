@@ -2,7 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import { qualityFixture, ready } from './quality-fixture';
 
 const panels = [
-  ['/perfil', 'cliente'],
+  ['/perfil', 'cliente'], ['/mis-citas', 'cliente'],
   ['/configuracion', 'cliente'],
   ['/perfil-profesional', 'barbero'],
   ['/admin', 'admin'],

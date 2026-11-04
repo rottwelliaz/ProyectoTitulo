@@ -1,17 +1,24 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import SessionNav from '../components/SessionNav.astro';
-import logoConce from '../assets/logotesis.png';
-import { ArrowLeft, MessageCircle, Send } from 'lucide-astro';
+import ProfileSidebar from '../components/ProfileSidebar.astro';
+import ProfessionalSidebar from '../components/ProfessionalSidebar.astro';
+import { ArrowLeft, Menu, MessageCircle, Send } from 'lucide-astro';
+import '../styles/profile.css';
+import '../styles/professional-profile.css';
 import '../styles/messages.css';
 ---
 
 <Layout title="Mensajes - Conce Barber Club">
-  <main class="messages-root">
+  <main class="panel-layout messages-layout">
+    <div id="messages-navigation"></div>
+    <template id="messages-client-navigation"><ProfileSidebar active="mensajes" /></template>
+    <template id="messages-barber-navigation"><ProfessionalSidebar active="mensajes" external /></template>
+    <section class="messages-root">
     <header class="messages-topbar">
-      <a class="messages-brand" href="/home" aria-label="Volver al inicio">
-        <img src={logoConce.src} alt="Conce Barber Club" />
-      </a>
+      <button id="messages-menu-toggle" class="messages-menu-toggle" type="button" aria-label="Abrir menú principal" aria-expanded="false" aria-controls="messages-navigation">
+        <Menu size={22} aria-hidden="true" />
+      </button>
       <div class="messages-title">
         <MessageCircle size={25} aria-hidden="true" />
         <div>
@@ -66,7 +73,7 @@ import '../styles/messages.css';
               placeholder="Escribe un mensaje..."
               required
             ></textarea>
-            <button id="send-message" type="submit">
+            <button id="send-message" type="submit" aria-label="Enviar">
               <Send size={19} aria-hidden="true" />
               <span>Enviar</span>
             </button>
@@ -74,6 +81,7 @@ import '../styles/messages.css';
           <p id="chat-error" class="chat-error" role="alert"></p>
         </div>
       </section>
+    </section>
     </section>
   </main>
 </Layout>
@@ -83,7 +91,43 @@ import '../styles/messages.css';
   import { requireSession, authFetch as fetch, API_URL } from '../lib/session';
   import { safePhotoUrl, setPhotoBackground } from '../lib/profilePhoto';
   void (async () => {
-    if (!(await requireSession())) return;
+    const session = await requireSession();
+    if (!session) return;
+
+    // Mount the same sidebar used by the authenticated user's panel.
+    const layout = document.querySelector<HTMLElement>('.messages-layout');
+    const navigation = document.querySelector<HTMLElement>('#messages-navigation');
+    const template = document.querySelector<HTMLTemplateElement>(session.rol === 'barbero'
+      ? '#messages-barber-navigation' : '#messages-client-navigation');
+    const sidebar = template?.content.firstElementChild?.cloneNode(true);
+    if (layout && navigation && sidebar instanceof HTMLElement) {
+      layout.classList.add(...(session.rol === 'barbero' ? ['pro-root'] : ['profile-root', 'profile-dashboard']));
+      sidebar.id = navigation.id;
+      navigation.replaceWith(sidebar);
+      const name = sidebar.querySelector('#sidebar-name');
+      const specialty = sidebar.querySelector('#sidebar-specialty');
+      if (name) name.textContent = session.nombre;
+      if (specialty) specialty.textContent = session.perfilBarbero?.especialidades?.join(' · ') || 'Barbero profesional';
+      const avatar = sidebar.querySelector<HTMLElement>('[data-user-avatar]');
+      if (avatar) setPhotoBackground(avatar,
+        safePhotoUrl(session.foto_perfil) || safePhotoUrl(session.perfilBarbero?.foto_perfil));
+    }
+    document.querySelectorAll('template[id^="messages-"]').forEach(template => template.remove());
+
+    const menuToggle = document.querySelector<HTMLButtonElement>('#messages-menu-toggle');
+    const setMenuOpen = (open: boolean) => {
+      layout?.classList.toggle('is-navigation-open', open);
+      menuToggle?.setAttribute('aria-expanded', String(open));
+      menuToggle?.setAttribute('aria-label', open ? 'Cerrar menú principal' : 'Abrir menú principal');
+    };
+    menuToggle?.addEventListener('click', () => setMenuOpen(menuToggle.getAttribute('aria-expanded') !== 'true'));
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && menuToggle?.getAttribute('aria-expanded') === 'true') {
+        setMenuOpen(false);
+        menuToggle.focus();
+      }
+    });
+    window.matchMedia('(max-width: 1180px)').addEventListener('change', () => setMenuOpen(false));
 
   const token = localStorage.getItem('token');
   const app = document.querySelector<HTMLElement>('#messages-app');

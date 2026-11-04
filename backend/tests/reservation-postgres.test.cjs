@@ -20,7 +20,7 @@ describe('reservas con transacciones PostgreSQL reales', { skip: !databaseUrl },
   const { withSchedule } = require('../src/services/schedule');
   const { businessRange } = require('../src/services/businessTime');
   const independent = new PrismaClient({ datasources: { db: { url: databaseUrl } } });
-  const at = minutes => new Date(Date.UTC(new Date().getUTCFullYear() + 1, 0, 11, 10, minutes));
+  const at = minutes => new Date(Date.UTC(2035, 0, 15, 13, minutes));
   let server, base, clients;
   const request = async (userId, path, method = 'GET', data) => {
     if (path.endsWith('/disponibilidad/semana') && method === 'PUT') {
@@ -39,7 +39,8 @@ describe('reservas con transacciones PostgreSQL reales', { skip: !databaseUrl },
   async function fixture(windows = [[0, 180], [30, 180], [60, 180]]) {
     const owner = await user('barbero');
     const profile = await prisma.barberProfile.create({ data: { usuarioId: owner.id, requiereComprobante: false } });
-    const service = await prisma.service.create({ data: { perfilBarberoId: profile.id, nombre_servicio: 'Corte', precio: 10000, duracion_minutos: 60 } });
+    const service = await prisma.service.create({ data: { perfilBarberoId: profile.id, nombre_servicio: 'Corte', precio: 10000 } });
+    await prisma.agendaSemana.create({ data: { barberoId: profile.id, inicio: businessRange("2035-01-15").start, configuracion: { startTime: "10:00", endTime: "19:00", blockMinutes: 60 } } });
     const slots = [];
     for (const [start, end] of windows) slots.push(await prisma.cita.create({ data: { barberoId: profile.id, estado: 'disponible', fecha_hora: at(start), disponibleHasta: end === null ? null : at(end) } }));
     return { owner, profile, service, slots };
@@ -73,7 +74,7 @@ describe('reservas con transacciones PostgreSQL reales', { skip: !databaseUrl },
     const f = await fixture();
     const first = await book(f); assert.equal(first.status, 200);
     assert.equal((await book(f, 2, 1)).status, 200);
-    assert.equal((await request(f.owner.id, `/api/servicios/${f.service.id}`, 'PUT', { duracion_minutos: 30 })).status, 200);
+    assert.equal((await request(f.owner.id, `/api/servicios/${f.service.id}`, 'PUT', { nombre_servicio: 'Nombre actualizado' })).status, 200);
     assert.equal((await prisma.cita.findUnique({ where: { id: first.body.id } })).duracionReservada, 60);
     assert.equal((await book(f, 1)).status, 409);
     assert.equal((await request(f.owner.id, `/api/servicios/${f.service.id}`, 'DELETE')).status, 204);
@@ -129,7 +130,7 @@ describe('reservas con transacciones PostgreSQL reales', { skip: !databaseUrl },
   });
   test('publicar descansos conserva citas y cancelar no reabre bloques retirados', async () => {
     const f = await fixture(); const booked = await book(f);
-    const saved = await request(f.owner.id, '/api/citas/disponibilidad/semana', 'PUT', { fechaInicio: at(0).toISOString().slice(0, 10), bloques: [] });
+    const saved = await request(f.owner.id, '/api/citas/disponibilidad/semana', 'PUT', { fechaInicio: at(0).toISOString().slice(0, 10), bloques: [], conservarReservas: true });
     assert.equal(saved.status, 200);
     assert.equal((await prisma.cita.findUnique({ where: { id: booked.body.id } })).estado, 'confirmada');
     assert.equal((await request(clients[0].id, `/api/citas/cliente/${booked.body.id}/cancelar`, 'PATCH')).status, 200);
@@ -139,12 +140,12 @@ describe('reservas con transacciones PostgreSQL reales', { skip: !databaseUrl },
     const f = await fixture(); await book(f);
     const result = await request(clients[0].id, `/api/citas/disponibilidad/${f.profile.id}?fecha=${at(0).toISOString().slice(0, 10)}&servicioId=${f.service.id}`);
     assert.equal(result.status, 200);
-    assert.deepEqual(result.body.citas.map(c => c.id), [f.slots[2].id]);
+    assert.deepEqual(result.body.citas.map(c => c.fecha_hora), [at(60).toISOString(), at(120).toISOString()]);
   });
-  test('duración heredada se congela antes de editar servicio; una reserva huérfana bloquea por seguridad', async () => {
+  test('una reserva sin intervalo verificable bloquea por seguridad y no toma duración del servicio', async () => {
     const f = await fixture(); const legacy = await existing(f, 0, 60, 'confirmada', null);
-    assert.equal((await request(f.owner.id, `/api/servicios/${f.service.id}`, 'PUT', { duracion_minutos: 30 })).status, 200);
-    assert.equal((await prisma.cita.findUnique({ where: { id: legacy.id } })).duracionReservada, 60);
+    assert.equal((await request(f.owner.id, `/api/servicios/${f.service.id}`, 'PUT', { nombre_servicio: 'Nombre actualizado' })).status, 200);
+    assert.equal((await prisma.cita.findUnique({ where: { id: legacy.id } })).duracionReservada, null);
     await prisma.cita.create({ data: { barberoId: f.profile.id, clienteId: clients[0].id, fecha_hora: at(75), estado: 'confirmada' } });
     assert.equal((await book(f, 2)).status, 409);
   });
@@ -168,7 +169,7 @@ describe('reservas con transacciones PostgreSQL reales', { skip: !databaseUrl },
   });
 
   for (const day of ['2026-01-15', '2026-07-15', '2026-04-04', '2026-09-06']) {
-    test(`consulta diaria Santiago incluye la noche y excluye medianoche siguiente: ${day}`, async () => {
+    test(`consulta diaria Santiago conserva ventanas nocturnas sin ofrecerlas fuera de jornada: ${day}`, async () => {
       const f = await fixture([]);
       const { start, end } = businessRange(day);
       const starts = [new Date(start.getTime() - 60000), start, new Date(end.getTime() - 60000), end];
@@ -181,7 +182,7 @@ describe('reservas con transacciones PostgreSQL reales', { skip: !databaseUrl },
       try {
         const result = await request(clients[0].id, `/api/citas/disponibilidad/${f.profile.id}?fecha=${day}&servicioId=${f.service.id}`);
         assert.equal(result.status, 200, JSON.stringify(result.body));
-        assert.deepEqual(result.body.citas.map(c => c.id), [slots[1].id, slots[2].id]);
+        assert.deepEqual(result.body.citas, []);
         assert.equal((await request(clients[0].id, `/api/citas/disponibilidad/${f.profile.id}?fecha=${day}&desde=${day}T00:00:00Z`)).status, 400);
         assert.deepEqual(await prisma.cita.findUnique({ where: { id: slots[2].id } }), slots[2]);
       } finally { Date.now = now; }

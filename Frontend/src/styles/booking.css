@@ -36,6 +36,41 @@
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.24);
 }
 
+.booking-options {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(240px, 1fr) minmax(0, 2fr);
+  align-items: start;
+}
+
+.booking-options .booking-panel { min-width: 0; }
+.booking-options .booking-services { grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); }
+.booking-barbers-compact .booking-barber-card {
+  display: grid;
+  gap: 0.2rem 0.8rem;
+  grid-template-columns: 46px minmax(0, 1fr);
+  min-height: 0;
+}
+.booking-barbers-compact .booking-avatar { grid-row: 1 / 4; margin: 0; }
+.booking-barbers-compact :is(strong, small, em) { grid-column: 2; margin: 0; overflow-wrap: anywhere; }
+.booking-root :is(.booking-barber-card, .booking-service-card):disabled { cursor: default; }
+.booking-root :is(.booking-barber-card, .booking-service-card, .booking-confirmation-actions button):focus-visible {
+  outline: 3px solid #4aa3ff;
+  outline-offset: 2px;
+}
+
+.booking-confirmation-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+.booking-confirmation-actions p { color: var(--booking-muted); flex: 1 1 240px; margin: 0; }
+.booking-confirmation-actions button { flex-shrink: 0; }
+.booking-summary-details { min-width: 0; overflow-wrap: anywhere; }
+
 .booking-auth-card {
   max-width: 520px;
   padding: 2.25rem;
@@ -61,7 +96,8 @@
 }
 
 .booking-auth-card a,
-.booking-summary button {
+.booking-summary button,
+.booking-confirmation-actions button {
   background: var(--booking-blue);
   border: 1px solid var(--booking-hover);
   border-radius: 8px;
@@ -190,7 +226,7 @@
 .booking-barbers {
   display: grid;
   gap: 0.9rem;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(210px, 100%), 1fr));
 }
 
 .booking-barber-card,
@@ -435,8 +471,9 @@ html[data-theme='dark'] .booking-summary .booking-payment-note {
   padding: 0 1rem;
 }
 
-.booking-summary button:disabled {
-  cursor: wait;
+.booking-summary button:disabled,
+.booking-confirmation-actions button:disabled {
+  cursor: not-allowed;
   opacity: 0.65;
 }
 
@@ -636,13 +673,17 @@ html[data-theme='dark'] :is(.booking-week-nav button, .booking-payment-actions b
   }
 }
 
-html[data-theme='light'] :is(.booking-week-nav button, .booking-payment-actions button, .booking-summary button):disabled,
-html[data-theme='dark'] :is(.booking-week-nav button, .booking-payment-actions button, .booking-summary button):disabled {
+html[data-theme='light'] :is(.booking-week-nav button, .booking-payment-actions button, .booking-summary button, .booking-confirmation-actions button):disabled,
+html[data-theme='dark'] :is(.booking-week-nav button, .booking-payment-actions button, .booking-summary button, .booking-confirmation-actions button):disabled {
   filter: saturate(0.55);
   opacity: 0.68;
 }
 
 @media (max-width: 760px) {
+  .booking-options { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .booking-barbers { grid-template-columns: repeat(auto-fit, minmax(min(210px, 100%), 1fr)); }
+  .booking-confirmation-actions { align-items: stretch; flex-direction: column; }
+  .booking-confirmation-actions p { flex-basis: auto; }
   .booking-root {
     padding: 1rem max(0.75rem, calc((100vw - 1240px) / 2)) 2rem;
   }

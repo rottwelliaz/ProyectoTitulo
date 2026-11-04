@@ -27,7 +27,7 @@ describe('calendario público semanal con PostgreSQL real', { skip: !databaseUrl
       bancoNombre: 'Titular prueba', bancoRut: '11111111-1', bancoNombreBanco: 'Banco prueba',
       bancoTipoCuenta: 'Corriente', bancoNroCuenta: '123456', bancoCorreo: 'banco@test.invalid',
     } });
-    const service = await prisma.service.create({ data: { perfilBarberoId: profile.id, nombre_servicio: 'Corte calendario', precio: 10000, duracion_minutos: 60 } });
+    const service = await prisma.service.create({ data: { perfilBarberoId: profile.id, nombre_servicio: 'Corte calendario', precio: 10000 } });
     const slots = [];
     for (const date of dates) for (const time of ['09:00','09:30','10:00','10:30','11:00','11:30']) {
       slots.push(await prisma.cita.create({ data: { barberoId: profile.id, fecha_hora: at(time, date), disponibleHasta: new Date(at(time, date).getTime() + 30 * 60000) } }));
@@ -64,12 +64,12 @@ describe('calendario público semanal con PostgreSQL real', { skip: !databaseUrl
     assert.equal(response.status, 200, JSON.stringify(response.body));
     assert.equal(response.headers.get('cache-control'), 'no-store');
     assert.equal(cell(response, '09:00').estado, 'available');
-    assert.equal(cell(response, '09:30').estado, 'unavailable'); // 60 minutes overlap 10:00.
+    assert.equal(cell(response, '09:30').estado, 'available');
     assert.equal(cell(response, '10:00').estado, 'reserved');
     assert.equal(cell(response, '10:00').citaId, undefined);
-    assert.equal(cell(response, '10:30').motivo, 'duracion'); // Crosses the break.
+    assert.equal(cell(response, '10:30').estado, 'available');
     assert.equal(cell(response, '11:00').motivo, 'bloqueado');
-    assert.equal(cell(response, '11:30').estado, 'unavailable'); // Extends past closing.
+    assert.equal(cell(response, '11:30').estado, 'available');
     assert.equal(cell(response, '09:00', '2035-01-17').motivo, 'sin_publicar');
     assert.ok(!response.body.calendario.horas.includes('12:00'));
     for (const value of [reserved.id, f.client.email, f.client.nombre, f.client.telefono, 'COMPROBANTE_PRIVADO', 'clienteId', 'comprobante', 'banco']) assert.ok(!JSON.stringify(response.body).includes(value), value);
@@ -77,7 +77,6 @@ describe('calendario público semanal con PostgreSQL real', { skip: !databaseUrl
     const daily = await request(null, `/api/usuarios/barberos/${f.profile.id}/disponibilidad?fecha=${day}&servicioId=${f.service.id}`);
     assert.deepEqual(daily.body.citas, response.body.citas.filter(c => c.fecha_hora < at('00:00', '2035-01-16').toISOString()));
     assert.equal(daily.body.calendario, undefined);
-    await prisma.service.update({ where: { id: f.service.id }, data: { duracion_minutos: 30 } });
     assert.equal(cell(await calendar(f), '09:30').estado, 'available');
   });
 
@@ -92,15 +91,15 @@ describe('calendario público semanal con PostgreSQL real', { skip: !databaseUrl
     assert.equal((await book(f)).status, 409);
   });
 
-  test('dos clientes que consultaron libre: solo una reserva simultánea, incluso con inicios diferentes', async () => {
+  test('dos clientes que consultaron libre: un mismo bloque se reserva una vez y los consecutivos son independientes', async () => {
     for (const secondIndex of [0, 1]) {
       const f = await fixture();
       assert.equal(cell(await calendar(f), '09:00').estado, 'available');
       const results = await Promise.all([book(f), book(f, secondIndex, f.rival)]);
-      assert.deepEqual(results.map(r => r.status).sort(), [200, 409]);
-      assert.equal(await prisma.cita.count({ where: { barberoId: f.profile.id, estado: 'confirmada' } }), 1);
+      assert.deepEqual(results.map(r => r.status).sort(), secondIndex ? [200, 200] : [200, 409]);
+      assert.equal(await prisma.cita.count({ where: { barberoId: f.profile.id, estado: 'confirmada' } }), secondIndex ? 2 : 1);
       const updated = await calendar(f);
-      assert.equal(updated.body.calendario.horarios.filter(c => c.fecha === day && c.estado === 'reserved').length, 2);
+      assert.equal(updated.body.calendario.horarios.filter(c => c.fecha === day && c.estado === 'reserved').length, secondIndex ? 2 : 1);
     }
   });
 
@@ -112,17 +111,17 @@ describe('calendario público semanal con PostgreSQL real', { skip: !databaseUrl
     assert.equal(cell(await calendar(f), '11:00').estado, 'unavailable');
   });
 
-  test('un servicio al final del día o semana también valida los intervalos del período siguiente', async () => {
+  test('disponibilidad heredada fuera de jornada no habilita nuevas reservas', async () => {
     const f = await fixture();
     const first = await prisma.cita.create({ data: { barberoId: f.profile.id, fecha_hora: at('23:30', '2035-01-21'), disponibleHasta: at('00:00', '2035-01-22') } });
     await prisma.cita.create({ data: { barberoId: f.profile.id, fecha_hora: at('00:00', '2035-01-22'), disponibleHasta: at('00:30', '2035-01-22') } });
-    assert.equal(cell(await calendar(f), '23:30', '2035-01-21').estado, 'available');
+    assert.equal(cell(await calendar(f), '23:30', '2035-01-21'), undefined);
     const occupied = await prisma.cita.create({ data: { barberoId: f.profile.id, fecha_hora: at('00:00', '2035-01-22'), estado: 'confirmada', duracionReservada: 30 } });
-    assert.equal(cell(await calendar(f), '23:30', '2035-01-21').estado, 'unavailable');
+    assert.equal(cell(await calendar(f), '23:30', '2035-01-21'), undefined);
     assert.equal((await request(f.client, `/api/citas/${first.id}/agendar`, 'PATCH', { servicioId: f.service.id })).status, 409);
     await prisma.cita.update({ where: { id: occupied.id }, data: { estado: 'cancelada' } });
     await prisma.agendaBloqueo.create({ data: { barberoId: f.profile.id, inicio: at('00:00', '2035-01-22'), fin: at('00:15', '2035-01-22') } });
-    assert.equal(cell(await calendar(f), '23:30', '2035-01-21').estado, 'unavailable');
+    assert.equal(cell(await calendar(f), '23:30', '2035-01-21'), undefined);
     const daily = await request(null, `/api/usuarios/barberos/${f.profile.id}/disponibilidad?fecha=2035-01-21&servicioId=${f.service.id}`);
     assert.equal(daily.body.citas.length, 0);
   });
@@ -220,9 +219,9 @@ describe('calendario público semanal con PostgreSQL real', { skip: !databaseUrl
     try {
       const first = await open(f.client), second = await open(f.rival);
       await Promise.all([first.getByRole('button', { name: 'Reservar ahora', exact: true }).click(), second.getByRole('button', { name: 'Reservar ahora', exact: true }).click()]);
-      await first.waitForFunction(() => document.querySelector('.booking-alert.is-success') || document.querySelector('.booking-alert.is-error'));
-      await second.waitForFunction(() => document.querySelector('.booking-alert.is-success') || document.querySelector('.booking-alert.is-error'));
-      assert.equal(await first.locator('.booking-alert.is-success').count() + await second.locator('.booking-alert.is-success').count(), 1);
+      await first.waitForFunction(() => document.querySelector('.cbc-notification.swal2-icon-success') || document.querySelector('.booking-alert.is-error'));
+      await second.waitForFunction(() => document.querySelector('.cbc-notification.swal2-icon-success') || document.querySelector('.booking-alert.is-error'));
+      assert.equal(await first.locator('.cbc-notification.swal2-icon-success').count() + await second.locator('.cbc-notification.swal2-icon-success').count(), 1);
       assert.equal(await prisma.cita.count({ where: { barberoId: f.profile.id, estado: 'confirmada' } }), 1);
       const loser = await first.locator('.booking-alert.is-error').count() ? first : second;
       assert.match(await loser.locator('.booking-alert.is-error').textContent(), /dejó de estar disponible/);
@@ -232,9 +231,9 @@ describe('calendario público semanal con PostgreSQL real', { skip: !databaseUrl
       await page.getByRole('button', { name: 'Continuar al pago' }).click();
       await page.locator('.booking-proof-field input').setInputFiles(require('node:path').resolve(__dirname, '../../Frontend/src/assets/logotesis.png'));
       await page.getByRole('button', { name: 'Reservar con comprobante' }).click();
-      await page.locator('.booking-alert.is-success').waitFor();
+      await page.locator('.cbc-notification.swal2-icon-success').waitFor();
       const saved = await prisma.cita.findFirst({ where: { barberoId: payment.profile.id, estado: 'confirmada' } });
-      assert.equal(saved.duracionReservada, 60); assert.ok(saved.comprobanteTransferencia);
+      assert.equal(saved.duracionReservada, 30); assert.ok(saved.comprobanteTransferencia);
     } finally { await browser.close(); }
   });
 });

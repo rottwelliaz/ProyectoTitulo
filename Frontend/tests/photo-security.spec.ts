@@ -1,3 +1,4 @@
+import { fulfillDataTable } from './datatable-fixture';
 import { test, expect, type Page } from '@playwright/test';
 import { safePhotoUrl } from '../src/lib/profilePhoto';
 
@@ -17,15 +18,15 @@ async function mockPhotos(page: Page, role: 'cliente' | 'barbero' | 'admin', pho
     localStorage.setItem('user', JSON.stringify({ id: 1, rol: role }));
     localStorage.setItem('profile-photo-1', photo);
   }, { photo, role });
-  const professional = { id: 2, nombre: 'Barbero Foto', email: 'barbero@example.com', rol: 'barbero', aprobado: true, fecha_creacion: '2026-01-01T12:00:00Z', perfilBarbero: { id: 10, foto_perfil: photo, servicios: [{ id: 'cut', nombre_servicio: 'Corte', duracion_minutos: 30, precio: 12000 }], lugarTrabajo: { nombre_barberia: 'Conce', direccion: 'Centro' } } };
+  const professional = { id: 2, nombre: 'Barbero Foto', email: 'barbero@example.com', rol: 'barbero', aprobado: true, fecha_creacion: '2026-01-01T12:00:00Z', perfilBarbero: { id: 10, foto_perfil: photo, servicios: [{ id: 'cut', nombre_servicio: 'Corte', precio: 12000 }], lugarTrabajo: { nombre_barberia: 'Conce', direccion: 'Centro' } } };
   await page.route('**/api/**', async route => {
     const path = new URL(route.request().url()).pathname;
-    if (path.endsWith('/auth/me')) return route.fulfill({ json: { id: 1, nombre: 'Usuario', rol: role, email: 'usuario@example.com', aprobado: true, fecha_creacion: '2026-01-01T12:00:00Z', foto_perfil: photo, perfilBarbero: role === 'barbero' ? professional.perfilBarbero : null } });
-    if (path.endsWith('/usuarios')) return route.fulfill({ json: [professional] });
-    if (path.endsWith('/admin/dashboard')) return route.fulfill({ json: { stats: {}, clientes: [], barberos: [professional], admins: [], barberosPendientes: [] } });
-    if (path.endsWith('/citas/barberos')) return route.fulfill({ json: [{ id: 10, usuario: { nombre: 'Barbero Foto' }, foto_perfil: photo, servicios: professional.perfilBarbero.servicios, requiereComprobante: false }] });
-    if (path.endsWith('/conversations')) return route.fulfill({ json: [{ id: 'chat', updatedAt: '2026-01-01T12:00:00Z', otherUser: { id: 2, nombre: 'Barbero Foto', rol: 'barbero', foto_perfil: photo }, lastMessage: null }] });
-    return route.fulfill({ json: [] });
+    if (path.endsWith('/auth/me')) return fulfillDataTable(route, { json: { id: 1, nombre: 'Usuario', rol: role, email: 'usuario@example.com', aprobado: true, fecha_creacion: '2026-01-01T12:00:00Z', foto_perfil: photo, perfilBarbero: role === 'barbero' ? professional.perfilBarbero : null } });
+    if (path.endsWith('/usuarios')) return fulfillDataTable(route, { json: [professional] });
+    if (path.endsWith('/admin/dashboard')) return fulfillDataTable(route, { json: { stats: {}, clientes: [], barberos: [professional], admins: [], barberosPendientes: [] } });
+    if (path.endsWith('/citas/barberos')) return fulfillDataTable(route, { json: [{ id: 10, usuario: { nombre: 'Barbero Foto' }, foto_perfil: photo, servicios: professional.perfilBarbero.servicios, requiereComprobante: false }] });
+    if (path.endsWith('/conversations')) return fulfillDataTable(route, { json: [{ id: 'chat', updatedAt: '2026-01-01T12:00:00Z', otherUser: { id: 2, nombre: 'Barbero Foto', rol: 'barbero', foto_perfil: photo }, lastMessage: null }] });
+    return fulfillDataTable(route, { json: [] });
   });
 }
 
@@ -63,7 +64,7 @@ for (const accepted of [true, false]) {
     let requestPhoto = '';
     await page.route('**/api/auth/me/photo', async route => {
       requestPhoto = route.request().postDataJSON().foto_perfil;
-      return route.fulfill({ status: accepted ? 200 : 400, json: accepted ? { id: 1, foto_perfil: validPhoto } : { message: 'Imagen inválida' } });
+      return fulfillDataTable(route, { status: accepted ? 200 : 400, json: accepted ? { id: 1, foto_perfil: validPhoto } : { message: 'Imagen inválida' } });
     });
     await page.goto('/perfil');
     await expect(page.locator('.profile-photo')).toHaveClass(/has-photo/);

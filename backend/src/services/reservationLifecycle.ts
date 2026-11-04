@@ -32,7 +32,7 @@ const transitions: Partial<Record<CitaEstado, CitaEstado[]>> = {
 };
 
 export function validateTransition(
-  cita: Pick<Cita, 'estado' | 'fecha_hora' | 'duracionReservada'> & { servicio: { duracion_minutos: number } | null },
+  cita: Pick<Cita, 'estado' | 'fecha_hora' | 'duracionReservada'>,
   target: CitaEstado, actor: Actor, now = new Date(),
 ) {
   if (!['cliente', 'barbero', 'admin'].includes(actor.rol) || (actor.rol === 'cliente' && target !== 'cancelada')) {
@@ -53,22 +53,25 @@ export function validateTransition(
 // Keep the existing response shape while ensuring the UI reads historical values.
 export function historicalAppointment<T extends {
   nombreServicioReservado: string | null; precioReservado: number | null;
-  duracionReservada: number | null; servicioId: string | null; servicio?: unknown;
+  fecha_hora?: Date; duracionReservada: number | null; servicioId: string | null; servicio?: unknown;
 }>(cita: T) {
-  return { ...cita, servicio: cita.nombreServicioReservado === null ? null : {
-    id: cita.servicioId, nombre_servicio: cita.nombreServicioReservado,
-    precio: cita.precioReservado, duracion_minutos: cita.duracionReservada,
+  const service = cita.servicio as { nombre_servicio?: string; precio?: number } | null | undefined;
+  const duration = durationOf(cita);
+  return { ...cita, duracionReservada: duration,
+    fin: duration && cita.fecha_hora ? endOf(cita.fecha_hora, duration) : null,
+    servicio: cita.nombreServicioReservado === null && !service ? null : {
+    id: cita.servicioId, nombre_servicio: cita.nombreServicioReservado ?? service?.nombre_servicio,
+    precio: cita.precioReservado ?? service?.precio ?? null,
   } };
 }
 
 export async function freezeServiceHistory(tx: Prisma.TransactionClient, service: {
-  id: string; nombre_servicio: string; precio: number; duracion_minutos: number;
+  id: string; nombre_servicio: string; precio: number;
 }) {
-  // Fill only missing snapshots. Never overwrite a price/duration already agreed upon.
+  // Only service name and price belong to the service snapshot.
   for (const [field, value] of Object.entries({
     nombreServicioReservado: service.nombre_servicio,
     precioReservado: service.precio,
-    duracionReservada: service.duracion_minutos,
   })) {
     await tx.cita.updateMany({
       where: { servicioId: service.id, estado: { not: 'disponible' }, [field]: null },

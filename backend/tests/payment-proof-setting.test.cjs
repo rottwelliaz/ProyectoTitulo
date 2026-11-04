@@ -30,6 +30,7 @@ const originals = {
   transaction: prisma.$transaction,
   queryRaw: prisma.$queryRaw,
   serviceFindUnique: prisma.service.findUnique,
+  weekFindUnique: prisma.agendaSemana.findUnique,
 };
 
 let server;
@@ -37,10 +38,12 @@ let base;
 let requiresProof = true;
 let lastProfileUpdate;
 let lastAppointmentUpdate;
+const slotStart = new Date("2035-01-15T13:00:00Z");
 
 before(async () => {
   prisma.$transaction = async action => action(prisma);
   prisma.$queryRaw = async () => [{ id: 10 }];
+  prisma.agendaSemana.findUnique = async () => ({ configuracion: { startTime: "09:00", endTime: "19:00", blockMinutes: 30 } });
   prisma.agendaBloqueo.findFirst = async () => null;
   prisma.user.findUnique = async ({ where }) => users[where.id] || null;
   prisma.barberProfile.findUnique = async ({ where }) =>
@@ -54,8 +57,8 @@ before(async () => {
     id: 'slot-1',
     barberoId: 10,
     estado: 'disponible',
-    fecha_hora: new Date(Date.now() + 60 * 60 * 1000),
-    disponibleHasta: new Date(Date.now() + 120 * 60 * 1000),
+    fecha_hora: slotStart,
+    disponibleHasta: new Date(+slotStart + 60 * 60 * 1000),
     barbero: { requiereComprobante: requiresProof, usuario: { rol: 'barbero', aprobado: true } },
   });
   prisma.cita.updateMany = async args => {
@@ -64,9 +67,9 @@ before(async () => {
   };
   prisma.cita.create = async args => { lastAppointmentUpdate = args; return { id: 'booking-1', ...args.data }; };
   prisma.cita.findMany = async ({ where }) => where.estado === 'disponible'
-    ? [{ fecha_hora: new Date(Date.now()), disponibleHasta: new Date(Date.now() + 180 * 60 * 1000) }]
+    ? [{ fecha_hora: slotStart, disponibleHasta: new Date(+slotStart + 180 * 60 * 1000) }]
     : [];
-  prisma.service.findUnique = async () => ({ id: 'service-1', perfilBarberoId: 10, duracion_minutos: 30, nombre_servicio: 'Corte', precio: 10000, activo: true });
+  prisma.service.findUnique = async () => ({ id: 'service-1', perfilBarberoId: 10, nombre_servicio: 'Corte', precio: 10000, activo: true });
 
   const app = express();
   app.use(express.json({ limit: '6mb' }));
@@ -95,6 +98,7 @@ after(async () => {
   prisma.$transaction = originals.transaction;
   prisma.$queryRaw = originals.queryRaw;
   prisma.service.findUnique = originals.serviceFindUnique;
+  prisma.agendaSemana.findUnique = originals.weekFindUnique;
   await new Promise(resolve => server.close(resolve));
   await prisma.$disconnect();
 });

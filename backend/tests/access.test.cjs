@@ -61,10 +61,10 @@ test('Los tres roles se validan contra la base de datos, no el rol del JWT', asy
   }
 });
 
-test('Un solicitante anterior puede consultar su perfil como cliente pero no acceder a funciones profesionales', async () => {
+test('Un barbero pendiente conserva su rol y puede consultar su perfil sin acceso profesional', async () => {
   const me = await fetch(`${base}/api/auth/me`, { headers: headers(4) });
   assert.equal(me.status, 200);
-  assert.equal((await me.json()).rol, 'cliente');
+  assert.equal((await me.json()).rol, 'barbero');
   assert.equal((await fetch(`${base}/private/barbero`, { headers: headers(4) })).status, 403);
   assert.equal((await fetch(`${base}/private/admin`, { headers: headers(4) })).status, 403);
 });
@@ -86,7 +86,7 @@ test('Login valida contraseña, rol y aprobación, y emite un token utilizable',
     assert.equal(response.status, 200);
     {
       const data = await response.json();
-      assert.equal(data.user.rol, user.aprobado ? user.rol : 'cliente');
+      assert.equal(data.user.rol, user.rol);
       assert.equal(data.user.password, undefined);
       assert.equal((await fetch(`${base}/api/auth/me`, { headers: { Authorization: `Bearer ${data.token}` } })).status, 200);
     }

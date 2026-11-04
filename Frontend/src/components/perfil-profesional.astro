@@ -1,5 +1,5 @@
 ---
-import logoConce from '../assets/logotesis.png';
+import ProfessionalSidebar from './ProfessionalSidebar.astro';
 import ProfessionalCalendar from './calendar/ProfessionalCalendar';
 import BarberCalendar from './calendar/BarberCalendar';
 import ProfessionalServices from './ProfessionalServices';
@@ -8,61 +8,16 @@ import ProfessionalStatistics from './ProfessionalStatistics';
 import BarberAppointments from './BarberAppointments';
 import SessionNav from './SessionNav.astro';
 import {
-  BriefcaseBusiness,
-  ClipboardList,
-  UserRound,
   Pencil,
-  MessageCircle,
   FileCheck2,
   BadgeCheck,
   Camera,
-  Scissors,
   Settings,
 } from 'lucide-astro';
 ---
 
 <main class="panel-layout pro-root">
-  <aside class="pro-sidebar panel-sidebar">
-    <a class="pro-brand panel-sidebar-brand" href="/home" aria-label="Conce Barber Club">
-      <img src={logoConce.src} alt="Conce Barber Club" />
-    </a>
-
-    <nav class="pro-nav panel-sidebar-nav" aria-label="Menú profesional">
-      <a class="pro-nav-link is-active" href="#mi-perfil" data-pro-view="mi-perfil" aria-current="page">
-        <UserRound class="pro-nav-lucide" size={23} aria-hidden="true" />
-        Mi perfil
-      </a>
-      <a class="pro-nav-link" href="#mi-negocio" data-pro-view="mi-negocio">
-        <BriefcaseBusiness class="pro-nav-lucide" size={23} aria-hidden="true" />
-        Mi negocio
-      </a>
-      <a class="pro-nav-link" href="#organizacion" data-pro-view="organizacion">
-        <Scissors class="pro-nav-lucide" size={23} aria-hidden="true" />
-        Organización
-      </a>
-      <a class="pro-nav-link" href="#mis-citas" data-pro-view="mis-citas">
-        <ClipboardList class="pro-nav-lucide" size={23} aria-hidden="true" />
-        Mis citas
-      </a>
-      <a class="pro-nav-link" href="/mensajes">
-        <MessageCircle class="pro-nav-lucide" size={23} aria-hidden="true" />
-        Mensajes
-      </a>
-      <a class="pro-nav-link" href="#configuracion-reservas" data-pro-view="configuracion-reservas">
-        <Settings class="pro-nav-lucide" size={23} aria-hidden="true" />
-        Configuración
-      </a>
-    </nav>
-
-    <div class="pro-sidebar-user panel-sidebar-footer">
-      <div class="pro-mini-avatar" data-user-avatar aria-hidden="true"></div>
-      <div>
-        <strong id="sidebar-name">Barbero</strong>
-        <span id="sidebar-specialty">Perfil profesional</span>
-      </div>
-      <span class="pro-user-caret" aria-hidden="true"></span>
-    </div>
-  </aside>
+  <ProfessionalSidebar />
 
   <section class="pro-main">
     <header class="pro-topbar">
@@ -254,6 +209,7 @@ import {
 </main>
 
 <script>
+  import { confirmAction, notifyError, notifySuccess } from '../lib/notifications';
   import { requireSession, authFetch as fetch, API_URL, cacheSessionUser } from '../lib/session';
   import { safePhotoUrl } from '../lib/profilePhoto';
   void (async () => {
@@ -293,7 +249,19 @@ import {
     });
     if (view === 'mis-citas') window.dispatchEvent(new CustomEvent('professional-appointments-view', { detail: tab === 'historial' ? 'historial' : 'reservas' }));
   };
-  const showView = () => {
+  let previousHash = location.hash;
+  let decidingNavigation = false;
+  const showView = async () => {
+    if (location.hash !== previousHash) {
+      if (decidingNavigation) return;
+      decidingNavigation = true;
+      const detail = { allow: Promise.resolve(true) };
+      window.dispatchEvent(new CustomEvent('professional-before-view-change', { detail }));
+      const allowed = await detail.allow;
+      decidingNavigation = false;
+      if (!allowed) { history.replaceState(null, '', location.pathname + location.search + previousHash); return; }
+      previousHash = location.hash;
+    }
     const target = decodeURIComponent(location.hash.slice(1));
     const [view, tab] = titles[target] ? [target, undefined] : aliases[target] || ['mi-perfil'];
     views.forEach(panel => { panel.hidden = panel.dataset.proPanel !== view; });
@@ -605,7 +573,7 @@ import {
       if (!response.ok) throw new Error(data.message || 'No se pudo guardar el lugar de trabajo.');
 
       renderWorkplace(data);
-      setWorkplaceMessage(isEditing ? 'Lugar de trabajo actualizado.' : 'Lugar de trabajo creado.');
+      void notifySuccess(isEditing ? 'Lugar de trabajo actualizado.' : 'Lugar de trabajo creado.');
       await loadProfessionalProfile();
     } catch (error) {
       setWorkplaceMessage(
@@ -620,17 +588,15 @@ import {
     }
   });
 
+  let deletingWorkplace = false;
   deleteWorkplaceButton?.addEventListener('click', async () => {
-    if (!token || !currentWorkplace || !deleteWorkplaceButton) return;
-    const confirmed = window.confirm(
-      '¿Eliminar este lugar de trabajo? Tendrás que crear otro para completar tu perfil.',
-    );
-    if (!confirmed) return;
-
-    deleteWorkplaceButton.disabled = true;
-    setWorkplaceMessage();
+    if (!token || !currentWorkplace || !deleteWorkplaceButton || deletingWorkplace) return;
+    deletingWorkplace = true;
 
     try {
+      if (!await confirmAction('¿Eliminar este lugar de trabajo? Tendrás que crear otro para completar tu perfil.', 'Sí, eliminar lugar')) return;
+      deleteWorkplaceButton.disabled = true;
+      setWorkplaceMessage();
       const response = await fetch(`${API_URL}/lugartrabajo/${currentWorkplace.id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
@@ -641,14 +607,12 @@ import {
       }
 
       renderWorkplace(null);
-      setWorkplaceMessage('Lugar eliminado. Debes registrar uno nuevo.');
+      void notifySuccess('Lugar eliminado. Debes registrar uno nuevo.');
       await loadProfessionalProfile();
-    } catch (error) {
-      setWorkplaceMessage(
-        error instanceof Error ? error.message : 'No se pudo eliminar el lugar de trabajo.',
-        true,
-      );
+    } catch {
+      void notifyError('No se pudo eliminar el lugar de trabajo. Inténtalo nuevamente.');
     } finally {
+      deletingWorkplace = false;
       deleteWorkplaceButton.disabled = false;
     }
   });
@@ -704,7 +668,7 @@ import {
       if (!response.ok) throw new Error(data.message || 'No se pudieron guardar los datos bancarios.');
 
       renderBanking(data);
-      setBankingMessage(hasData ? 'Datos bancarios actualizados.' : 'Datos bancarios registrados.');
+      void notifySuccess(hasData ? 'Datos bancarios actualizados.' : 'Datos bancarios registrados.');
       await loadProfessionalProfile();
     } catch (error) {
       setBankingMessage(
@@ -739,7 +703,8 @@ import {
       if (!response.ok) throw new Error(data.message || 'No se pudo guardar la configuración.');
 
       renderBookingSettings(Boolean(data.requiereComprobante));
-      setBookingSettingsMessage('Configuración guardada correctamente.');
+      setBookingSettingsMessage();
+      void notifySuccess('Configuración guardada correctamente.');
     } catch (error) {
       renderBookingSettings(currentRequiresProof);
       setBookingSettingsMessage(

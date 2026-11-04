@@ -1,3 +1,10 @@
+.messages-layout {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .messages-root {
   --messages-bg: #020b18;
   --messages-panel: rgba(5, 24, 47, 0.94);
@@ -9,10 +16,9 @@
   background: radial-gradient(circle at 75% 8%, rgba(18, 97, 216, 0.2), transparent 27rem), var(--messages-bg);
   color: var(--messages-text);
   font-family: Inter, system-ui, sans-serif;
-  height: 100vh;
   overflow: hidden;
-  padding: 0 max(1rem, calc((100vw - 1320px) / 2)) 2rem;
-  height: 100dvh;
+  padding: 0 1.5rem 1.5rem;
+  min-width: 0;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -22,16 +28,22 @@
   align-items: center;
   display: grid;
   gap: 1.5rem;
-  grid-template-columns: 110px 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   min-height: 104px;
   flex: 0 0 auto;
 }
 
-.messages-brand img {
-  display: block;
-  height: 84px;
-  object-fit: contain;
-  width: 94px;
+.messages-menu-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: var(--messages-panel-strong);
+  border: 1px solid var(--messages-line);
+  border-radius: 8px;
+  color: var(--messages-text);
+  cursor: pointer;
+  min-height: 44px;
+  width: 44px;
 }
 
 .messages-title {
@@ -59,15 +71,6 @@
   margin-top: 0.2rem;
 }
 
-.messages-home-link {
-  border: 1px solid var(--messages-line);
-  border-radius: 8px;
-  color: var(--messages-text);
-  font-weight: 800;
-  padding: 0.75rem 1rem;
-  text-decoration: none;
-}
-
 .messages-app {
   border: 1px solid var(--messages-line);
   border-radius: 12px;
@@ -81,7 +84,7 @@
   background: var(--messages-panel);
   border-right: 1px solid var(--messages-line);
   display: flex !important;
-  flex: 0 0 clamp(300px, 27%, 360px);
+  flex: 0 0 clamp(260px, 34%, 360px);
   flex-direction: column;
   height: 100%;
   min-width: 0;
@@ -298,6 +301,11 @@
 
 .chat-header h2 {
   font-size: 1.02rem;
+  overflow-wrap: anywhere;
+}
+
+.chat-header > div {
+  min-width: 0;
 }
 
 .chat-header p {
@@ -322,6 +330,8 @@
   flex-direction: column;
   gap: 0.55rem;
   overflow-y: auto;
+  min-height: 0;
+  overscroll-behavior-y: contain;
   padding: 1.25rem;
 }
 
@@ -367,11 +377,12 @@
   border-top: 1px solid var(--messages-line);
   display: grid;
   gap: 0.75rem;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   padding: 0.9rem 1rem;
 }
 
 .message-composer textarea {
+  min-width: 0;
   background: rgba(2, 14, 29, 0.8);
   border: 1px solid var(--messages-line);
   border-radius: 9px;
@@ -552,11 +563,6 @@ html[data-theme='dark'] .message-composer textarea {
     min-height: 84px;
   }
 
-  .messages-brand img {
-    height: 68px;
-    width: 78px;
-  }
-
   .chat-content {
     grid-template-rows: 70px minmax(0, 1fr) auto auto;
   }
@@ -591,31 +597,60 @@ html[data-theme='dark'] .message-composer textarea {
   }
 }
 
+@media (max-width: 1180px) {
+  .messages-layout {
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .messages-layout > .panel-sidebar {
+    display: none;
+    position: relative;
+    max-height: 50vh;
+    max-height: 50dvh;
+  }
+
+  .messages-layout.is-navigation-open > .panel-sidebar {
+    display: flex;
+  }
+
+  .messages-menu-toggle {
+    display: inline-flex;
+  }
+
+  .messages-topbar {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 0.75rem;
+    min-height: 72px;
+  }
+
+  .messages-title p {
+    display: none;
+  }
+
+  .messages-layout:not(.is-navigation-open) .messages-root {
+    grid-row: 2;
+  }
+}
+
+@media (max-width: 760px) {
+  .messages-topbar .session-user-copy,
+  .messages-topbar .session-nav-home {
+    display: none;
+  }
+
+  .messages-root {
+    padding: 0 0.75rem 0.75rem;
+  }
+}
+
 @media (max-width: 520px) {
   .messages-root {
     padding: 0;
   }
 
   .messages-topbar {
-    grid-template-columns: 72px 1fr;
-    grid-template-rows: auto auto;
-    min-height: 142px;
+    min-height: 64px;
     padding: 0.45rem 0.9rem;
-  }
-
-  .messages-topbar .session-nav {
-    grid-column: 1 / -1;
-    justify-content: space-between;
-  }
-
-  .messages-brand img {
-    height: 64px;
-    width: 68px;
-  }
-
-  .messages-title p,
-  .messages-home-link {
-    display: none;
   }
 
   .messages-app {
@@ -659,4 +694,16 @@ html[data-theme='dark'] .message-composer textarea {
     padding: 0;
     width: 48px;
   }
+}
+
+/* Keep the composer visible when the mobile menu uses part of a short screen. */
+@media (max-height: 540px) {
+  .messages-topbar { min-height: 56px; }
+  .messages-title p { display: none; }
+  .messages-root { padding-bottom: 0.5rem; }
+  .chat-content { grid-template-rows: 48px minmax(0, 1fr) auto auto; }
+  .messages-sidebar-header { flex-basis: 48px; height: 48px; }
+  .message-composer { padding: 0.5rem 0.75rem; }
+  .message-composer textarea { max-height: 56px; }
+  .chat-header .message-avatar-large { height: 38px; width: 38px; }
 }

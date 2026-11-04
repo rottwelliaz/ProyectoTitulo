@@ -10,7 +10,7 @@ async function prepare(page: Page, requiresProof = true, paymentStatus = 200, de
   await page.route('**/api/**', async route => {
     const path = new URL(route.request().url()).pathname;
     if (path.endsWith('/auth/me')) return route.fulfill({ json: { id: 1, rol: 'cliente', nombre: 'Cliente', aprobado: true } });
-    if (path.endsWith('/citas/barberos')) return route.fulfill({ json: [10, 20].map(id => ({ id, usuario: { nombre: `Barbero ${id}` }, requiereComprobante: requiresProof, servicios: [{ id: `service-${id}`, nombre_servicio: 'Corte', precio: 12000, duracion_minutos: 30 }] })) });
+    if (path.endsWith('/citas/barberos')) return route.fulfill({ json: [10, 20].map(id => ({ id, usuario: { nombre: `Barbero ${id}` }, requiereComprobante: requiresProof, servicios: [{ id: `service-${id}`, nombre_servicio: 'Corte', precio: 12000 }] })) });
     if (path.includes('/citas/disponibilidad/')) return route.fulfill({ json: bookingAvailability(new URL(route.request().url()).searchParams, [{ id: `slot-${path.split('/').pop()}`, fecha_hora: slot }]) });
     if (path.endsWith('/pago')) {
       payments.push({ path, body: route.request().postDataJSON() });
@@ -25,21 +25,20 @@ async function prepare(page: Page, requiresProof = true, paymentStatus = 200, de
   await page.goto('/booking');
   await page.locator('.booking-barber-card').first().click();
   await page.locator('.booking-service-card').click();
+  expect(payments).toHaveLength(0);
+  await expect(page.getByText(bank.bancoNroCuenta)).toHaveCount(0);
   await page.locator('.booking-calendar-cell.is-available').click();
-  return { payments, bookings };
+  return { payments, bookings, slot, end: new Date(+new Date(slot) + 30 * 60000).toISOString() };
 }
 
-test('los datos se consultan solo al continuar al pago y el comprobante permite reservar', async ({ page }) => {
+test('los datos se consultan solo con servicio y horario completos y el comprobante permite reservar', async ({ page }) => {
   const state = await prepare(page);
-  expect(state.payments).toHaveLength(0);
-  await expect(page.getByText(bank.bancoNroCuenta)).toHaveCount(0);
-  await page.getByRole('button', { name: 'Continuar al pago' }).click();
   await expect(page.getByText(bank.bancoNroCuenta)).toBeVisible();
-  expect(state.payments).toEqual([{ path: '/api/citas/slot-10/pago', body: { servicioId: 'service-10' } }]);
+  expect(state.payments).toEqual([{ path: '/api/citas/slot-10/pago', body: { servicioId: 'service-10', fecha_hora: state.slot, fin_hora: state.end } }]);
   const stored = await page.evaluate(() => JSON.stringify({ ...localStorage, ...sessionStorage }));
   expect(stored).not.toContain('banco'); expect(stored).not.toContain(bank.bancoNroCuenta);
   await page.locator('.booking-proof-field input').setInputFiles('src/assets/logotesis.png');
-  await page.getByRole('button', { name: 'Reservar con comprobante' }).click();
+  await page.getByRole('button', { name: 'Confirmar reserva' }).click();
   await expect(page.getByText('Hora reservada y confirmada correctamente.')).toBeVisible();
   expect(state.bookings).toHaveLength(1);
   await expect(page.getByText(bank.bancoNroCuenta)).toHaveCount(0);
@@ -47,15 +46,14 @@ test('los datos se consultan solo al continuar al pago y el comprobante permite 
 
 test('sin comprobante no se consultan datos bancarios', async ({ page }) => {
   const state = await prepare(page, false);
-  await page.getByRole('button', { name: 'Reservar ahora' }).click();
+  await page.getByRole('button', { name: 'Confirmar reserva' }).click();
   await expect(page.getByText('Hora reservada y confirmada correctamente.')).toBeVisible();
   expect(state.payments).toHaveLength(0);
-  expect(state.bookings).toEqual([{ servicioId: 'service-10', comprobanteTransferencia: null, comprobanteNombre: null }]);
+  expect(state.bookings).toEqual([{ servicioId: 'service-10', fecha_hora: state.slot, fin_hora: state.end, comprobanteTransferencia: null, comprobanteNombre: null }]);
 });
 
 test('cambiar de profesional descarta respuestas bancarias tardías', async ({ page }) => {
   const state = await prepare(page, true, 200, 350);
-  await page.getByRole('button', { name: 'Continuar al pago' }).click();
   await expect.poll(() => state.payments.length).toBe(1);
   await page.locator('.booking-barber-card').nth(1).click();
   await page.waitForTimeout(450);
@@ -65,7 +63,6 @@ test('cambiar de profesional descarta respuestas bancarias tardías', async ({ p
 
 test('una denegación de pago muestra el error sin información bancaria', async ({ page }) => {
   await prepare(page, true, 429);
-  await page.getByRole('button', { name: 'Continuar al pago' }).click();
   await expect(page.getByText('No se pueden consultar datos de pago en este momento.')).toBeVisible();
   await expect(page.locator('.booking-payment')).toHaveCount(0);
 });

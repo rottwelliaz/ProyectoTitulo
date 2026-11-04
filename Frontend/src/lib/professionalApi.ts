@@ -7,7 +7,7 @@ export async function professionalApi(path: string, method = 'GET', body?: unkno
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
   const data = await response.json().catch(() => null);
-  if (!response.ok) throw new Error(data?.message || 'No se pudo completar la operación. Inténtalo nuevamente.');
+  if (!response.ok) throw Object.assign(new Error(data?.message || 'No se pudo completar la operación. Inténtalo nuevamente.'), { status: response.status, conflictos: data?.conflictos });
   return data;
 }
 export const errorMessage = (error: unknown) => error instanceof Error ? error.message : 'No se pudo completar la operación.';

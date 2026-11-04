@@ -1,3 +1,5 @@
+import { isDataTable } from '../services/dataTables';
+import { pendingWhere, userPage } from '../services/paginatedLists';
 import { Request, Response } from 'express';
 import type { UserRole } from '@prisma/client';
 import prisma from '../config/prisma';
@@ -31,8 +33,8 @@ export const createUser = async (req: Request, res: Response) => {
         email,
         password: hashed,
         telefono: telefono || null,
-        rol: 'cliente',
-        aprobado: true,
+        rol: selectedRole,
+        aprobado: selectedRole !== 'barbero',
         ...(selectedRole === 'barbero' ? { solicitudProfesional: { create: {} } } : {}),
       },
       });
@@ -102,18 +104,35 @@ export const getUsers = async (req: Request, res: Response) => {
   }
 };
 
-export const getPendingBarbers = async (_req: AuthRequest, res: Response) => {
+export const getPendingBarbers = async (req: AuthRequest, res: Response) => {
   try {
-    return res.json(await prisma.user.findMany({ where: { solicitudProfesional: { is: { estado: 'pendiente' } } },
+    if (isDataTable(req)) return res.json(await userPage(req, pendingWhere));
+    return res.json(await prisma.user.findMany({ where: { rol: 'barbero', aprobado: false, solicitudProfesional: { is: { estado: 'pendiente' } } },
       select: { id: true, nombre: true, email: true, telefono: true, rol: true, aprobado: true, activo: true, fecha_creacion: true, solicitudProfesional: true },
       orderBy: { fecha_creacion: 'asc' } }));
-  } catch { return res.status(500).json({ message: 'No se pudieron cargar las solicitudes' }); }
+  } catch (error) { const failure = scheduleFailure(error); return res.status(failure?.status ?? 500).json({ message: failure?.message ?? 'No se pudieron cargar las solicitudes' }); }
 };
 export const approveBarber = resolveApplication(true);
 export const rejectBarber = resolveApplication(false);
 
-export const getAdminDashboard = async (_req: AuthRequest, res: Response) => {
+export const getAdminDashboard = async (req: AuthRequest, res: Response) => {
   try {
+    if (isDataTable(req)) {
+      const table = req.query.table;
+      if (typeof table !== 'string' || !['clientes', 'barberos', 'admins', 'pendientes'].includes(table)) throw new ScheduleError(400, 'Listado inválido');
+      const where = table === 'pendientes' ? pendingWhere : { rol: ({ clientes: 'cliente', barberos: 'barbero', admins: 'admin' } as const)[table as 'clientes' | 'barberos' | 'admins'] };
+      return res.json(await userPage(req, where));
+    }
+    if (req.query.summary === '1') {
+      const [clients, barbers, admins, approved, pending] = await prisma.$transaction([
+        prisma.user.count({ where: { rol: 'cliente' } }),
+        prisma.user.count({ where: { rol: 'barbero' } }),
+        prisma.user.count({ where: { rol: 'admin' } }),
+        prisma.user.count({ where: { rol: 'barbero', aprobado: true } }),
+        prisma.user.count({ where: pendingWhere }),
+      ]);
+      return res.json({ stats: { totalUsuarios: clients + barbers + admins, clientes: clients, barberos: barbers, admins, barberosAprobados: approved, barberosPendientes: pending } });
+    }
     const users = await prisma.user.findMany({
       select: {
         id: true,
@@ -142,7 +161,6 @@ export const getAdminDashboard = async (_req: AuthRequest, res: Response) => {
                 id: true,
                 nombre_servicio: true,
                 precio: true,
-                duracion_minutos: true,
               },
               orderBy: { nombre_servicio: 'asc' },
             },
@@ -169,7 +187,7 @@ export const getAdminDashboard = async (_req: AuthRequest, res: Response) => {
     const clientes = users.filter((user) => user.rol === 'cliente');
     const barberos = users.filter((user) => user.rol === 'barbero');
     const admins = users.filter((user) => user.rol === 'admin');
-    const barberosPendientes = users.filter((user) => user.solicitudProfesional?.estado === 'pendiente');
+    const barberosPendientes = barberos.filter((user) => !user.aprobado && user.solicitudProfesional?.estado === 'pendiente');
 
     return res.json({
       stats: {
@@ -186,6 +204,8 @@ export const getAdminDashboard = async (_req: AuthRequest, res: Response) => {
       barberosPendientes,
     });
   } catch (error) {
+    const failure = scheduleFailure(error);
+    if (failure) return res.status(failure.status).json({ message: failure.message });
     console.error('getAdminDashboard error', error);
     return res.status(500).json({ message: 'Error al obtener dashboard admin' });
   }
@@ -267,7 +287,10 @@ export const updateUser = async (req: AuthRequest, res: Response) => {
       if (current.rol !== user.rol || current.aprobado !== user.aprobado || current.activo !== user.activo) throw new ScheduleError(409, 'La cuenta cambió; actualiza el panel antes de editar');
       if (id === req.user!.id && (nextRole !== 'admin' || activo === false)) throw new ScheduleError(409, 'No puedes retirar tu propio acceso administrativo');
       if (current.rol === 'admin' && current.activo && (nextRole !== 'admin' || activo === false) && await tx.user.count({ where: { rol: 'admin', activo: true } }) <= 1) throw new ScheduleError(409, 'Debe permanecer al menos un administrador activo');
-      if (current.solicitudProfesional?.estado === 'pendiente' && (nextRole !== current.rol || nextApproved !== current.aprobado)) throw new ScheduleError(409, 'Resuelve la solicitud con Aprobar o Rechazar antes de cambiar el rol');
+      // An admin may explicitly repair an old client-labelled application in the editor.
+      // Approval/rejection themselves never convert client accounts.
+      const repairPendingRole = current.rol === 'cliente' && current.solicitudProfesional?.estado === 'pendiente' && nextRole === 'barbero' && !nextApproved;
+      if (current.solicitudProfesional?.estado === 'pendiente' && !repairPendingRole && (nextRole !== current.rol || nextApproved !== current.aprobado)) throw new ScheduleError(409, 'Resuelve la solicitud con Aprobar o Rechazar antes de cambiar el rol');
       if (nextRole === 'barbero' && !current.solicitudProfesional && (current.rol !== 'barbero' || !nextApproved)) {
         await tx.solicitudProfesional.create({ data: { usuarioId: id, estado: nextApproved ? 'aprobada' : 'pendiente',
           fechaResolucion: nextApproved ? new Date() : null, revisorId: nextApproved ? req.user!.id : null } });

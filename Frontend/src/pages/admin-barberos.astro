@@ -73,6 +73,8 @@ import SessionNav from '../components/SessionNav.astro';
 </style>
 
 <script>
+  import { mountCardTable, userOrders } from '../lib/dataTables';
+  import { confirmAction, notifyError, notifySuccess } from '../lib/notifications';
   import { escapeHtmlValue as escapeHtml } from '../lib/html';
   import { requireSession, authFetch as fetch, API_URL } from '../lib/session';
   void (async () => {
@@ -85,6 +87,7 @@ import SessionNav from '../components/SessionNav.astro';
   const refreshButton = document.querySelector<HTMLButtonElement>('#refresh-pending-barbers');
 
   const showMessage = (text: string, type: 'success' | 'error') => {
+    if (type === 'success') { void notifySuccess(text); text = ''; }
     if (!message) return;
     message.textContent = text;
     message.className =
@@ -101,46 +104,7 @@ import SessionNav from '../components/SessionNav.astro';
     }
   };
 
-  const renderEmpty = (text: string) => {
-    if (!list) return;
-    list.innerHTML = `<div class="rounded-lg border border-[#0D47A1] bg-[#020B18] p-5 text-[#C7D2E1]">${escapeHtml(text)}</div>`;
-  };
-
-  const loadPendingBarbers = async () => {
-    if (!token) {
-      window.location.href = '/login?redirect=/admin-barberos';
-      return;
-    }
-
-    const user = getUser();
-    if (user?.rol !== 'admin') {
-      renderEmpty('No tienes permisos para ver esta página.');
-      showMessage('Solo un usuario administrador puede aprobar barberos.', 'error');
-      return;
-    }
-
-    if (list) list.innerHTML = '<div class="rounded-lg border border-[#0D47A1] bg-[#020B18] p-5 text-[#C7D2E1]">Cargando solicitudes...</div>';
-
-    try {
-      const response = await fetch(`${API_URL}/usuarios/barberos/pendientes`, {
-        headers: {
-          Authorization: `Bearer ${token}`, 'Content-Type': 'application/json',
-        },
-      });
-
-      const data = await response.json().catch(() => []);
-      if (!response.ok) {
-        throw new Error(data.message || 'No se pudieron cargar los barberos pendientes.');
-      }
-
-      if (!Array.isArray(data) || data.length === 0) {
-        renderEmpty('No hay barberos pendientes por aprobar.');
-        return;
-      }
-
-      if (!list) return;
-      list.innerHTML = data
-        .map((barber) => {
+  const renderPendingBarber = (barber: any) => {
           const date = barber.fecha_creacion ? new Date(barber.fecha_creacion).toLocaleDateString('es-CL') : '-';
           return `
             <article class="grid gap-4 rounded-lg border border-[#0D47A1] bg-[#020B18] p-5 sm:grid-cols-[1fr_auto] sm:items-center">
@@ -148,6 +112,7 @@ import SessionNav from '../components/SessionNav.astro';
                 <h2 class="text-xl font-black">${escapeHtml(barber.nombre)}</h2>
                 <p class="mt-1 text-sm text-[#C7D2E1]">${escapeHtml(barber.email)}</p>
                 <p class="mt-1 text-sm text-[#C7D2E1]">Teléfono: ${escapeHtml(barber.telefono || 'No registrado')}</p>
+                <p class="mt-1 text-sm text-[#C7D2E1]">Rol: ${escapeHtml(barber.rol)} · Solicitud: Pendiente · Estado de aprobación: No aprobado</p>
                 <p class="mt-2 text-xs font-bold uppercase tracking-[0.16em] text-[#F2C230]">Solicitado: ${escapeHtml(date)}</p>
               </div>
               <button
@@ -160,32 +125,30 @@ import SessionNav from '../components/SessionNav.astro';
               <button type="button" class="reject-barber rounded-lg bg-red-800 px-5 py-3 text-sm font-black text-white" data-id="${escapeHtml(barber.id)}">Rechazar solicitud</button>
             </article>
           `;
-        })
-        .join('');
-    } catch (error) {
-      const text = error instanceof Error ? error.message : 'Error al cargar solicitudes.';
-      renderEmpty(text);
-      showMessage(text, 'error');
-    }
+  };
+  let pendingTable: ReturnType<typeof mountCardTable> | undefined;
+  const loadPendingBarbers = async () => {
+    if (!token || getUser()?.rol !== 'admin' || !list) return;
+    if (pendingTable) { pendingTable.reload(); return; }
+    pendingTable = mountCardTable(list, { endpoint: '/usuarios/barberos/pendientes', label: 'Solicitudes pendientes', orders: userOrders,
+      render: renderPendingBarber, empty: 'No hay barberos pendientes por aprobar.' });
   };
 
   list?.addEventListener('click', async (event) => {
     const button = (event.target as HTMLElement).closest<HTMLButtonElement>('.approve-barber, .reject-barber');
-    if (!button || !token) return;
+    if (!button || !token || resolving) return;
 
     const rejected = button.classList.contains('reject-barber');
-    const motivoRechazo = rejected ? window.prompt('Motivo del rechazo (obligatorio):') : null;
-    if (rejected && !motivoRechazo?.trim()) return;
-    button.disabled = true;
-    button.textContent = 'Guardando...';
-
+    resolving = true;
     try {
+      if (rejected && !(await confirmAction('¿Estás seguro de rechazar esta solicitud? La cuenta pendiente será eliminada permanentemente.', 'Sí, rechazar y eliminar'))) return;
+      button.disabled = true;
+      button.textContent = 'Guardando...';
       const response = await fetch(`${API_URL}/usuarios/${button.dataset.id}/${rejected ? 'rechazar-barbero' : 'aprobar-barbero'}`, {
         method: 'PATCH',
         headers: {
           Authorization: `Bearer ${token}`, 'Content-Type': 'application/json',
         },
-        body: rejected ? JSON.stringify({ motivoRechazo }) : undefined,
       });
 
       const data = await response.json().catch(() => ({}));
@@ -193,15 +156,16 @@ import SessionNav from '../components/SessionNav.astro';
         throw new Error(data.message || 'No se pudo aprobar el barbero.');
       }
 
-      showMessage(rejected ? 'Solicitud rechazada; resultado conservado.' : 'Barbero aprobado correctamente.', 'success');
+      showMessage(rejected ? 'La solicitud fue rechazada y la cuenta eliminada correctamente.' : 'El barbero ha sido aprobado correctamente.', 'success');
       await loadPendingBarbers();
     } catch (error) {
       const text = error instanceof Error ? error.message : 'Error al aprobar barbero.';
-      showMessage(text, 'error');
+      void notifyError(text);
       button.disabled = false;
       button.textContent = rejected ? 'Rechazar solicitud' : 'Aprobar barbero';
-    }
+    } finally { resolving = false; }
   });
+  let resolving = false;
 
   refreshButton?.addEventListener('click', loadPendingBarbers);
   loadPendingBarbers();

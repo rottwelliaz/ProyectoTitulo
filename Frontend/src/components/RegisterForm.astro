@@ -51,11 +51,11 @@
             <input
               type="password"
               name="password"
-              minlength="12"
+              minlength="8"
               maxlength="72"
               autocomplete="new-password"
               aria-describedby="password-help"
-              placeholder="Mínimo 12 caracteres"
+              placeholder="Mínimo 8 caracteres"
               required
               class="rounded-lg border border-[#0D47A1] bg-[#020B18] px-4 py-3 text-white outline-none transition placeholder:text-[#8798B3] focus:border-[#1E6DFF] focus:ring-2 focus:ring-[#1E6DFF]/20"
             />
@@ -75,7 +75,7 @@
             />
           </label>
 
-          <p id="password-help" class="text-sm text-[#C7D2E1]">Contraseña: mínimo 12 caracteres y máximo 72 bytes. Las tildes y emojis pueden ocupar varios bytes.</p>
+          <p id="password-help" class="text-sm text-[#C7D2E1]">Contraseña: mínimo 8 caracteres y máximo 72 bytes. Las tildes y emojis pueden ocupar varios bytes.</p>
           <fieldset class="grid gap-3 text-left">
             <legend class="text-sm font-semibold text-white">Tipo de cuenta</legend>
             <div class="grid gap-3 sm:grid-cols-2">
@@ -131,7 +131,8 @@
 
 <script>
   import { API_URL } from '../lib/session';
-  import { registrationError } from '../lib/registration';
+  import { registrationError, newPasswordError } from '../lib/registration';
+  import { notifyError, notifySuccess } from '../lib/notifications';
   const form = document.querySelector<HTMLFormElement>('#register-form');
   const message = document.querySelector<HTMLParagraphElement>('#register-message');
   const button = document.querySelector<HTMLButtonElement>('#register-button');
@@ -140,6 +141,7 @@
   const roleInputs = document.querySelectorAll<HTMLInputElement>('input[name="rol"]');
 
   const showMessage = (text: string, type: 'success' | 'error') => {
+    void (type === 'success' ? notifySuccess(text) : notifyError(text));
     if (!message) return;
 
     message.textContent = text;
@@ -148,6 +150,11 @@
         ? 'mt-4 rounded-lg border border-green-500/50 bg-green-500/10 px-4 py-3 text-sm font-semibold text-green-300'
         : 'mt-4 rounded-lg border border-red-500/50 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-300';
   };
+
+  form?.querySelector<HTMLInputElement>('[name="password"]')?.addEventListener('invalid', event => {
+    const error = newPasswordError((event.target as HTMLInputElement).value);
+    if (error) { event.preventDefault(); showMessage(error, 'error'); }
+  });
 
   const updateApprovalNote = () => {
     const selectedRole = form?.querySelector<HTMLInputElement>('input[name="rol"]:checked')?.value;
@@ -192,7 +199,7 @@
 
       const successMessage =
         payload.rol === 'barbero'
-          ? 'Solicitud enviada correctamente. Puedes iniciar sesión como cliente y consultar el estado en Mi perfil.'
+          ? 'Tu cuenta de barbero está pendiente de aprobación. Puedes iniciar sesión y consultar el estado en Mi perfil.'
           : 'Cuenta creada correctamente. Ahora puedes iniciar sesión.';
 
       showMessage(successMessage, 'success');

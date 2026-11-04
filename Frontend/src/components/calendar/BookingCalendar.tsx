@@ -10,6 +10,7 @@ export interface BookingCalendarCell {
   estado: 'available' | 'reserved' | 'unavailable';
   citaId?: string;
   motivo?: 'pasado' | 'bloqueado' | 'duracion' | 'sin_publicar' | 'agenda' | 'hora_invalida';
+  ocupacion?: { inicio: string; fin: string; desde: number; hasta: number; tipo?: 'reserved' | 'bloqueado' | 'descanso' }[];
 }
 
 export interface BookingCalendarData {
@@ -18,12 +19,13 @@ export interface BookingCalendarData {
   horarios: BookingCalendarCell[];
   zonaHoraria: string;
   consultadoEn: string;
+  configuracion?: { startTime: string; endTime: string; blockMinutes: number };
 }
 
 const labels = { available: 'Disponible', reserved: 'Reservado', unavailable: 'No disponible', selected: 'Seleccionado' };
 const reasons = {
   pasado: 'Esta hora ya pasó.', bloqueado: 'El profesional no atiende en este horario.',
-  duracion: 'El servicio completo no cabe antes de otra reserva, bloqueo o cierre.',
+  duracion: 'El bloque completo no está disponible antes de otra reserva, bloqueo o cierre.',
   sin_publicar: 'No hay un inicio de atención publicado para esta hora.',
   agenda: 'El profesional debe revisar este horario.', hora_invalida: 'Hora no válida por el cambio de horario de Chile.',
 };
@@ -126,7 +128,7 @@ export default function BookingCalendar({ now, weekStart, selectedDate, selected
     {loading && !data ? <p className="booking-empty" role="status">Consultando agenda…</p>
       : error ? <div className="booking-calendar-error" role="alert"><p>{error}</p><button type="button" onClick={onRefresh}>Volver a consultar agenda</button></div>
       : data && <>
-        {!data.horarios.some(cell => days.includes(cell.fecha) && cell.estado === 'available' && Boolean(cell.fecha_hora && new Date(cell.fecha_hora).getTime() > now)) && <p className="booking-calendar-notice" role="status">No hay horas disponibles para este servicio en la semana consultada.</p>}
+        {!data.horarios.some(cell => days.includes(cell.fecha) && cell.estado === 'available' && Boolean(cell.fecha_hora && new Date(cell.fecha_hora).getTime() > now)) && <p className="booking-calendar-notice" role="status">No hay horas disponibles en la semana consultada.</p>}
         <div className="booking-calendar-scroll">
           <table className="booking-calendar-table">
             <caption className="sr-only">Agenda semanal del barbero. Los horarios se muestran en la hora de Chile.</caption>
@@ -145,14 +147,15 @@ export default function BookingCalendar({ now, weekStart, selectedDate, selected
                 <button type="button" className={`booking-calendar-cell is-${status}`} disabled={loading || disabled || !cell || cell.estado !== 'available' || expired}
                   aria-pressed={cell?.estado === 'available' ? selected : undefined}
                   aria-label={`${formatDay(day, { weekday: 'long', day: 'numeric', month: 'long' })}, ${time}: ${labels[status]}${reason ? `. ${reason}` : ''}`}
-                  title={reason || labels[status]} onClick={() => cell && cell.fecha_hora && new Date(cell.fecha_hora).getTime() > Date.now() && onSelect(cell)}>
+                  style={cell?.ocupacion?.length && !selected ? { backgroundImage: cell.ocupacion.map(part => { const color = part.tipo === 'descanso' ? 'rgba(242, 194, 48, .55)' : part.tipo === 'bloqueado' ? 'rgba(18, 97, 216, .5)' : 'rgba(220, 50, 50, .4)'; return `linear-gradient(to bottom, transparent ${part.desde}%, ${color} ${part.desde}%, ${color} ${part.hasta}%, transparent ${part.hasta}%)`; }).join(', ') } : undefined}
+                  title={[reason || labels[status], ...(cell?.ocupacion || []).map(part => `${part.tipo === 'descanso' ? 'Descanso' : part.tipo === 'bloqueado' ? 'Bloqueado' : 'Reservado'} ${businessTime(part.inicio)}–${businessTime(part.fin)}`)].join(' · ')} onClick={() => cell && cell.fecha_hora && new Date(cell.fecha_hora).getTime() > Date.now() && onSelect(cell)}>
                   <StatusIcon status={status} /><span>{labels[status]}</span>
                 </button>
               </td>;
             })}</tr>)}</tbody>
           </table>
         </div>
-        <p className="booking-calendar-note">Hora de Chile · La disponibilidad se actualiza automáticamente y se verifica al confirmar tu reserva.</p>
+        <p className="booking-calendar-note">Hora de Chile{data.configuracion ? ` · Bloques de ${data.configuracion.blockMinutes} minutos` : ''} · La disponibilidad se actualiza automáticamente y se verifica al confirmar tu reserva.</p>
       </>}
   </div>;
 }

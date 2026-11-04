@@ -15,6 +15,15 @@ export const formatInstant = (instant: string | Date, options: Intl.DateTimeForm
   new Intl.DateTimeFormat('es-CL', { ...options, timeZone: BUSINESS_TIME_ZONE }).format(new Date(instant));
 export const businessTime = (instant: string | Date) => formatInstant(instant, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
 
+export function reservationDuration(appointment: { duracionReservada?: number | null }) {
+  const minutes = appointment.duracionReservada;
+  return Number.isInteger(minutes) && Number(minutes) > 0 ? Number(minutes) : null;
+}
+export function reservationEnd(appointment: Parameters<typeof reservationDuration>[0] & { fecha_hora: string }) {
+  const minutes = reservationDuration(appointment);
+  return minutes === null ? null : new Date(+new Date(appointment.fecha_hora) + minutes * 60000);
+}
+
 // Never silently shift a nonexistent/repeated wall-clock time. If nighttime
 // publication is added to the UI, it must let the professional resolve it.
 export function slotInstant(day: string, minutes: number): Date {

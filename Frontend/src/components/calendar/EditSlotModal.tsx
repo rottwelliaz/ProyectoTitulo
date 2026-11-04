@@ -9,7 +9,7 @@ interface EditSlotModalProps {
   onChange: (status: SlotStatus) => void;
 }
 
-const STATUS_OPTIONS: SlotStatus[] = ['available', 'booking', 'break'];
+const STATUS_OPTIONS: SlotStatus[] = ['available', 'booking', 'break', 'unconfigured'];
 
 export default function EditSlotModal({
   dateLabel,

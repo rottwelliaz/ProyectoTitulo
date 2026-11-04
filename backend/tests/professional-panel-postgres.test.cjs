@@ -30,7 +30,7 @@ describe('panel profesional con HTTP y PostgreSQL reales', { skip: !url }, () =>
     const r = await fetch(base + path, { method, headers: { 'Content-Type': 'application/json', ...(account ? { Authorization: 'Bearer ' + jwt.sign({ id: account.id, rol: 'admin' }, process.env.JWT_SECRET, { expiresIn: '1h' }) } : {}) }, ...(data === undefined ? {} : { body: JSON.stringify(data) }) });
     return { status: r.status, body: await r.json().catch(() => null) };
   };
-  const serviceData = { nombre_servicio: 'Corte clásico', descripcion: 'Servicio profesional', precio: 12000, duracion_minutos: 30 };
+  const serviceData = { nombre_servicio: 'Corte clásico', descripcion: 'Servicio profesional', precio: 12000 };
   const seed = (f, estado, date) => prisma.cita.create({ data: { barberoId: f.profile.id, clienteId: client.id, estado, fecha_hora: date, duracionReservada: 30, nombreServicioReservado: 'Histórico', precioReservado: 10000 } });
   before(async () => {
     client = await user('cliente'); admin = await user('admin');
@@ -47,7 +47,7 @@ describe('panel profesional con HTTP y PostgreSQL reales', { skip: !url }, () =>
     for (const method of ['PUT', 'DELETE']) assert.equal((await request(other.owner, `/servicios/${service.id}`, method, method === 'PUT' ? serviceData : undefined)).status, 403);
     for (const data of [{ precio: -1 }, { duracion_minutos: 0 }, { perfilBarberoId: other.profile.id }, { nombre_servicio: 'x'.repeat(81) }]) assert.equal((await request(f.owner, `/servicios/${service.id}`, 'PUT', data)).status, 400);
     const old = await prisma.cita.create({ data: { barberoId: f.profile.id, clienteId: client.id, servicioId: service.id, fecha_hora: new Date('2026-01-01T14:00:00Z'), estado: 'finalizada', duracionReservada: 30, nombreServicioReservado: service.nombre_servicio, precioReservado: 12000 } });
-    assert.equal((await request(f.owner, `/servicios/${service.id}`, 'PUT', { nombre_servicio: 'Corte nuevo', descripcion: 'Nueva descripción', precio: 15000, duracion_minutos: 45, activo: false })).status, 200);
+    assert.equal((await request(f.owner, `/servicios/${service.id}`, 'PUT', { nombre_servicio: 'Corte nuevo', descripcion: 'Nueva descripción', precio: 15000, activo: false })).status, 200);
     assert.equal((await request(f.owner, '/servicios')).body.find(s => s.id === service.id).activo, false);
     assert.equal((await request(f.owner, `/servicios/${service.id}`, 'PUT', { activo: true })).body.activo, true);
     assert.equal((await request(f.owner, `/servicios/${service.id}`, 'DELETE')).status, 204);
@@ -113,7 +113,7 @@ describe('panel profesional con HTTP y PostgreSQL reales', { skip: !url }, () =>
     assert.equal((await request(f.owner, '/profesional/calendario?desde=2035-01-15&hasta=2035-01-15')).body.bloqueos[0].id, block.body.id);
     assert.equal((await request(f.owner, `/profesional/bloqueos/${block.body.id}`, 'DELETE')).status, 204);
     const reservation = await book(); assert.equal(reservation.status, 200);
-    assert.equal((await request(f.owner, '/profesional/bloqueos', 'POST', { inicio: start.toISOString(), fin: end.toISOString(), tipo: 'bloqueado' })).status, 201);
+    assert.equal((await request(f.owner, '/profesional/bloqueos', 'POST', { inicio: start.toISOString(), fin: end.toISOString(), tipo: 'bloqueado', conservarReservas: true })).status, 201);
     assert.equal((await prisma.cita.findUnique({ where: { id: reservation.body.id } })).estado, 'confirmada');
   });
 

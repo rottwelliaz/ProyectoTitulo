@@ -530,7 +530,8 @@
 .calendar-day {
   display: grid;
   gap: 5px;
-  grid-template-rows: 52px repeat(11, 38px);
+  grid-template-rows: 52px repeat(var(--calendar-rows), 38px);
+  align-content: start;
 }
 
 .calendar-corner,
@@ -577,6 +578,7 @@
 }
 
 .barber-slot {
+  position: relative;
   align-items: center;
   border: 1px solid transparent;
   border-radius: 8px;
@@ -590,6 +592,8 @@
   justify-content: center;
   min-width: 0;
   padding: 0.2rem;
+  min-height: 0;
+  overflow: hidden;
   transition: filter 150ms ease, transform 150ms ease, box-shadow 150ms ease;
 }
 
@@ -610,6 +614,13 @@
   opacity: 0.92;
 }
 
+.barber-slot .slot-reservation-heading { display: flex; align-items: center; gap: .25rem; width: 100%; font-size: .62rem; line-height: 1.1; }
+.slot-reservation-heading > span:first-child { flex-shrink: 0; }
+.barber-slot .slot-reservation-client { min-width: 0; flex: 1; text-align: left; }
+.barber-slot.is-reserved { padding: 2px 4px; }
+.barber-slot.is-reserved small { margin-top: 0; line-height: 1.05; }
+.barber-slot .slot-time { font-variant-numeric: tabular-nums; }
+
 .barber-slot:hover:not(:disabled) {
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.28);
   filter: brightness(1.14);
@@ -629,6 +640,21 @@
 .barber-slot.is-booking { background: #1261d8; }
 .barber-slot.is-reserved { background: #ef4444; }
 .barber-slot.is-break { background: #f2c230; color: #020b18; }
+.barber-slot.is-unconfigured { background: #586474; color: #fff; }
+.barber-calendar { --calendar-pending-border: #f4b45f; }
+html[data-theme='light'] .barber-calendar { --calendar-pending-border: #b95100; }
+.barber-slot.is-pending::after { content: ''; position: absolute; inset: 1px; border: 1.5px dashed #ffffff; border-radius: 6px; pointer-events: none; }
+.barber-slot.underlying-available { --slot-underlying: #16803a; }
+.barber-slot.underlying-booking { --slot-underlying: #1261d8; }
+.barber-slot.underlying-break { --slot-underlying: #f2c230; }
+.barber-slot.underlying-unconfigured { --slot-underlying: #586474; }
+.calendar-pending-message { color: var(--pro-text); padding: .7rem; border-left: 4px solid #f59e0b; }
+.calendar-secondary-actions { justify-content: flex-start; margin-bottom: .75rem; }
+.calendar-legend i.is-unconfigured, .slot-status-option.is-unconfigured i { background: #586474; }
+.calendar-legend i.is-pending { background: transparent; border: 1.5px dashed var(--calendar-pending-border); border-radius: 3px; box-sizing: border-box; }
+.appointment-details dl { display: grid; grid-template-columns: auto 1fr; gap: .7rem 1rem; margin: 1rem 0; }
+.appointment-details dd { margin: 0; overflow-wrap: anywhere; }
+.professional-event.is-confirmada, .professional-event.is-pendiente { border-color: var(--pro-red); }
 
 .calendar-legend {
   display: flex;

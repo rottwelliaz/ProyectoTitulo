@@ -1,6 +1,9 @@
+import PaginatedCards from './PaginatedCards';
+import { appointmentOrders } from '../lib/dataTables';
 import { authFetch as fetch, API_URL } from '../lib/session';
-import { useEffect, useState } from 'react';
-import { businessTime, formatInstant } from '../lib/businessTime';
+import { useEffect, useRef, useState } from 'react';
+import { confirmAction, notifyError } from '../lib/notifications';
+import { businessTime, formatInstant, reservationEnd, reservationDuration } from '../lib/businessTime';
 
 type AppointmentStatus = 'pendiente' | 'confirmada' | 'rechazada' | 'cancelada' | 'finalizada' | 'inasistencia';
 
@@ -19,7 +22,6 @@ interface Appointment {
   servicio: {
     id: string;
     nombre_servicio: string;
-    duracion_minutos: number;
   } | null;
 }
 
@@ -34,61 +36,33 @@ const STATUS_LABELS: Record<AppointmentStatus, string> = {
   finalizada: 'Finalizada',
 };
 
-const sortAppointmentsByNewest = (items: Appointment[]) =>
-  [...items].sort((a, b) => new Date(b.fecha_hora).getTime() - new Date(a.fecha_hora).getTime());
-
 export default function BarberAppointments() {
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [revision, setRevision] = useState(0);
   const [listView, setListView] = useState<'reservas' | 'historial'>('reservas');
-  const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const updating = useRef(false);
 
   useEffect(() => {
-    const changeView = (event: Event) => setListView((event as CustomEvent<string>).detail === 'historial' ? 'historial' : 'reservas');
+    const changeView = (event: Event) => { setListView((event as CustomEvent<string>).detail === 'historial' ? 'historial' : 'reservas'); setRevision(n => n + 1); };
+    const refresh = () => { if (!document.hidden && !updating.current) setRevision(n => n + 1); };
     window.addEventListener('professional-appointments-view', changeView);
-    return () => window.removeEventListener('professional-appointments-view', changeView);
+    window.addEventListener('professional-calendar-updated', refresh);
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    const timer = window.setInterval(refresh, 30000);
+    return () => { clearInterval(timer); window.removeEventListener('professional-appointments-view', changeView); window.removeEventListener('professional-calendar-updated', refresh); window.removeEventListener('focus', refresh); document.removeEventListener('visibilitychange', refresh); };
   }, []);
-  const visibleAppointments = appointments.filter(item => {
-    const historical = new Date(item.fecha_hora).getTime() < Date.now() || ['cancelada', 'rechazada', 'finalizada', 'inasistencia'].includes(item.estado);
-    return listView === 'historial' ? historical : !historical;
-  });
-
-  useEffect(() => {
-    const loadAppointments = async () => {
-      const token = window.localStorage.getItem('token');
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const response = await fetch(`${API_URL}/citas/mias`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await response.json().catch(() => []);
-        if (!response.ok) throw new Error(data.message || 'No se pudieron cargar tus citas.');
-        setAppointments(Array.isArray(data) ? sortAppointmentsByNewest(data as Appointment[]) : []);
-      } catch (requestError) {
-        setError(requestError instanceof Error ? requestError.message : 'No se pudieron cargar tus citas.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    void loadAppointments();
-  }, []);
-
   const updateStatus = async (appointment: Appointment, estado: AppointmentStatus) => {
     const action = { confirmada: 'confirmar', rechazada: 'rechazar', cancelada: 'cancelar', finalizada: 'finalizar', inasistencia: 'marcar con inasistencia', pendiente: '' }[estado];
-    if (!window.confirm(`¿Seguro que deseas ${action} esta cita?`)) return;
-
     const token = window.localStorage.getItem('token');
-    if (!token) return;
+    if (!token || updating.current) return;
 
+    updating.current = true;
     setUpdatingId(appointment.id);
-    setError('');
     try {
+      if (!await confirmAction(`¿Seguro que deseas ${action} esta cita?`, 'Sí, ' + action, !['confirmada', 'finalizada'].includes(estado))) return;
+      setError('');
       const response = await fetch(`${API_URL}/citas/${appointment.id}/estado`, {
         method: 'PATCH',
         headers: {
@@ -100,13 +74,12 @@ export default function BarberAppointments() {
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.message || 'No se pudo actualizar la cita.');
 
-      setAppointments((current) =>
-        sortAppointmentsByNewest(current.map((item) => item.id === data.id ? data as Appointment : item)),
-      );
+      setRevision(current => current + 1);
       window.dispatchEvent(new Event('professional-calendar-updated'));
-    } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : 'No se pudo actualizar la cita.');
+    } catch {
+      void notifyError('No se pudo actualizar la cita. Inténtalo nuevamente.');
     } finally {
+      updating.current = false;
       setUpdatingId(null);
     }
   };
@@ -149,18 +122,16 @@ export default function BarberAppointments() {
       </div>
 
       {error && <p className="appointments-message is-error" role="alert">{error}</p>}
-      {loading ? (
-        <p className="pro-empty">Cargando citas...</p>
-      ) : visibleAppointments.length === 0 ? (
-        <p className="pro-empty">{listView === 'historial' ? 'Aún no tienes citas en el historial.' : 'Aún no tienes reservas activas.'}</p>
-      ) : (
-        <div className="appointments-list">
-          {visibleAppointments.map((appointment) => (
+      <div className="appointments-list">
+        <PaginatedCards<Appointment> endpoint={`/citas/mias?vista=${listView}`} orders={appointmentOrders} revision={revision}
+          label={listView === 'historial' ? 'Historial de citas' : 'Reservas'}
+          empty="Aún no tienes citas en esta sección."
+          render={appointment => (
             <section key={appointment.id} className="appointment-card">
               <div className="appointment-date">
                 <strong>{formatInstant(appointment.fecha_hora, { day: '2-digit' })}</strong>
                 <span>{formatInstant(appointment.fecha_hora, { month: 'short' })}</span>
-                <time>{businessTime(appointment.fecha_hora)}</time>
+                <time>{businessTime(appointment.fecha_hora)}–{reservationEnd(appointment) ? businessTime(reservationEnd(appointment)!) : 'Por verificar'}</time>
               </div>
 
               <div className="appointment-info">
@@ -190,7 +161,7 @@ export default function BarberAppointments() {
 
                 {(() => {
                   const start = new Date(appointment.fecha_hora).getTime();
-                  const duration = appointment.duracionReservada ?? appointment.servicio?.duracion_minutos;
+                  const duration = reservationDuration(appointment);
                   const ended = duration && start + duration * 60000 <= Date.now();
                   const actions: AppointmentStatus[] = appointment.estado === 'pendiente' && start > Date.now()
                     ? ['confirmada', 'rechazada', 'cancelada']
@@ -207,9 +178,8 @@ export default function BarberAppointments() {
                 })()}
               </div>
             </section>
-          ))}
-        </div>
-      )}
+          )} />
+      </div>
     </article>
   );
 }

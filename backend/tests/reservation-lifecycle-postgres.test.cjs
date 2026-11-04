@@ -24,8 +24,8 @@ describe('ciclo e historial de reservas por HTTP y PostgreSQL', { skip: !url }, 
   async function fixture() {
     const owner = await user('barbero');
     const profile = await prisma.barberProfile.create({ data: { usuarioId: owner.id, requiereComprobante: false } });
-    const service = await prisma.service.create({ data: { perfilBarberoId: profile.id, nombre_servicio: 'Corte original', precio: 10000, duracion_minutos: 30 } });
-    const start = new Date(Date.now() + 86400000);
+    const service = await prisma.service.create({ data: { perfilBarberoId: profile.id, nombre_servicio: 'Corte original', precio: 10000 } });
+    const start = new Date("2035-01-15T13:00:00Z");
     const slot = await prisma.cita.create({ data: { barberoId: profile.id, fecha_hora: start, disponibleHasta: new Date(+start + 3600000) } });
     return { owner, profile, service, slot };
   }
@@ -142,10 +142,10 @@ describe('ciclo e historial de reservas por HTTP y PostgreSQL', { skip: !url }, 
   test('nombre, precio, duración, participantes y fechas sobreviven a editar/desactivar servicio y usuario', async () => {
     const f = await fixture(), booked = await book(f); assert.equal(booked.status, 200);
     const id = booked.body.id, created = booked.body.fecha_creacion;
-    assert.equal((await request(f.owner, `/servicios/${f.service.id}`, 'PUT', { nombre_servicio: 'Nuevo corte', precio: 20000, duracion_minutos: 60 })).status, 200);
+    assert.equal((await request(f.owner, `/servicios/${f.service.id}`, 'PUT', { nombre_servicio: 'Nuevo corte', precio: 20000 })).status, 200);
     assert.equal((await request(f.owner, `/servicios/${f.service.id}`, 'DELETE')).status, 204);
     const history = (await request(client, '/citas/cliente/mias')).body.find(c => c.id === id);
-    assert.deepEqual(history.servicio, { id: f.service.id, nombre_servicio: 'Corte original', precio: 10000, duracion_minutos: 30 });
+    assert.deepEqual(history.servicio, { id: f.service.id, nombre_servicio: 'Corte original', precio: 10000 });
     assert.equal(history.fecha_creacion, created);
     assert.equal((await request(f.owner, `/citas/${id}`, 'DELETE')).status, 409);
     assert.equal((await request(admin, `/usuarios/${f.owner.id}`, 'DELETE')).status, 204);

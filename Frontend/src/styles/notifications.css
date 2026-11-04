@@ -1,0 +1,77 @@
+/* Inherit the existing data-theme preference. CSS updates open popups in place. */
+.cbc-notifications {
+  --cbc-surface: var(--admin-card, #062544);
+  --cbc-field: var(--booking-bg, #03152d);
+  --cbc-text: var(--pro-text, #f5f7fa);
+  --cbc-muted: var(--pro-muted, #b8c2cc);
+  --cbc-border: var(--pro-line, #31577c);
+  --cbc-success: #7de0a3;
+  --cbc-error: #ff8d8d;
+  --cbc-warning: #ffc400;
+  z-index: 20000;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+html[data-theme='light'] .cbc-notifications {
+  --cbc-success: #166534;
+  --cbc-error: #b91c1c;
+  --cbc-warning: #854d0e;
+}
+.cbc-notifications .cbc-notification {
+  --swal2-background: var(--cbc-surface);
+  --swal2-color: var(--cbc-text);
+  --swal2-success: var(--cbc-success);
+  background: var(--cbc-surface);
+  color: var(--cbc-text);
+  border: 1px solid var(--cbc-border);
+  border-radius: 16px;
+  box-shadow: 0 18px 48px rgb(0 0 0 / 24%);
+  width: min(32rem, 100%);
+  padding: 1.25rem;
+}
+.cbc-notification .swal2-title { color: var(--cbc-text); font-size: 1.35rem; line-height: 1.4; }
+.cbc-notification .swal2-html-container { color: var(--cbc-muted); margin: 1rem 0; line-height: 1.6; }
+.cbc-notification .swal2-actions { gap: .75rem; flex-wrap: wrap; margin-top: 1.25rem; }
+.cbc-notification :is(.swal2-confirm, .swal2-cancel) {
+  border: 1px solid transparent;
+  border-radius: 9px;
+  padding: .75rem 1.1rem;
+  min-height: 44px;
+  font: inherit;
+  font-weight: 700;
+}
+.cbc-notification .swal2-confirm { background: #1261d8; color: #fff; }
+.cbc-notification .swal2-confirm.cbc-danger { background: #b91c1c; }
+.cbc-notification .swal2-cancel { background: var(--cbc-field); color: var(--cbc-text); border-color: var(--cbc-border); }
+.cbc-notification button:hover { filter: brightness(1.1); }
+.cbc-notification button:focus-visible { outline: 3px solid #4aa3ff; outline-offset: 3px; }
+.cbc-notification button:disabled { opacity: .65; }
+.cbc-notification .swal2-close { color: var(--cbc-muted); width: 44px; height: 44px; }
+.cbc-notification :is(.swal2-input, .swal2-textarea, .swal2-select) {
+  background: var(--cbc-field); color: var(--cbc-text); border: 1px solid var(--cbc-border);
+  border-radius: 8px; box-shadow: none; margin: 1rem 0; width: 100%;
+}
+.cbc-notification :is(.swal2-input, .swal2-textarea)::placeholder { color: var(--cbc-muted); }
+.cbc-notification :is(.swal2-radio, .swal2-checkbox, .swal2-validation-message, .swal2-footer) {
+  background: var(--cbc-field); color: var(--cbc-text); border-color: var(--cbc-border);
+}
+.cbc-notification .swal2-icon.swal2-warning { color: var(--cbc-warning); border-color: var(--cbc-warning); }
+.cbc-notification .swal2-icon.swal2-error { color: var(--cbc-error); border-color: var(--cbc-error); }
+.cbc-notification .swal2-error [class^='swal2-x-mark-line'] { background: var(--cbc-error); }
+.cbc-notification .swal2-icon.swal2-success { color: var(--cbc-success); border-color: var(--cbc-success); }
+.cbc-notification .swal2-success-ring { border-color: var(--cbc-success); }
+.cbc-notification .swal2-success [class^='swal2-success-line'] { background: var(--cbc-success); }
+.cbc-notification .swal2-success :is(.swal2-success-fix, .swal2-success-circular-line-left, .swal2-success-circular-line-right) {
+  background: var(--cbc-surface) !important;
+}
+.cbc-notifications .cbc-notification.swal2-toast { padding: 1rem; width: 100%; }
+.cbc-notification.swal2-toast .swal2-title { font-size: 1rem; }
+.cbc-notification.swal2-toast .swal2-close { width: 44px; height: 44px; }
+.cbc-notification .swal2-timer-progress-bar { background: var(--cbc-success); }
+@media (max-width: 480px) {
+  .cbc-notifications.swal2-container { padding: .75rem; }
+  .cbc-notification .swal2-actions { width: 100%; }
+  .cbc-notification :is(.swal2-confirm, .swal2-cancel) { flex: 1 1 auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cbc-notifications *, .cbc-notifications *::before, .cbc-notifications *::after { animation: none !important; transition: none !important; }
+}

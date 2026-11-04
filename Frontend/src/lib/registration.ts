@@ -1,5 +1,5 @@
 export function newPasswordError(password: string): string | null {
-  if (password.length < 12) return 'La contraseña nueva debe tener al menos 12 caracteres';
+  if (password.length < 8) return 'La contraseña debe tener al menos 8 caracteres';
   if (/^\s+$/.test(password)) return 'La contraseña no puede contener solo espacios';
   if (new TextEncoder().encode(password).length > 72) return 'La contraseña no puede superar 72 bytes (algunos caracteres ocupan más de un byte)';
   return null;

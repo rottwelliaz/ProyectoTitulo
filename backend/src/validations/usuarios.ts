@@ -25,10 +25,10 @@ const email = Joi.string()
   });
 
 const password = Joi.string()
-  .min(12)
+  .min(8)
   .custom((value, helpers) => Buffer.byteLength(value, 'utf8') > 72 ? helpers.error('password.bytes') : /^\s+$/.test(value) ? helpers.error('password.blank') : value)
   .messages({
-    'string.min': 'La contraseña nueva debe tener al menos 12 caracteres',
+    'string.min': 'La contraseña debe tener al menos 8 caracteres',
     'password.bytes': 'La contraseña no puede superar 72 bytes (algunos caracteres ocupan más de un byte)',
     'password.blank': 'La contraseña no puede contener solo espacios',
     'string.base': 'El password debe ser texto',
@@ -91,8 +91,27 @@ export const updateUserValidation = Joi.object({
 export const updateProfileValidation = Joi.object({
   nombre: nombre.optional(),
   email: email.optional(),
-  password: password.optional(),
   telefono: telefono.optional(),
 }).unknown(false).messages({
   'object.unknown': 'No se permiten campos adicionales en la edición de perfil',
+});
+
+export const changePasswordValidation = Joi.object({
+  currentPassword: Joi.string().max(4096).required().messages({
+    'any.required': 'Ingresa tu contraseña actual',
+    'string.empty': 'Ingresa tu contraseña actual',
+    'string.base': 'La contraseña actual debe ser texto',
+    'string.max': 'La contraseña actual es demasiado larga',
+  }),
+  newPassword: password.required().messages({ 'any.required': 'Ingresa la nueva contraseña' }),
+  confirmPassword: Joi.string().required().valid(Joi.ref('newPassword')).messages({
+    'any.required': 'Confirma la nueva contraseña',
+    'any.only': 'Las nuevas contraseñas no coinciden',
+    'string.empty': 'Confirma la nueva contraseña',
+    'string.base': 'La confirmación debe ser texto',
+  }),
+}).required().unknown(false).messages({
+  'object.unknown': 'No se permiten campos adicionales al cambiar la contraseña',
+  'object.base': 'Completa los campos del cambio de contraseña',
+  'any.required': 'Completa los campos del cambio de contraseña',
 });

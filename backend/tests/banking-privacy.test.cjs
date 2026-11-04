@@ -31,8 +31,8 @@ describe('privacidad bancaria con PostgreSQL real', { skip: !databaseUrl }, () =
     const owner = await user('barbero');
     const place = await prisma.lugarTrabajo.create({ data: { nombre_barberia: 'Barberia', direccion: 'Concepcion' } });
     const profile = await prisma.barberProfile.create({ data: { usuarioId: owner.id, lugarTrabajoId: place.id, requiereComprobante: proof, ...bank } });
-    const service = await prisma.service.create({ data: { perfilBarberoId: profile.id, nombre_servicio: 'Corte', precio: 10000, duracion_minutos: 30 } });
-    const slot = await prisma.cita.create({ data: { barberoId: profile.id, fecha_hora: new Date(Date.now() + 86400000), disponibleHasta: new Date(Date.now() + 90000000), estado: 'disponible' } });
+    const service = await prisma.service.create({ data: { perfilBarberoId: profile.id, nombre_servicio: 'Corte', precio: 10000 } });
+    const slot = await prisma.cita.create({ data: { barberoId: profile.id, fecha_hora: new Date('2035-01-15T13:00:00Z'), disponibleHasta: new Date('2035-01-15T14:00:00Z'), estado: 'disponible' } });
     return { owner, profile, service, slot, place };
   }
   const pay = (account, f, data = { servicioId: f.service.id }) => request(account, `/citas/${f.slot.id}/pago`, 'POST', data);

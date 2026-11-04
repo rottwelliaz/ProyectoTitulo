@@ -53,6 +53,7 @@ const { showHome = true, label = 'Navegación de cuenta' } = Astro.props;
 <script>
   import { clearSession, getSession } from '../lib/session';
   import { safePhotoUrl, setPhotoBackground } from '../lib/profilePhoto';
+  import { canAccess } from '../lib/access';
 
   type MenuRoot = HTMLElement & { dataset: DOMStringMap };
 
@@ -106,8 +107,8 @@ const { showHome = true, label = 'Navegación de cuenta' } = Astro.props;
       setPhotoBackground(avatar, photo);
       fallback?.classList.toggle('hidden', Boolean(photo));
     }
-    root.querySelectorAll<HTMLElement>('[data-session-role-link]').forEach((link) => {
-      link.hidden = !link.dataset.sessionRoleLink?.split(' ').includes(user.rol);
+    root.querySelectorAll<HTMLAnchorElement>('[data-session-role-link]').forEach((link) => {
+      link.hidden = !link.dataset.sessionRoleLink?.split(' ').includes(user.rol) || !canAccess(new URL(link.href).pathname, user.rol, user.aprobado !== false);
     });
     const guest = root.querySelector<HTMLElement>('[data-session-guest]');
     if (guest) guest.hidden = true;

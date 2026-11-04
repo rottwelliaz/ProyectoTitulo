@@ -11,8 +11,8 @@ async function fixture(page: Page, theme = 'original', instant = '2030-01-07T11:
     const url = new URL(route.request().url()), path = url.pathname;
     if (path.endsWith('/auth/me')) return route.fulfill({ json: { id: 1, rol: 'cliente', nombre: 'Cliente de prueba' } });
     if (path.endsWith('/citas/barberos')) return route.fulfill({ json: [{ id: 10, usuario: { nombre: 'Barbero de prueba' }, requiereComprobante: false, servicios: [
-      { id: 'long', nombre_servicio: 'Corte completo', precio: 10000, duracion_minutos: 60 },
-      { id: 'short', nombre_servicio: 'Barba', precio: 7000, duracion_minutos: 30 },
+      { id: 'long', nombre_servicio: 'Corte completo', precio: 10000 },
+      { id: 'short', nombre_servicio: 'Barba', precio: 7000 },
     ] }] });
     if (path.includes('/citas/disponibilidad/')) {
       state.requests.push(url.search);
@@ -58,10 +58,10 @@ test('semana real, estados accesibles, selección azul y reserva sin comprobante
   await available.focus(); await page.keyboard.press('Enter');
   await expect(page.locator('.booking-calendar-cell.is-selected')).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('.booking-summary')).toContainText('lunes, 7 de enero');
-  await page.getByRole('button', { name: 'Reservar ahora', exact: true }).click();
+  await page.getByRole('button', { name: 'Confirmar reserva', exact: true }).click();
   await expect(page.getByText('Hora reservada y confirmada correctamente.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'lunes, 7 de enero, 09:00: Reservado', exact: true })).toBeDisabled();
-  expect(state.bookings).toEqual([{ servicioId: 'long', comprobanteTransferencia: null, comprobanteNombre: null }]);
+  expect(state.bookings).toEqual([{ servicioId: 'long', fecha_hora: slotInstant('2030-01-07', 540).toISOString(), fin_hora: slotInstant('2030-01-07', 570).toISOString(), comprobanteTransferencia: null, comprobanteNombre: null }]);
 });
 
 test('navegación semanal, fechas mensuales y regreso a hoy', async ({ page }) => {
@@ -91,22 +91,24 @@ test('actualizar conserva una selección válida y descarta la ocupada; error y 
   state.reserved = true;
   await page.getByRole('button', { name: 'Actualizar', exact: true }).click();
   await expect(page.getByText(/El horario seleccionado dejó de estar disponible/)).toBeVisible();
-  await expect(page.locator('.booking-summary')).toHaveCount(0);
+  await expect(page.locator('.booking-summary')).toContainText('Fecha y horario pendientes.');
+  await expect(page.getByRole('button', { name: 'Confirmar reserva', exact: true })).toBeDisabled();
   state.fail = true;
   await page.getByRole('button', { name: 'Actualizar', exact: true }).click();
   await expect(page.locator('.booking-calendar-error')).toContainText('Agenda temporalmente no disponible.');
   state.fail = false; state.empty = true;
   await page.getByRole('button', { name: 'Volver a consultar agenda', exact: true }).click();
-  await expect(page.getByText('No hay horas disponibles para este servicio en la semana consultada.')).toBeVisible();
+  await expect(page.getByText('No hay horas disponibles en la semana consultada.')).toBeVisible();
 });
 
 test('conflicto al confirmar actualiza la agenda y permite escoger otra hora', async ({ page }) => {
   const state = await fixture(page); state.conflict = true;
   await page.getByRole('button', { name: 'lunes, 7 de enero, 09:00: Disponible', exact: true }).click();
-  await page.getByRole('button', { name: 'Reservar ahora', exact: true }).click();
+  await page.getByRole('button', { name: 'Confirmar reserva', exact: true }).click();
   await expect(page.getByText(/El horario dejó de estar disponible/)).toBeVisible();
   await expect(page.getByRole('button', { name: 'lunes, 7 de enero, 09:00: Reservado', exact: true })).toBeDisabled();
-  await expect(page.locator('.booking-summary')).toHaveCount(0);
+  await expect(page.locator('.booking-summary')).toContainText('Fecha y horario pendientes.');
+  await expect(page.getByRole('button', { name: 'Confirmar reserva', exact: true })).toBeDisabled();
 });
 
 test('actualización automática y al volver a la ventana; una selección válida conserva el desplazamiento', async ({ page }) => {
@@ -126,7 +128,8 @@ test('actualización automática y al volver a la ventana; una selección válid
   state.reserved = true;
   await page.evaluate(() => window.dispatchEvent(new Event('focus')));
   await expect(page.getByRole('button', { name: 'lunes, 7 de enero, 09:00: Reservado', exact: true })).toBeDisabled();
-  await expect(page.locator('.booking-summary')).toHaveCount(0);
+  await expect(page.locator('.booking-summary')).toContainText('Fecha y horario pendientes.');
+  await expect(page.getByRole('button', { name: 'Confirmar reserva', exact: true })).toBeDisabled();
 });
 
 for (const theme of ['original', 'light', 'dark']) for (const [width, height] of [[1920,1080],[1600,900],[1366,768],[1280,720],[768,1024],[390,844],[320,568]]) {
@@ -183,7 +186,7 @@ for (const timezoneId of ['UTC', 'Asia/Tokyo', 'America/Santiago']) {
       await expect(page.getByRole('button', { name: 'Mes anterior', exact: true })).toBeDisabled();
       await page.keyboard.press('Escape');
       await saturday.click();
-      await page.getByRole('button', { name: 'Reservar ahora', exact: true }).click();
+      await page.getByRole('button', { name: 'Confirmar reserva', exact: true }).click();
       await expect(page.getByText('Hora reservada y confirmada correctamente.')).toBeVisible();
       expect(state.bookings).toHaveLength(1);
     });
@@ -213,7 +216,8 @@ test('vence una selección sin interacción; el domingo oculta filas pasadas', a
   await page.getByRole('button', { name: 'lunes, 7 de enero, 09:00: Disponible', exact: true }).click();
   await page.clock.setSystemTime(new Date('2030-01-07T12:00:00Z'));
   await page.clock.runFor(1001);
-  await expect(page.locator('.booking-summary')).toHaveCount(0);
+  await expect(page.locator('.booking-summary')).toContainText('Fecha y horario pendientes.');
+  await expect(page.getByRole('button', { name: 'Confirmar reserva', exact: true })).toBeDisabled();
   await expect(page.getByRole('button', { name: /lunes, 7 de enero, 09:00: No disponible/ })).toBeDisabled();
   await page.clock.setSystemTime(new Date('2030-01-13T13:00:00Z')); // Sunday 10:00.
   await page.clock.runFor(1001);

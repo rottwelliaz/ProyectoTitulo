@@ -36,8 +36,10 @@ test('historial restringido al cliente, al profesional asignado y al administrad
   for (const [id, rol] of [[11, 'cliente'], [21, 'barbero'], [10, 'barbero'], [20, 'cliente']]) assert.throws(() => assertReservationAccess(cita, { id, rol }));
 });
 
-test('la respuesta histórica nunca usa nombre, precio o duración del catálogo editado', () => {
-  const stored = { nombreServicioReservado: 'Corte original', precioReservado: 10000, duracionReservada: 30, servicioId: 's', servicio: { nombre_servicio: 'Otro', precio: 50000, duracion_minutos: 60 } };
-  assert.deepEqual(historicalAppointment(stored).servicio, { id: 's', nombre_servicio: 'Corte original', precio: 10000, duracion_minutos: 30 });
-  assert.equal(historicalAppointment({ ...stored, nombreServicioReservado: null }).servicio, null);
+test('la duración solo proviene del snapshot; los intervalos desconocidos requieren revisión', () => {
+  const stored = { nombreServicioReservado: 'Corte original', precioReservado: 10000, duracionReservada: 30, servicioId: 's', servicio: { nombre_servicio: 'Otro', precio: 50000 } };
+  assert.deepEqual(historicalAppointment(stored).servicio, { id: 's', nombre_servicio: 'Corte original', precio: 10000 });
+  assert.deepEqual(historicalAppointment({ ...stored, nombreServicioReservado: null }).servicio, { id: 's', nombre_servicio: 'Otro', precio: 10000 });
+  assert.equal(historicalAppointment({ ...stored, duracionReservada: null }).duracionReservada, null);
+  assert.equal(historicalAppointment({ ...stored, nombreServicioReservado: null, servicio: null }).servicio, null);
 });

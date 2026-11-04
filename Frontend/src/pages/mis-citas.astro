@@ -1,0 +1,29 @@
+---
+import Layout from '../layouts/Layout.astro';
+import ProfileSidebar from '../components/ProfileSidebar.astro';
+import SessionNav from '../components/SessionNav.astro';
+import ClientAppointments from '../components/ClientAppointments.astro';
+import '../styles/profile.css';
+---
+
+<Layout title="Mis citas - Conce Barber Club">
+  <main class="panel-layout profile-root profile-dashboard">
+    <ProfileSidebar active="mis-citas" />
+
+    <section class="profile-main">
+      <header class="profile-topbar">
+        <div class="profile-page-heading">
+          <p>Conce Barber Club</p>
+          <h1>Mis citas</h1>
+        </div>
+        <div class="profile-top-actions">
+          <SessionNav />
+        </div>
+      </header>
+
+      <div class="profile-content">
+        <ClientAppointments />
+      </div>
+    </section>
+  </main>
+</Layout>

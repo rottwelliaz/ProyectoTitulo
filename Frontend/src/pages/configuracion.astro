@@ -1,38 +1,13 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import SessionNav from '../components/SessionNav.astro';
-import logoConce from '../assets/logotesis.png';
+import ProfileSidebar from '../components/ProfileSidebar.astro';
 import '../styles/profile.css';
 ---
 
 <Layout title="Configuración - Conce Barber Club">
   <main class="panel-layout profile-root">
-    <aside class="profile-sidebar panel-sidebar">
-      <a class="profile-brand panel-sidebar-brand" href="/home" aria-label="Conce Barber Club">
-        <img class="profile-brand-logo" src={logoConce.src} alt="Conce Barber Club" />
-      </a>
-
-      <nav class="profile-nav panel-sidebar-nav" aria-label="Navegación de perfil">
-        <a class="profile-sidebar-link" href="/perfil">
-          <span class="profile-link-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/></svg>
-          </span>
-          Perfil
-        </a>
-        <a class="profile-sidebar-link is-active" href="/configuracion">
-          <span class="profile-link-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.05.05a2 2 0 1 1-2.83 2.83l-.05-.05A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.05.05a2 2 0 1 1-2.83-2.83l.05-.05A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3a2 2 0 1 1 0-4h-.1A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.05-.05a2 2 0 1 1 2.83-2.83l.05.05A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3a2 2 0 1 1 4 0v.1A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.88-.34l.05-.05a2 2 0 1 1 2.83 2.83l-.05.05A1.7 1.7 0 0 0 19.4 9c.2.38.56.65 1 .6h.6a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1.4Z"/></svg>
-          </span>
-          Configuración
-        </a>
-        <a class="profile-sidebar-link" href="/mensajes">
-          <span class="profile-link-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z"/><path d="M8 9h8M8 13h5"/></svg>
-          </span>
-          Mensajes
-        </a>
-      </nav>
-    </aside>
+    <ProfileSidebar active="configuracion" showFooter={false} />
 
     <section class="profile-main">
       <header class="profile-topbar">

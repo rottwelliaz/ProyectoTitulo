@@ -1,0 +1,28 @@
+/* Cards keep their existing layout; the table only supplies data navigation. */
+.cbc-data-list { --dt-bg: var(--pro-panel, var(--admin-card, #061b33)); --dt-text: var(--pro-text, var(--admin-text, #f8fafc)); --dt-line: var(--pro-line, var(--admin-border, #31577d)); color: var(--dt-text); width: 100%; min-width: 0; display: block !important; }
+html[data-theme='light'] .cbc-data-list { --dt-bg: #fff; --dt-text: #0f172a; --dt-line: #cbd8eb; }
+html[data-theme='dark'] .cbc-data-list { --dt-bg: #15171c; --dt-text: #f8fafc; --dt-line: #46505e; }
+.cbc-data-list .cbc-card-table { width: 100% !important; border-collapse: separate; border-spacing: 0 12px; table-layout: fixed; }
+.cbc-data-list .cbc-card-table thead { display: none; }
+.cbc-data-list .cbc-card-table td { padding: 0; border: 0; overflow-wrap: anywhere; vertical-align: top; }
+.cbc-data-list .cbc-card-table td > :is(section, article) { width: 100%; min-width: 0; }
+.cbc-data-list .cbc-card-table .dt-empty { text-align: center; padding: 24px 12px; }
+.cbc-data-list :is(.dt-layout-row, .dt-layout-cell, .dt-search, .dt-length, .cbc-list-order) { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; min-width: 0; }
+.cbc-data-list .dt-layout-row { justify-content: space-between; margin: 12px 0; }
+.cbc-data-list .dt-layout-table, .cbc-data-list .dt-layout-table .dt-layout-cell { display: block; }
+.cbc-data-list :is(input, select, .dt-paging-button) { background: var(--dt-bg); color: var(--dt-text); border: 1px solid var(--dt-line); border-radius: 8px; padding: 8px 10px; min-height: 40px; max-width: 100%; font: inherit; }
+.cbc-data-list input { width: 210px; }
+.cbc-data-list .dt-paging { display: flex; flex-wrap: wrap; gap: 4px; }
+.cbc-data-list .dt-paging-button { cursor: pointer; }
+.cbc-data-list .dt-paging-button.current { background: #1261d8; border-color: #1261d8; color: #fff; font-weight: 700; }
+.cbc-data-list .dt-paging-button:is(:disabled, [aria-disabled='true']) { opacity: .45; cursor: default; }
+.cbc-data-list :is(button, select, input):focus-visible { outline: 2px solid #60a5fa; outline-offset: 2px; }
+.cbc-data-list .dt-info { font-size: .9rem; }
+.cbc-data-list .dt-processing { padding: 8px; }
+.cbc-data-list [role='alert'] { color: var(--dt-text); }
+@media (max-width: 640px) {
+  .cbc-data-list .dt-layout-row { align-items: stretch; flex-direction: column; }
+  .cbc-data-list .dt-search input { width: 100%; flex: 1; min-width: 0; }
+  .cbc-data-list .dt-paging { justify-content: center; }
+  .cbc-data-list .dt-paging-button { padding: 7px 9px; }
+}

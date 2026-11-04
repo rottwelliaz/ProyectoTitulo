@@ -1,0 +1,172 @@
+<article id="client-appointments-card" class="profile-card profile-appointments-card">
+  <div class="profile-appointments-header">
+    <div>
+      <h2>Mis citas</h2>
+      <p>Revisa tus horas confirmadas y el historial de tus reservas.</p>
+    </div>
+    <a href="/booking">Reservar otra hora</a>
+  </div>
+
+  <div class="cbc-data-list">
+    <div class="cbc-list-order">
+      <label for="client-appointments-view">Mostrar citas:</label>
+      <select id="client-appointments-view">
+        <option value="todas">Todas mis citas</option>
+        <option value="proximas">Próximas citas</option>
+        <option value="historial">Historial de citas anteriores</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="client-appointments-list" class="client-appointments-list" aria-live="polite">
+    <p class="client-appointments-empty">Cargando tus citas...</p>
+  </div>
+</article>
+
+<script>
+  import { mountCardTable, appointmentOrders } from '../lib/dataTables';
+  import { confirmAction, notifyError, notifySuccess } from '../lib/notifications';
+  import { escapeHtml } from '../lib/html';
+  import { BUSINESS_TIME_ZONE, reservationEnd } from '../lib/businessTime';
+  import { requireSession, authFetch as fetch, API_URL } from '../lib/session';
+
+  void (async () => {
+    const user = await requireSession();
+    if (user?.rol !== 'cliente') return;
+    const token = localStorage.getItem('token');
+    const clientAppointmentsList = document.querySelector<HTMLElement>('#client-appointments-list');
+    const clientAppointmentsView = document.querySelector<HTMLSelectElement>('#client-appointments-view');
+
+    const renderClientAppointment = (appointment: any) => {
+      const statusLabels: Record<string, string> = {
+        rechazada: 'Rechazada',
+        inasistencia: 'Inasistencia',
+        pendiente: 'Pendiente',
+        confirmada: 'Confirmada',
+        cancelada: 'Cancelada',
+        finalizada: 'Finalizada',
+      };
+
+        const date = new Date(appointment.fecha_hora);
+        const dateLabel = new Intl.DateTimeFormat('es-CL', {
+          timeZone: BUSINESS_TIME_ZONE,
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        }).format(date);
+        const timeLabel = new Intl.DateTimeFormat('es-CL', {
+          timeZone: BUSINESS_TIME_ZONE,
+          hourCycle: 'h23',
+          hour: '2-digit',
+          minute: '2-digit',
+        }).format(date);
+        const barber = escapeHtml(appointment.barbero?.usuario?.nombre || 'Barbero');
+        const service = escapeHtml(appointment.servicio?.nombre_servicio || 'Servicio');
+        const workplace = escapeHtml(appointment.barbero?.lugarTrabajo?.nombre_barberia || 'Barbería');
+        const status = String(appointment.estado || 'confirmada');
+        const hasProof = Boolean(appointment.comprobanteTransferencia);
+        const appointmentDate = new Date(appointment.fecha_hora);
+        const end = reservationEnd(appointment);
+        const endTimeLabel = end ? new Intl.DateTimeFormat('es-CL', { timeZone: BUSINESS_TIME_ZONE, hourCycle: 'h23', hour: '2-digit', minute: '2-digit' }).format(end) : 'Por verificar';
+        const canCancel = ['pendiente', 'confirmada'].includes(status) && appointmentDate > new Date();
+
+        return `
+          <section class="client-appointment-item">
+            <div class="client-appointment-date">
+              <strong>${escapeHtml(timeLabel)}–${escapeHtml(endTimeLabel)}</strong>
+              <span>${escapeHtml(dateLabel)}</span>
+            </div>
+            <div class="client-appointment-detail">
+              <strong>${service}</strong>
+              <span>Con ${barber}</span>
+              <small>${workplace}</small>
+              <small>${hasProof ? 'Comprobante adjuntado' : 'Reserva sin comprobante'}</small>
+            </div>
+            <div class="client-appointment-actions">
+              <span class="client-appointment-status is-${escapeHtml(status)}">
+                ${escapeHtml(statusLabels[status] || status)}
+              </span>
+              ${canCancel ? `
+                <button
+                  class="client-appointment-cancel"
+                  type="button"
+                  data-cancel-appointment="${escapeHtml(appointment.id)}"
+                  data-has-proof="${String(hasProof)}"
+                >
+                  Cancelar
+                </button>
+              ` : ''}
+            </div>
+          </section>
+        `;
+    };
+
+    let cancellingAppointment = false;
+    const cancelClientAppointment = async (appointmentId: string, button: HTMLButtonElement) => {
+      if (!token) {
+        window.location.href = '/login';
+        return;
+      }
+
+      if (button.disabled || cancellingAppointment) return;
+      cancellingAppointment = true;
+      const previousText = button.textContent || 'Cancelar';
+      try {
+        const confirmed = await confirmAction(
+          button.dataset.hasProof === 'true'
+            ? 'Si cancelas esta hora perderás el pago previo asociado a la reserva. Esta acción no se puede deshacer. ¿Deseas continuar?'
+            : 'Esta acción cancelará la reserva y no se puede deshacer. ¿Deseas continuar?',
+        );
+
+        if (!confirmed) return;
+
+        button.disabled = true;
+        button.textContent = 'Cancelando...';
+
+        const response = await fetch(`${API_URL}/citas/cliente/${appointmentId}/cancelar`, {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.message || 'No se pudo cancelar la cita.');
+
+        void notifySuccess('Cita cancelada correctamente.');
+        await loadClientAppointments();
+      } catch {
+        void notifyError('No se pudo cancelar la cita. Inténtalo nuevamente.');
+        button.disabled = false;
+        button.textContent = previousText;
+      } finally { cancellingAppointment = false; }
+    };
+
+    let appointmentsTable: ReturnType<typeof mountCardTable> | undefined;
+    const appointmentsEndpoint = () => '/citas/cliente/mias?vista=' + (clientAppointmentsView?.value || 'todas');
+    const loadClientAppointments = async () => {
+      if (!token || !clientAppointmentsList) return;
+      if (appointmentsTable) { appointmentsTable.reload(); return; }
+      appointmentsTable = mountCardTable(clientAppointmentsList, {
+        endpoint: appointmentsEndpoint(), label: 'Mis citas', orders: appointmentOrders, render: renderClientAppointment,
+        empty: 'Aún no tienes citas.',
+      });
+    };
+    clientAppointmentsView?.addEventListener('change', () => appointmentsTable?.setEndpoint(appointmentsEndpoint()));
+    const refreshClientAppointments = () => { if (!document.hidden && !cancellingAppointment) appointmentsTable?.reload(); };
+    window.addEventListener('focus', refreshClientAppointments);
+    window.addEventListener('professional-calendar-updated', refreshClientAppointments);
+    document.addEventListener('visibilitychange', refreshClientAppointments);
+    const appointmentsRefresh = window.setInterval(refreshClientAppointments, 30000);
+    window.addEventListener('pagehide', () => window.clearInterval(appointmentsRefresh), { once: true });
+
+    clientAppointmentsList?.addEventListener('click', (event) => {
+      const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-cancel-appointment]');
+      const appointmentId = button?.dataset.cancelAppointment;
+      if (!button || !appointmentId) return;
+
+      void cancelClientAppointment(appointmentId, button);
+    });
+
+    await loadClientAppointments();
+  })();
+</script>

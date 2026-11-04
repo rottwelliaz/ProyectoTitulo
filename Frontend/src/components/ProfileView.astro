@@ -1,48 +1,11 @@
 ---
-import logoConce from '../assets/logotesis.png';
-import { ShieldCheck } from 'lucide-astro';
+import ProfileSidebar from './ProfileSidebar.astro';
 import SessionNav from './SessionNav.astro';
+import ChangePasswordForm from './ChangePasswordForm.astro';
 ---
 
 <main class="panel-layout profile-root profile-dashboard">
-  <aside class="profile-sidebar panel-sidebar">
-    <a class="profile-brand panel-sidebar-brand" href="/home" aria-label="Conce Barber Club">
-      <img
-        class="profile-brand-logo"
-        src={logoConce.src}
-        alt="Conce Barber Club"
-      />
-    </a>
-
-    <nav class="profile-nav panel-sidebar-nav" aria-label="Navegación de perfil">
-      <a class="profile-sidebar-link is-active" href="/perfil">
-        <span class="profile-link-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/></svg>
-        </span>
-        Perfil
-      </a>
-      <a class="profile-sidebar-link" href="/configuracion">
-        <span class="profile-link-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.05.05a2 2 0 1 1-2.83 2.83l-.05-.05A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.05.05a2 2 0 1 1-2.83-2.83l.05-.05A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3a2 2 0 1 1 0-4h-.1A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.05-.05a2 2 0 1 1 2.83-2.83l.05.05A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3a2 2 0 1 1 4 0v.1A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.88-.34l.05-.05a2 2 0 1 1 2.83 2.83l-.05.05A1.7 1.7 0 0 0 19.4 9c.2.38.56.65 1 .6h.6a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1.4Z"/></svg>
-        </span>
-        Configuración
-      </a>
-      <a id="profile-messages-nav" class="profile-sidebar-link" href="/mensajes">
-        <span class="profile-link-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z"/><path d="M8 9h8M8 13h5"/></svg>
-        </span>
-        Mensajes
-      </a>
-    </nav>
-
-    <div class="profile-sidebar-card panel-sidebar-footer">
-      <ShieldCheck size={22} aria-hidden="true" />
-      <div>
-        <strong>Cuenta personal</strong>
-        <span>Gestiona tus datos y reservas.</span>
-      </div>
-    </div>
-  </aside>
+  <ProfileSidebar />
 
   <section class="profile-main">
     <header class="profile-topbar">
@@ -85,8 +48,7 @@ import SessionNav from './SessionNav.astro';
         </button>
       </article>
 
-      <section class="profile-dashboard-grid">
-        <article class="profile-card profile-data-card">
+      <article class="profile-card profile-data-card">
         <div class="profile-panel-header">
           <div>
             <h2>Tus datos personales</h2>
@@ -140,21 +102,11 @@ import SessionNav from './SessionNav.astro';
         </form>
 
         <p id="profile-message" class="profile-message" aria-live="polite"></p>
-        </article>
+      </article>
 
-        <aside class="profile-security">
-        <div class="profile-shield" aria-hidden="true">
-          <ShieldCheck size={30} />
-        </div>
-        <div>
-          <span class="profile-kicker">Seguridad</span>
-          <strong>Tu información está protegida</strong>
-          <p>En Conce Barber Club resguardamos tus datos personales y nunca los compartimos con terceros.</p>
-        </div>
-        </aside>
-      </section>
+      <ChangePasswordForm />
 
-      <article id="professional-application" class="profile-card profile-appointments-card is-hidden">
+      <article id="professional-application" class="profile-card profile-appointments-card is-hidden" data-roles="cliente" hidden>
         <div class="profile-appointments-header"><div>
           <h2>Solicitud de perfil profesional</h2>
           <p id="application-status" aria-live="polite">Cargando solicitud...</p>
@@ -164,28 +116,12 @@ import SessionNav from './SessionNav.astro';
           <button id="refresh-application" class="profile-cancel-button" type="button">Actualizar estado</button>
         </div>
       </article>
-
-      <article id="client-appointments-card" class="profile-card profile-appointments-card is-hidden">
-        <div class="profile-appointments-header">
-          <div>
-            <h2>Mis citas</h2>
-            <p>Revisa tus horas confirmadas y el historial de tus reservas.</p>
-          </div>
-          <a href="/booking">Reservar otra hora</a>
-        </div>
-
-        <div id="client-appointments-list" class="client-appointments-list" aria-live="polite">
-          <p class="client-appointments-empty">Cargando tus citas...</p>
-        </div>
-      </article>
-
     </div>
   </section>
 </main>
 
 <script>
-  import { escapeHtml } from '../lib/html';
-  import { BUSINESS_TIME_ZONE } from '../lib/businessTime';
+  import { notifySuccess } from '../lib/notifications';
   import { safePhotoUrl, setPhotoBackground } from '../lib/profilePhoto';
   import { requireSession, authFetch as fetch, API_URL, cacheSessionUser } from '../lib/session';
   void (async () => {
@@ -202,8 +138,6 @@ import SessionNav from './SessionNav.astro';
   const photoInput = document.querySelector<HTMLInputElement>('#profile-photo-input');
   const profilePhoto = document.querySelector<HTMLDivElement>('.profile-photo');
   const profileMessagesNav = document.querySelector<HTMLAnchorElement>('#profile-messages-nav');
-  const clientAppointmentsCard = document.querySelector<HTMLElement>('#client-appointments-card');
-  const clientAppointmentsList = document.querySelector<HTMLElement>('#client-appointments-list');
 
   const nameTitle = document.querySelector<HTMLHeadingElement>('#profile-name');
   const roleText = document.querySelector<HTMLSpanElement>('#profile-role');
@@ -228,6 +162,7 @@ import SessionNav from './SessionNav.astro';
   } | null = null;
 
   const showMessage = (text: string, type: 'success' | 'error' | 'info' = 'info') => {
+    if (text && type === 'success') { void notifySuccess(text); text = ''; }
     if (!message) return;
     message.textContent = text;
     message.className = `profile-message is-${type}`;
@@ -269,149 +204,6 @@ import SessionNav from './SessionNav.astro';
     }).format(new Date(value));
   };
 
-  const renderClientAppointments = (appointments: any[]) => {
-    if (!clientAppointmentsList) return;
-    if (!appointments.length) {
-      clientAppointmentsList.innerHTML = `
-        <div class="client-appointments-empty">
-          <strong>Aún no tienes citas.</strong>
-          <span>Cuando reserves una hora aparecerá en este apartado.</span>
-        </div>
-      `;
-      return;
-    }
-
-    const statusLabels: Record<string, string> = {
-      rechazada: 'Rechazada',
-      inasistencia: 'Inasistencia',
-      pendiente: 'Pendiente',
-      confirmada: 'Confirmada',
-      cancelada: 'Cancelada',
-      finalizada: 'Finalizada',
-    };
-
-    const sortedAppointments = [...appointments].sort((current, next) =>
-      new Date(next.fecha_hora).getTime() - new Date(current.fecha_hora).getTime()
-    );
-
-    clientAppointmentsList.innerHTML = sortedAppointments.map((appointment) => {
-      const date = new Date(appointment.fecha_hora);
-      const dateLabel = new Intl.DateTimeFormat('es-CL', {
-        timeZone: BUSINESS_TIME_ZONE,
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      }).format(date);
-      const timeLabel = new Intl.DateTimeFormat('es-CL', {
-        timeZone: BUSINESS_TIME_ZONE,
-        hourCycle: 'h23',
-        hour: '2-digit',
-        minute: '2-digit',
-      }).format(date);
-      const barber = escapeHtml(appointment.barbero?.usuario?.nombre || 'Barbero');
-      const service = escapeHtml(appointment.servicio?.nombre_servicio || 'Servicio');
-      const workplace = escapeHtml(appointment.barbero?.lugarTrabajo?.nombre_barberia || 'Barbería');
-      const status = String(appointment.estado || 'confirmada');
-      const hasProof = Boolean(appointment.comprobanteTransferencia);
-      const appointmentDate = new Date(appointment.fecha_hora);
-      const canCancel = ['pendiente', 'confirmada'].includes(status) && appointmentDate > new Date();
-
-      return `
-        <section class="client-appointment-item">
-          <div class="client-appointment-date">
-            <strong>${escapeHtml(timeLabel)}</strong>
-            <span>${escapeHtml(dateLabel)}</span>
-          </div>
-          <div class="client-appointment-detail">
-            <strong>${service}</strong>
-            <span>Con ${barber}</span>
-            <small>${workplace}</small>
-            <small>${hasProof ? 'Comprobante adjuntado' : 'Reserva sin comprobante'}</small>
-          </div>
-          <div class="client-appointment-actions">
-            <span class="client-appointment-status is-${escapeHtml(status)}">
-              ${escapeHtml(statusLabels[status] || status)}
-            </span>
-            ${canCancel ? `
-              <button
-                class="client-appointment-cancel"
-                type="button"
-                data-cancel-appointment="${escapeHtml(appointment.id)}"
-                data-has-proof="${String(hasProof)}"
-              >
-                Cancelar
-              </button>
-            ` : ''}
-          </div>
-        </section>
-      `;
-    }).join('');
-  };
-
-  const cancelClientAppointment = async (appointmentId: string, button: HTMLButtonElement) => {
-    if (!token) {
-      window.location.href = '/login';
-      return;
-    }
-
-    const confirmed = window.confirm(
-      button.dataset.hasProof === 'true'
-        ? 'Si cancelas esta hora perderás el pago previo asociado a la reserva. Esta acción no se puede deshacer. ¿Deseas continuar?'
-        : 'Esta acción cancelará la reserva y no se puede deshacer. ¿Deseas continuar?',
-    );
-
-    if (!confirmed) return;
-
-    button.disabled = true;
-    const previousText = button.textContent || 'Cancelar';
-    button.textContent = 'Cancelando...';
-    showMessage('', 'info');
-
-    try {
-      const response = await fetch(`${API_URL}/citas/cliente/${appointmentId}/cancelar`, {
-        method: 'PATCH',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.message || 'No se pudo cancelar la cita.');
-
-      showMessage('Cita cancelada correctamente.', 'success');
-      await loadClientAppointments();
-    } catch (error) {
-      showMessage(error instanceof Error ? error.message : 'Error al cancelar la cita.', 'error');
-      button.disabled = false;
-      button.textContent = previousText;
-    }
-  };
-
-  const loadClientAppointments = async () => {
-    if (!token || !clientAppointmentsList) return;
-    try {
-      const response = await fetch(`${API_URL}/citas/cliente/mias`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await response.json().catch(() => []);
-      if (!response.ok) throw new Error(data.message || 'No se pudieron cargar tus citas.');
-      renderClientAppointments(Array.isArray(data) ? data : []);
-    } catch (error) {
-      clientAppointmentsList.innerHTML = `
-        <p class="client-appointments-error">
-          ${escapeHtml(error instanceof Error ? error.message : 'No se pudieron cargar tus citas.')}
-        </p>
-      `;
-    }
-  };
-
-  clientAppointmentsList?.addEventListener('click', (event) => {
-    const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-cancel-appointment]');
-    const appointmentId = button?.dataset.cancelAppointment;
-    if (!button || !appointmentId) return;
-
-    void cancelClientAppointment(appointmentId, button);
-  });
-
   const renderUser = (user: typeof currentUser) => {
     if (!user) return;
 
@@ -421,8 +213,8 @@ import SessionNav from './SessionNav.astro';
     if (nombreInput) nombreInput.value = user.nombre;
     if (emailInput) emailInput.value = user.email;
     if (telefonoInput) telefonoInput.value = user.telefono || '';
+    setApplicationVisibility(user.rol === 'cliente');
     profileMessagesNav?.classList.toggle('is-hidden', !['cliente', 'barbero'].includes(user.rol));
-    clientAppointmentsCard?.classList.toggle('is-hidden', user.rol !== 'cliente');
     if (photoButton) photoButton.hidden = !['cliente', 'barbero'].includes(user.rol);
   };
 
@@ -430,28 +222,47 @@ import SessionNav from './SessionNav.astro';
   const applicationStatus = document.querySelector<HTMLElement>('#application-status');
   const applyButton = document.querySelector<HTMLButtonElement>('#apply-professional');
   const refreshApplication = document.querySelector<HTMLButtonElement>('#refresh-application');
+  let canRequestProfessional = false;
+  const setApplicationVisibility = (isClient: boolean) => {
+    if (applicationCard) applicationCard.hidden = !isClient;
+    applicationCard?.classList.toggle('is-hidden', !isClient);
+    if (!isClient) {
+      canRequestProfessional = false;
+      if (applyButton) applyButton.hidden = true;
+    }
+  };
   const loadApplication = async () => {
-    if (!currentUser || currentUser.rol === 'admin') return;
-    applicationCard?.classList.remove('is-hidden');
+    canRequestProfessional = false;
     if (applyButton) applyButton.hidden = true;
+    const session = await requireSession(true);
+    setApplicationVisibility(session?.rol === 'cliente');
+    if (session?.rol !== 'cliente') return;
     try {
       const response = await fetch(API_URL + '/usuarios/solicitud-profesional', { headers: { Authorization: 'Bearer ' + token } });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'No se pudo consultar la solicitud.');
-      if (applicationStatus) applicationStatus.textContent = !data ? (currentUser.rol === 'barbero' ? 'Tu perfil profesional está habilitado.' : 'Puedes solicitar la habilitación de tu perfil profesional.')
+      if (applicationCard?.hidden) return;
+      if (applicationStatus) applicationStatus.textContent = !data ? 'Puedes solicitar la habilitación de tu perfil profesional.'
         : data.estado === 'pendiente' ? 'Solicitud pendiente de revisión administrativa.'
         : data.estado === 'aprobada' ? 'Solicitud aprobada. Actualiza la página para acceder al panel profesional.'
         : 'Solicitud rechazada. Motivo: ' + data.motivoRechazo;
-      if (applyButton) applyButton.hidden = Boolean(data) || currentUser.rol !== 'cliente';
+      canRequestProfessional = !data;
+      if (applyButton) applyButton.hidden = !canRequestProfessional;
     } catch (error) { if (applicationStatus) applicationStatus.textContent = error instanceof Error ? error.message : 'No se pudo cargar la solicitud.'; }
   };
   applyButton?.addEventListener('click', async () => {
+    if (applyButton.disabled || !canRequestProfessional || applicationCard?.hidden) return;
     applyButton.disabled = true;
+    canRequestProfessional = false;
     try {
+      const session = await requireSession(true);
+      setApplicationVisibility(session?.rol === 'cliente');
+      if (session?.rol !== 'cliente') return;
       const response = await fetch(API_URL + '/usuarios/solicitud-profesional', { method: 'POST', headers: { Authorization: 'Bearer ' + token } });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'No se pudo enviar la solicitud.');
-      await loadApplication();
+      await requireSession(true);
+      await loadProfile();
     } catch (error) { if (applicationStatus) applicationStatus.textContent = error instanceof Error ? error.message : 'No se pudo enviar la solicitud.'; }
     finally { applyButton.disabled = false; }
   });
@@ -481,7 +292,6 @@ import SessionNav from './SessionNav.astro';
       renderUser(currentUser);
       loadSavedPhoto();
       await loadApplication();
-      if (data.rol === 'cliente') await loadClientAppointments();
       showMessage('', 'info');
     } catch (error) {
       const text = error instanceof Error ? error.message : 'Error al cargar el perfil.';

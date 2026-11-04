@@ -5,7 +5,7 @@ import { jwtSettings } from '../config/security';
 
 
 export interface AuthRequest extends Request {
-  user?: { id: number; rol: string };
+  user?: { id: number; rol: string; aprobado?: boolean };
 }
 
 export const authenticate = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -21,7 +21,7 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, rol: true, aprobado: true, activo: true } });
     if (!user) return res.status(401).json({ message: 'Usuario no encontrado' });
     if (user.activo === false) return res.status(403).json({ message: 'La cuenta está deshabilitada' });
-    req.user = { id: user.id, rol: user.rol === 'barbero' && !user.aprobado ? 'cliente' : user.rol };
+    req.user = { id: user.id, rol: user.rol, aprobado: user.aprobado };
     next();
   } catch (error) {
     return res.status(401).json({ message: 'Token inválido' });
@@ -31,6 +31,7 @@ export const authorizeRoles = (...roles: string[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user) return res.status(401).json({ message: 'No autenticado' });
     if (!roles.includes(req.user.rol)) return res.status(403).json({ message: 'No autorizado' });
+    if (req.user.rol === 'barbero' && req.user.aprobado === false) return res.status(403).json({ message: 'Tu cuenta de barbero está pendiente de aprobación' });
     next();
   };
 };

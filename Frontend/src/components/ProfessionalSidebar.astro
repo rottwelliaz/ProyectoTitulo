@@ -1,0 +1,48 @@
+---
+import logoConce from '../assets/logotesis.png';
+import { BriefcaseBusiness, ClipboardList, UserRound, MessageCircle, Scissors, Settings } from 'lucide-astro';
+interface Props { active?: 'mi-perfil' | 'mensajes'; external?: boolean; }
+const { active = 'mi-perfil', external = false } = Astro.props;
+const viewHref = (view: string) => `${external ? '/perfil-profesional' : ''}#${view}`;
+---
+  <aside class="pro-sidebar panel-sidebar">
+    <a class="pro-brand panel-sidebar-brand" href="/home" aria-label="Conce Barber Club">
+      <img src={logoConce.src} alt="Conce Barber Club" />
+    </a>
+
+    <nav class="pro-nav panel-sidebar-nav" aria-label="Menú profesional">
+      <a class:list={["pro-nav-link", { "is-active": active === "mi-perfil" }]} href={viewHref("mi-perfil")} data-pro-view={external ? undefined : "mi-perfil"} aria-current={active === "mi-perfil" ? "page" : undefined}>
+        <UserRound class="pro-nav-lucide" size={23} aria-hidden="true" />
+        Mi perfil
+      </a>
+      <a class="pro-nav-link" href={viewHref("mi-negocio")} data-pro-view={external ? undefined : "mi-negocio"}>
+        <BriefcaseBusiness class="pro-nav-lucide" size={23} aria-hidden="true" />
+        Mi negocio
+      </a>
+      <a class="pro-nav-link" href={viewHref("organizacion")} data-pro-view={external ? undefined : "organizacion"}>
+        <Scissors class="pro-nav-lucide" size={23} aria-hidden="true" />
+        Organización
+      </a>
+      <a class="pro-nav-link" href={viewHref("mis-citas")} data-pro-view={external ? undefined : "mis-citas"}>
+        <ClipboardList class="pro-nav-lucide" size={23} aria-hidden="true" />
+        Mis citas
+      </a>
+      <a class:list={["pro-nav-link", { "is-active": active === "mensajes" }]} href="/mensajes" aria-current={active === "mensajes" ? "page" : undefined}>
+        <MessageCircle class="pro-nav-lucide" size={23} aria-hidden="true" />
+        Mensajes
+      </a>
+      <a class="pro-nav-link" href={viewHref("configuracion-reservas")} data-pro-view={external ? undefined : "configuracion-reservas"}>
+        <Settings class="pro-nav-lucide" size={23} aria-hidden="true" />
+        Configuración
+      </a>
+    </nav>
+
+    <div class="pro-sidebar-user panel-sidebar-footer">
+      <div class="pro-mini-avatar" data-user-avatar aria-hidden="true"></div>
+      <div>
+        <strong id="sidebar-name">Barbero</strong>
+        <span id="sidebar-specialty">Perfil profesional</span>
+      </div>
+      <span class="pro-user-caret" aria-hidden="true"></span>
+    </div>
+  </aside>

@@ -1,5 +1,5 @@
 export const publicServiceSelect = {
-  id: true, nombre_servicio: true, descripcion: true, precio: true, duracion_minutos: true,
+  id: true, nombre_servicio: true, descripcion: true, precio: true,
 } as const;
 export const publicProfileSelect = {
   id: true, biografia: true, especialidades: true, foto_perfil: true,

@@ -2,19 +2,39 @@ import { CitaEstado, Prisma } from '@prisma/client';
 import prisma from '../config/prisma';
 
 export class ScheduleError extends Error {
-  constructor(public status: number, message: string) { super(message); }
+  constructor(public status: number, message: string, public conflictos?: string[]) { super(message); }
 }
 
-export const activeStates = [CitaEstado.pendiente, CitaEstado.confirmada];
+export const activeStates: CitaEstado[] = [CitaEstado.pendiente, CitaEstado.confirmada];
 export const endOf = (start: Date, minutes: number) => new Date(start.getTime() + minutes * 60_000);
 export const overlaps = (start: Date, end: Date, otherStart: Date, otherEnd: Date) =>
   start < otherEnd && otherStart < end;
 
+// Shared projection: published windows remain in storage, but their occupied
+// portions must never be presented as available in a professional calendar.
+export function freeIntervals(windows: { fecha_hora: Date; disponibleHasta: Date | null }[], occupied: ScheduleIntervals['occupied'], blocked: ScheduleIntervals['blocked']) {
+  const cuts = [...blocked, ...occupied.map(c => ({ inicio: c.fecha_hora, fin: durationOf(c) ? endOf(c.fecha_hora, durationOf(c)!) : new Date(8640000000000000) }))];
+  const merged: { inicio: Date; fin: Date }[] = [];
+  for (const window of [...windows].sort((a, b) => +a.fecha_hora - +b.fecha_hora)) {
+    if (!window.disponibleHasta) continue;
+    const last = merged[merged.length - 1];
+    if (last && window.fecha_hora <= last.fin) last.fin = new Date(Math.max(+last.fin, +window.disponibleHasta));
+    else merged.push({ inicio: window.fecha_hora, fin: window.disponibleHasta });
+  }
+  return merged.flatMap(window => {
+    let parts = [window];
+    for (const cut of cuts) parts = parts.flatMap(part => !overlaps(part.inicio, part.fin, cut.inicio, cut.fin) ? [part] : [
+      ...(part.inicio < cut.inicio ? [{ inicio: part.inicio, fin: cut.inicio }] : []),
+      ...(cut.fin < part.fin ? [{ inicio: cut.fin, fin: part.fin }] : []),
+    ]);
+    return parts;
+  });
+}
+
 export function durationOf(appointment: {
   duracionReservada: number | null;
-  servicio: { duracion_minutos: number } | null;
 }): number | null {
-  const duration = appointment.duracionReservada ?? appointment.servicio?.duracion_minutos;
+  const duration = appointment.duracionReservada;
   return Number.isInteger(duration) && Number(duration) > 0 ? Number(duration) : null;
 }
 
@@ -42,7 +62,7 @@ export function covers(start: Date, end: Date, windows: { fecha_hora: Date; disp
 
 export interface ScheduleIntervals {
   windows: { fecha_hora: Date; disponibleHasta: Date | null }[];
-  occupied: { fecha_hora: Date; duracionReservada: number | null; servicio: { duracion_minutos: number } | null }[];
+  occupied: { fecha_hora: Date; duracionReservada: number | null }[];
   blocked: { inicio: Date; fin: Date }[];
 }
 
@@ -63,7 +83,7 @@ export function intervalIssue(start: Date, minutes: number, data: ScheduleInterv
 }
 
 export async function validateInterval(tx: Prisma.TransactionClient, barberId: number, start: Date, minutes: number, excludeId?: string) {
-  if (!Number.isInteger(minutes) || minutes <= 0) throw new ScheduleError(409, 'No se puede determinar la duración del servicio');
+  if (!Number.isInteger(minutes) || minutes <= 0) throw new ScheduleError(409, 'No se puede determinar la duración del bloque');
   const end = endOf(start, minutes);
   const blocked = await tx.agendaBloqueo.findFirst({ where: { barberoId: barberId, inicio: { lt: end }, fin: { gt: start } } });
   if (blocked) throw new ScheduleError(409, 'El horario coincide con un bloqueo o descanso del profesional');
@@ -77,11 +97,11 @@ export async function validateInterval(tx: Prisma.TransactionClient, barberId: n
   });
   const issue = intervalIssue(start, minutes, { windows, occupied, blocked: [] });
   if (issue) throw new ScheduleError(409, {
-    duration: 'No se puede determinar la duración del servicio',
+    duration: 'No se puede determinar la duración del bloque',
     blocked: 'El horario coincide con un bloqueo o descanso del profesional',
     unverified: 'Hay una reserva existente sin duración verificable; el profesional debe revisar su agenda',
     occupied: 'El horario se superpone con otra reserva del profesional',
-    coverage: 'El servicio completo no cabe en la disponibilidad publicada o cruza un descanso/bloqueo',
+    coverage: 'El bloque completo no cabe en la disponibilidad publicada o cruza un descanso/bloqueo',
   }[issue]);
 }
 

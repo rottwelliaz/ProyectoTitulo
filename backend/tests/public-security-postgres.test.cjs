@@ -29,8 +29,8 @@ describe('Grupo 5: perfiles, validaciones y autorización con PostgreSQL real', 
     place = await prisma.lugarTrabajo.create({ data: { nombre_barberia: 'Club Centro', direccion: 'Concepción' } });
     profile = await prisma.barberProfile.create({ data: { usuarioId: owner.id, biografia: 'Biografía profesional', especialidades: ['Fade', 'Barba'], lugarTrabajoId: place.id, bancoRut: 'PRIVADO', bancoNroCuenta: 'PRIVADO', requiereComprobante: false } });
     await prisma.barberProfile.create({ data: { usuarioId: other.id } });
-    service = await prisma.service.create({ data: { perfilBarberoId: profile.id, nombre_servicio: 'Corte', precio: 10000, duracion_minutos: 30 } });
-    await prisma.service.create({ data: { perfilBarberoId: profile.id, nombre_servicio: 'Oculto', precio: 1, duracion_minutos: 30, activo: false } });
+    service = await prisma.service.create({ data: { perfilBarberoId: profile.id, nombre_servicio: 'Corte', precio: 10000 } });
+    await prisma.service.create({ data: { perfilBarberoId: profile.id, nombre_servicio: 'Oculto', precio: 1, activo: false } });
     slot = await prisma.cita.create({ data: { barberoId: profile.id, fecha_hora: new Date('2035-01-15T15:00:00Z'), disponibleHasta: new Date('2035-01-15T16:00:00Z') } });
     const app = express(); app.use(express.json());
     for (const route of ['auth', 'usuarios', 'citas', 'servicios', 'lugartrabajo', 'conversations', 'profesional']) app.use('/' + route, require('../src/routes/' + route).default);
@@ -54,14 +54,14 @@ describe('Grupo 5: perfiles, validaciones y autorización con PostgreSQL real', 
   test('disponibilidad pública respeta servicio, bloqueos y reservas, sin clientes ni comprobantes', async () => {
     const path = `/usuarios/barberos/${profile.id}/disponibilidad?fecha=2035-01-15&servicioId=${service.id}`;
     const free = await request(null, path); assert.equal(free.status, 200); noPrivate(free.body);
-    assert.equal(free.headers.get('cache-control'), 'no-store'); assert.deepEqual(free.body.citas.map(c => c.id), [slot.id]);
+    assert.equal(free.headers.get('cache-control'), 'no-store'); assert.deepEqual(free.body.citas.map(c => c.fecha_hora), ['2035-01-15T15:00:00.000Z', '2035-01-15T15:30:00.000Z']);
     assert.equal((await request(null, path.replace(service.id, 'ajeno'))).status, 404);
     assert.equal((await request(null, path.replace('2035-01-15', 'no-fecha'))).status, 400);
     const block = await prisma.agendaBloqueo.create({ data: { barberoId: profile.id, inicio: new Date('2035-01-15T15:00:00Z'), fin: new Date('2035-01-15T15:30:00Z') } });
-    assert.equal((await request(null, path)).body.citas.length, 0);
+    assert.deepEqual((await request(null, path)).body.citas.map(c => c.fecha_hora), ['2035-01-15T15:30:00.000Z']);
     await prisma.agendaBloqueo.update({ where: { id: block.id }, data: { inicio: new Date('2035-01-16T15:00:00Z'), fin: new Date('2035-01-16T15:30:00Z') } });
     await prisma.cita.create({ data: { barberoId: profile.id, clienteId: client.id, servicioId: service.id, fecha_hora: slot.fecha_hora, duracionReservada: 30, estado: 'confirmada', comprobanteTransferencia: 'PRIVADO' } });
-    const occupied = await request(null, path); noPrivate(occupied.body); assert.equal(occupied.body.citas.length, 0);
+    const occupied = await request(null, path); noPrivate(occupied.body); assert.deepEqual(occupied.body.citas.map(c => c.fecha_hora), ['2035-01-15T15:30:00.000Z']);
   });
   test('solicitudes directas no eluden registro, duplicados ni permisos de rol', async () => {
     const payload = { nombre: 'Cliente Nuevo', email: email(), password: 'una clave nueva', telefono: '912345678' };
@@ -69,7 +69,7 @@ describe('Grupo 5: perfiles, validaciones y autorización con PostgreSQL real', 
       assert.equal((await request(null, '/usuarios', 'POST', { ...payload, ...patch })).status, 400);
     }
     const created = await request(null, '/usuarios', 'POST', { ...payload, rol: 'barbero' });
-    assert.equal(created.status, 201); assert.equal(created.body.rol, 'cliente'); assert.equal(created.body.password, undefined);
+    assert.equal(created.status, 201); assert.equal(created.body.rol, 'barbero'); assert.equal(created.body.aprobado, false); assert.equal(created.body.password, undefined);
     assert.equal((await request(null, '/usuarios', 'POST', { ...payload, email: payload.email.toUpperCase() })).status, 409);
     const stored = await prisma.user.findUnique({ where: { id: created.body.id } });
     assert.ok(await bcrypt.compare(payload.password, stored.password)); assert.equal(bcrypt.getRounds(stored.password), 10);
@@ -87,7 +87,8 @@ describe('Grupo 5: perfiles, validaciones y autorización con PostgreSQL real', 
     assert.equal((await request(admin, `/usuarios/${client.id}`, 'PUT', { password: 'corta' })).status, 400);
     assert.equal((await request(client, '/auth/me', 'PUT', { email: owner.email.toUpperCase() })).status, 409);
     assert.equal((await request(admin, `/usuarios/${client.id}`, 'PUT', { email: owner.email.toUpperCase() })).status, 409);
-    assert.equal((await request(client, '/auth/me', 'PUT', { password: 'contraseña nueva' })).status, 200);
+    assert.equal((await request(client, '/auth/me', 'PUT', { password: 'contraseña nueva' })).status, 400);
+    assert.equal((await request(client, '/auth/me/password', 'PUT', { currentPassword: '123456', newPassword: 'contraseña nueva', confirmPassword: 'contraseña nueva' })).status, 200);
     assert.ok(await bcrypt.compare('contraseña nueva', (await prisma.user.findUnique({ where: { id: client.id } })).password));
     await prisma.user.update({ where: { id: client.id }, data: { activo: false } });
     assert.equal((await request(client, '/auth/me')).status, 403);

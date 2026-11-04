@@ -51,7 +51,8 @@ describe('auditoría final: cuentas, administración y mensajería con PostgreSQ
     assert.equal(login.status, 200);
     assert.equal((await request(login.body.token, '/auth/me')).body.id, registration.body.id);
     const nextPassword = password + '-changed';
-    assert.equal((await request(login.body.token, '/auth/me', 'PUT', { password: nextPassword })).status, 200);
+    assert.equal((await request(login.body.token, '/auth/me', 'PUT', { password: nextPassword })).status, 400);
+    assert.equal((await request(login.body.token, '/auth/me/password', 'PUT', { currentPassword: password, newPassword: nextPassword, confirmPassword: nextPassword })).status, 200);
     assert.equal((await request(null, '/auth/login', 'POST', { email: address, password })).status, 401);
     assert.equal((await request(null, '/auth/login', 'POST', { email: address, password: nextPassword })).status, 200);
     for (const role of ['barbero', 'admin']) {
@@ -69,7 +70,7 @@ describe('auditoría final: cuentas, administración y mensajería con PostgreSQ
     assert.deepEqual(dashboard.body.stats, {
       totalUsuarios: await prisma.user.count(), clientes: count('cliente'), barberos: count('barbero'), admins: count('admin'),
       barberosAprobados: await prisma.user.count({ where: { rol: 'barbero', aprobado: true } }),
-      barberosPendientes: await prisma.solicitudProfesional.count({ where: { estado: 'pendiente' } }),
+      barberosPendientes: await prisma.user.count({ where: { rol: 'barbero', aprobado: false, solicitudProfesional: { is: { estado: 'pendiente' } } } }),
     });
     for (const [token, status] of [[null, 401], [client.token, 403], [barber.token, 403]]) {
       assert.equal((await request(token, '/usuarios/admin/dashboard')).status, status);

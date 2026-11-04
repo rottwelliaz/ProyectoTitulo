@@ -1,3 +1,4 @@
+import { fulfillDataTable } from './datatable-fixture';
 import { bookingAvailability } from './booking-fixture';
 import { test, expect, type Page } from '@playwright/test';
 import { privateRoutes, roles, roleHome, loginDestination, type Role } from '../src/lib/access';
@@ -34,7 +35,7 @@ async function mockApi(page: Page, role: Role = 'cliente', status = 200) {
     if (path.endsWith('/auth/login')) body = { token: 'test-token', user };
     if (path.endsWith('/auth/me')) body = user;
     if (path.endsWith('/admin/dashboard')) body = { stats: { totalUsuarios: 0, clientes: 0, barberos: 0, barberosPendientes: 0, barberosAprobados: 0, admins: 0 }, clientes: [], barberos: [], barberosPendientes: [], admins: [] };
-    await route.fulfill({ status: path.endsWith('/auth/me') ? status : 200, json: body });
+    await fulfillDataTable(route, { status: path.endsWith('/auth/me') ? status : 200, json: body });
   });
   return user;
 }
@@ -51,7 +52,7 @@ async function session(page: Page, role: Role, theme = 'original') {
 
 for (const [path, allowed] of Object.entries(privateRoutes)) {
   test(`Invitado: ${path} conserva URL completa al ir a login`, async ({ page }) => {
-    if (path === '/booking' || path === '/perfil-profesional') expectRedirect(page, path, '/login');
+    if (path === '/booking' || path === '/perfil-profesional' || path === '/mis-citas') expectRedirect(page, path, '/login');
     await page.goto(`${path}?origen=prueba#seccion`);
     await expect(page).toHaveURL(new RegExp('/login\\?redirect='));
     expect(new URL(page.url()).searchParams.get('redirect')).toBe(`${path}?origen=prueba#seccion`);
@@ -59,7 +60,7 @@ for (const [path, allowed] of Object.entries(privateRoutes)) {
   });
   for (const role of roles) {
     test(`${role}: ${path} ${allowed.includes(role) ? 'permitida' : 'denegada'}`, async ({ page }) => {
-      if (!allowed.includes(role) && (path === '/booking' || path === '/perfil-profesional')) expectRedirect(page, path, roleHome(role));
+      if (!allowed.includes(role) && (path === '/booking' || path === '/perfil-profesional' || path === '/mis-citas')) expectRedirect(page, path, roleHome(role));
       await mockApi(page, role);
       await session(page, role);
       await page.goto(path);
@@ -110,7 +111,7 @@ test('El perfil no aparece mientras el servidor valida la sesión', async ({ pag
   const blocked = new Promise<void>(resolve => { release = resolve; });
   await page.route('**/api/auth/me', async route => {
     await blocked;
-    await route.fulfill({ json: { id: 1, rol: 'cliente', nombre: 'Cliente', fecha_creacion: '2026-01-01' } });
+    await fulfillDataTable(route, { json: { id: 1, rol: 'cliente', nombre: 'Cliente', fecha_creacion: '2026-01-01' } });
   });
   await page.goto('/perfil');
   await expect(page.locator('.profile-root')).toBeHidden();
@@ -124,7 +125,7 @@ test('Una sesión que vence durante una acción vuelve al login', async ({ page 
   await session(page, 'admin');
   await page.goto('/admin-barberos');
   await expect(page.locator('html')).toHaveAttribute('data-auth-state', 'ready');
-  await page.route('**/api/usuarios/barberos/pendientes', route => route.fulfill({ status: 401, json: { message: 'Token inválido' } }));
+  await page.route('**/api/usuarios/barberos/pendientes*', route => fulfillDataTable(route, { status: 401, json: { message: 'Token inválido' } }));
   await page.locator('#refresh-pending-barbers').click();
   await expect(page).toHaveURL(/\/login\?redirect=/);
   expect(await page.evaluate(() => localStorage.getItem('token'))).toBeNull();
@@ -143,7 +144,7 @@ test('El menú de inicio se puede abrir y usar en móvil', async ({ page }) => {
 });
 
 test('El invitado ve un único acceso y ningún perfil en las páginas públicas', async ({ page }) => {
-  await page.route('**/api/usuarios?rol=barbero', route => route.fulfill({ json: [] }));
+  await page.route('**/api/usuarios?rol=barbero', route => fulfillDataTable(route, { json: [] }));
   for (const path of ['/home', '/barberos']) {
     await page.goto(path);
     await expect(page.locator('[data-session-guest]')).toBeVisible();
@@ -161,9 +162,9 @@ test('La navegación no muestra el estado invitado mientras valida una sesión',
     const path = new URL(route.request().url()).pathname;
     if (path.endsWith('/auth/me')) {
       await blocked;
-      return route.fulfill({ json: { id: 1, rol: 'cliente', nombre: 'Cliente Activo', fecha_creacion: '2026-01-01' } });
+      return fulfillDataTable(route, { json: { id: 1, rol: 'cliente', nombre: 'Cliente Activo', fecha_creacion: '2026-01-01' } });
     }
-    return route.fulfill({ json: [] });
+    return fulfillDataTable(route, { json: [] });
   });
 
   await page.goto('/home');
@@ -185,7 +186,7 @@ test('Cerrar sesión limpia los datos locales y vuelve al acceso', async ({ page
   expect(await page.evaluate(() => localStorage.getItem('user'))).toBeNull();
 });
 
-test('Mi perfil conserva edición, navegación y citas con el nuevo panel', async ({ page }) => {
+test('Mi perfil conserva edición y permite navegar a Mis citas', async ({ page }) => {
   const user = {
     id: 11,
     rol: 'cliente',
@@ -200,7 +201,7 @@ test('Mi perfil conserva edición, navegación y citas con el nuevo panel', asyn
     const request = route.request();
     const path = new URL(request.url()).pathname;
     if (path.endsWith('/citas/cliente/mias')) {
-      return route.fulfill({ json: [{
+      return fulfillDataTable(route, { json: [{
         id: 'appointment-1', fecha_hora: '2027-01-15T14:00:00.000Z', estado: 'confirmada',
         barbero: { usuario: { nombre: 'Barbero Demo' }, lugarTrabajo: { nombre_barberia: 'Conce Barber Club' } },
         servicio: { nombre_servicio: 'Corte clásico' },
@@ -208,17 +209,18 @@ test('Mi perfil conserva edición, navegación y citas con el nuevo panel', asyn
     }
     if (path.endsWith('/auth/me') && request.method() === 'PUT') {
       updatePayload = request.postDataJSON();
-      return route.fulfill({ json: { ...user, ...updatePayload } });
+      return fulfillDataTable(route, { json: { ...user, ...updatePayload } });
     }
-    if (path.endsWith('/auth/me')) return route.fulfill({ json: user });
-    return route.fulfill({ json: {} });
+    if (path.endsWith('/auth/me')) return fulfillDataTable(route, { json: user });
+    return fulfillDataTable(route, { json: {} });
   });
   await session(page, 'cliente', 'original');
   await page.goto('/perfil');
 
   await expect(page.getByRole('heading', { name: 'Mi perfil', exact: true })).toBeVisible();
   await expect(page.getByText('Cuenta personal')).toBeVisible();
-  await expect(page.getByText('Corte clásico')).toBeVisible();
+  await expect(page.locator('#client-appointments-list')).toHaveCount(0);
+  await expect(page.getByText('Corte clásico')).toHaveCount(0);
   await expect(page.locator('[data-session-role-link="barbero"]')).toBeHidden();
   await expect(page.locator('[data-session-role-link="admin"]')).toBeHidden();
 
@@ -229,11 +231,15 @@ test('Mi perfil conserva edición, navegación y citas con el nuevo panel', asyn
   await page.locator('#profile-input-telefono').fill('+56922222222');
   await page.getByRole('button', { name: 'Guardar cambios' }).click();
 
-  await expect(page.locator('#profile-message')).toContainText('Perfil actualizado correctamente');
+  await expect(page.locator('.cbc-notification')).toContainText('Perfil actualizado correctamente');
   await expect(page.locator('#profile-input-nombre')).toBeDisabled();
   expect(updatePayload).toEqual({
     nombre: 'Cliente Actualizado', email: 'actualizado@example.com', telefono: '+56922222222',
   });
+  await page.locator('.profile-nav').getByRole('link', { name: 'Mis citas', exact: true }).click();
+  await expect(page).toHaveURL(/\/mis-citas$/);
+  await expect(page.getByText('Corte clásico')).toBeVisible();
+  await expect(page.locator('#profile-form')).toHaveCount(0);
 });
 
 test('El barbero configura y conserva la exigencia de comprobante', async ({ page }) => {
@@ -255,13 +261,13 @@ test('El barbero configura y conserva la exigencia de comprobante', async ({ pag
     if (path.endsWith('/auth/me/booking-settings')) {
       settingsPayload = request.postDataJSON();
       requiresProof = settingsPayload!.requiereComprobante;
-      return route.fulfill({ json: { id: 10, requiereComprobante: requiresProof } });
+      return fulfillDataTable(route, { json: { id: 10, requiereComprobante: requiresProof } });
     }
-    if (path.endsWith('/auth/me')) return route.fulfill({ json: professional() });
-    if (path.endsWith('/servicios')) return route.fulfill({ json: [] });
-    if (path.includes('/lugartrabajo')) return route.fulfill({ json: {} });
-    if (path.endsWith('/citas/mias')) return route.fulfill({ json: [] });
-    return route.fulfill({ json: {} });
+    if (path.endsWith('/auth/me')) return fulfillDataTable(route, { json: professional() });
+    if (path.endsWith('/servicios')) return fulfillDataTable(route, { json: [] });
+    if (path.includes('/lugartrabajo')) return fulfillDataTable(route, { json: {} });
+    if (path.endsWith('/citas/mias')) return fulfillDataTable(route, { json: [] });
+    return fulfillDataTable(route, { json: {} });
   });
 
   await session(page, 'barbero');
@@ -273,7 +279,7 @@ test('El barbero configura y conserva la exigencia de comprobante', async ({ pag
   await expect(page.locator('#proof-setting-title')).toHaveText('Reserva sin comprobante');
 
   await toggle.check();
-  await expect(page.locator('#proof-setting-message')).toContainText('Configuración guardada correctamente');
+  await expect(page.locator('.cbc-notification')).toContainText('Configuración guardada correctamente');
   expect(settingsPayload).toEqual({ requiereComprobante: true });
 
   await page.reload();
@@ -288,24 +294,24 @@ async function prepareBooking(page: Page, requiresProof: boolean) {
     const request = route.request();
     const path = new URL(request.url()).pathname;
     if (path.endsWith('/auth/me')) {
-      return route.fulfill({ json: { id: 1, rol: 'cliente', nombre: 'Cliente', aprobado: true } });
+      return fulfillDataTable(route, { json: { id: 1, rol: 'cliente', nombre: 'Cliente', aprobado: true } });
     }
     if (path.endsWith('/citas/barberos')) {
-      return route.fulfill({ json: [{
+      return fulfillDataTable(route, { json: [{
         id: 10,
         biografia: null,
         foto_perfil: null,
         requiereComprobante: requiresProof,
         usuario: { id: 2, nombre: 'Barbero Demo' },
         lugarTrabajo: { id: 3, nombre_barberia: 'Conce Barber Club', direccion: 'Concepción' },
-        servicios: [{ id: 'service-1', nombre_servicio: 'Corte clásico', descripcion: null, precio: 12000, duracion_minutos: 45 }],
+        servicios: [{ id: 'service-1', nombre_servicio: 'Corte clásico', descripcion: null, precio: 12000 }],
       }] });
     }
     if (path.includes('/citas/disponibilidad/')) {
-      return route.fulfill({ json: bookingAvailability(new URL(request.url()).searchParams, [{ id: 'slot-1', fecha_hora: slotDate }]) });
+      return fulfillDataTable(route, { json: bookingAvailability(new URL(request.url()).searchParams, [{ id: 'slot-1', fecha_hora: slotDate }]) });
     }
     if (path.endsWith('/citas/slot-1/pago')) {
-      return route.fulfill({ json: {
+      return fulfillDataTable(route, { json: {
         citaId: 'slot-1', servicioId: 'service-1', barberoId: 10,
         bancoNombre: 'Barbero Demo', bancoRut: '11111111-1', bancoNombreBanco: 'Banco Demo',
         bancoTipoCuenta: 'Cuenta corriente', bancoNroCuenta: '123456', bancoCorreo: 'barbero@example.com',
@@ -313,9 +319,9 @@ async function prepareBooking(page: Page, requiresProof: boolean) {
     }
     if (path.endsWith('/citas/slot-1/agendar')) {
       bookingPayload = request.postDataJSON();
-      return route.fulfill({ json: { id: 'slot-1', estado: 'confirmada' } });
+      return fulfillDataTable(route, { json: { id: 'slot-1', estado: 'confirmada' } });
     }
-    return route.fulfill({ json: [] });
+    return fulfillDataTable(route, { json: [] });
   });
   await session(page, 'cliente');
   await page.goto('/booking');
@@ -327,23 +333,25 @@ async function prepareBooking(page: Page, requiresProof: boolean) {
 
 test('La reserva exige archivo cuando el barbero mantiene el comprobante activo', async ({ page }) => {
   await prepareBooking(page, true);
-  await page.getByRole('button', { name: 'Continuar al pago' }).click();
   await expect(page.getByRole('heading', { name: 'Transferencia y comprobante' })).toBeVisible();
   await expect(page.locator('.booking-proof-field input')).toHaveAttribute('required', '');
-  await expect(page.getByRole('button', { name: 'Reservar con comprobante' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Confirmar reserva' })).toBeDisabled();
 });
 
 test('La reserva se completa sin sección de pago cuando el barbero desactiva el comprobante', async ({ page }) => {
   const getPayload = await prepareBooking(page, false);
   await expect(page.getByText('Este profesional permite reservar sin comprobante de pago.')).toBeVisible();
-  await page.getByRole('button', { name: 'Reservar ahora' }).click();
+  await page.getByRole('button', { name: 'Confirmar reserva' }).click();
   await expect(page.getByText('Hora reservada y confirmada correctamente.')).toBeVisible();
   await expect(page.locator('.booking-payment')).toHaveCount(0);
   expect(getPayload()).toEqual({
     servicioId: 'service-1',
+    fecha_hora: expect.any(String),
+    fin_hora: expect.any(String),
     comprobanteTransferencia: null,
     comprobanteNombre: null,
   });
+  expect(+new Date(String(getPayload()?.fin_hora)) - +new Date(String(getPayload()?.fecha_hora))).toBe(30 * 60000);
 });
 
 for (const role of roles) {

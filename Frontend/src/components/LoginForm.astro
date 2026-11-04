@@ -84,6 +84,11 @@
         : 'mt-4 rounded-lg border border-red-500/50 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-300';
   };
 
+  if (sessionStorage.getItem('password-change-session-expired') === 'true') {
+    sessionStorage.removeItem('password-change-session-expired');
+    showMessage('Tu sesión expiró. Inicia sesión nuevamente para cambiar tu contraseña.', 'error');
+  }
+
   form?.addEventListener('submit', async (event) => {
     event.preventDefault();
 
@@ -122,7 +127,7 @@
 
       showMessage('Sesión iniciada correctamente.', 'success');
       const requestedRedirect = new URLSearchParams(window.location.search).get('redirect');
-      window.location.replace(loginDestination(requestedRedirect, verifiedUser.rol));
+      window.location.replace(loginDestination(requestedRedirect, verifiedUser.rol, verifiedUser.aprobado !== false));
     } catch (error) {
       const text = error instanceof Error ? error.message : 'Error al iniciar sesión.';
       showMessage(text, 'error');

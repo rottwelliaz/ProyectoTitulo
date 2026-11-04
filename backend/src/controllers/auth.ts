@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { AuthRequest } from '../middleware/auth';
 import { datosBancariosValidation } from '../validations/datosBancarios';
-import { updateProfileValidation } from '../validations/usuarios';
+import { changePasswordValidation, updateProfileValidation } from '../validations/usuarios';
 import { normalizeProfilePhoto, ProfilePhotoError } from '../services/profilePhoto';
 import { jwtSettings } from '../config/security';
 import { reserveEmail } from '../services/accountEmail';
@@ -35,7 +35,7 @@ export const login = async (req: Request, res: Response) => {
 
     const { password: _p, ...safe } = user;
 
-    return res.json({ token, user: { ...safe, rol: user.rol === 'barbero' && !user.aprobado ? 'cliente' : user.rol } });
+    return res.json({ token, user: safe });
   } catch (error) {
     console.error('login failed');
     return res.status(500).json({ message: 'Error en login' });
@@ -99,14 +99,12 @@ export const updateMe = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: error.details[0].message });
     }
 
-    const { nombre, email, password, telefono } = value;
+    const { nombre, email, telefono } = value;
 
     const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
     if (!user) {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
-
-    const hashedPassword = password ? await bcrypt.hash(password, 10) : undefined;
 
     const updated = await prisma.$transaction(async tx => {
       if (email && email !== user.email) await reserveEmail(tx, email, req.user!.id);
@@ -115,7 +113,6 @@ export const updateMe = async (req: AuthRequest, res: Response) => {
       data: {
         nombre:   nombre   ?? undefined,
         email:    email    ?? undefined,
-        password: hashedPassword,
         telefono: telefono === undefined ? undefined : telefono || null,
       },
       select: {
@@ -138,6 +135,34 @@ export const updateMe = async (req: AuthRequest, res: Response) => {
     if ((error as { code?: string }).code === 'P2002') return res.status(409).json({ message: 'El email ya está en uso' });
     console.error('updateMe failed');
     return res.status(500).json({ message: 'Error al actualizar perfil' });
+  }
+};
+
+export const changePassword = async (req: AuthRequest, res: Response) => {
+  try {
+    const { error, value } = changePasswordValidation.validate(req.body, { abortEarly: false });
+    if (error) return res.status(400).json({ message: error.details[0].message });
+    const { currentPassword, newPassword } = value;
+    const user = await prisma.user.findUnique({ where: { id: req.user!.id }, select: { password: true } });
+    if (!user) return res.status(401).json({ message: 'Tu sesión expiró. Inicia sesión nuevamente.' });
+    // A wrong current password is a validation error, not an expired JWT.
+    if (!(await bcrypt.compare(currentPassword, user.password))) {
+      return res.status(400).json({ message: 'La contraseña actual es incorrecta.' });
+    }
+    if (await bcrypt.compare(newPassword, user.password)) {
+      return res.status(400).json({ message: 'La nueva contraseña debe ser diferente de la actual.' });
+    }
+    const hashed = await bcrypt.hash(newPassword, 10);
+    // Compare-and-set prevents simultaneous requests from overwriting a newer password.
+    const updated = await prisma.user.updateMany({
+      where: { id: req.user!.id, password: user.password },
+      data: { password: hashed },
+    });
+    if (!updated.count) return res.status(409).json({ message: 'La contraseña cambió durante la solicitud. Vuelve a intentarlo con tu contraseña actual.' });
+    return res.json({ message: 'Contraseña actualizada correctamente. Ya puedes iniciar sesión con tu nueva contraseña.' });
+  } catch {
+    console.error('changePassword failed');
+    return res.status(500).json({ message: 'No se pudo cambiar la contraseña. Inténtalo nuevamente.' });
   }
 };
 
@@ -177,7 +202,7 @@ export const updateProfilePhoto = async (req: AuthRequest, res: Response) => {
 export const updateBankingData = async (req: AuthRequest, res: Response) => {
   res.set('Cache-Control', 'no-store');
   try {
-    if (req.user?.rol !== 'barbero') {
+    if (req.user?.rol !== 'barbero' || req.user.aprobado === false) {
       return res.status(403).json({ message: 'Solo los barberos pueden editar sus datos bancarios' });
     }
 
@@ -226,7 +251,7 @@ export const updateBankingData = async (req: AuthRequest, res: Response) => {
 
 export const updateBookingSettings = async (req: AuthRequest, res: Response) => {
   try {
-    if (req.user?.rol !== 'barbero') {
+    if (req.user?.rol !== 'barbero' || req.user.aprobado === false) {
       return res.status(403).json({ message: 'Solo los barberos pueden editar la configuración de reservas' });
     }
 

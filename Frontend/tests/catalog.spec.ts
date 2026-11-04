@@ -1,16 +1,16 @@
 import { test, expect, type Page } from '@playwright/test';
 
-const service = (nombre_servicio: string, precio: number, duracion_minutos: number) =>
-  ({ id: nombre_servicio, nombre_servicio, precio, duracion_minutos });
+const service = (nombre_servicio: string, precio: number) =>
+  ({ id: nombre_servicio, nombre_servicio, precio });
 const barbers = [
   { id: 1, nombre: 'Álvaro Pérez', rol: 'barbero', aprobado: true, perfilBarbero: {
     id: 11, biografia: 'Especialista en coloración',
     lugarTrabajo: { nombre_barberia: 'Club Centro', direccion: 'Concepción' },
-    servicios: [service('Corte', 10000, 30), service('Barba', 5000, 15), service('Diseño artístico', 15000, 45)],
+    servicios: [service('Corte', 10000), service('Barba', 5000), service('Diseño artístico', 15000)],
   } },
   { id: 2, nombre: 'Bruno Soto', rol: 'barbero', aprobado: true, perfilBarbero: {
     id: 12, biografia: null, lugarTrabajo: { nombre_barberia: 'Club Norte', direccion: 'Talcahuano' },
-    servicios: [service('Fade', 12000, 40)],
+    servicios: [service('Fade', 12000)],
   } },
   { id: 3, nombre: 'Carla Díaz', rol: 'barbero', aprobado: true, perfilBarbero: {
     id: 13, biografia: null, lugarTrabajo: null, servicios: [],
@@ -61,8 +61,6 @@ const orders: Record<string, string[]> = {
   'name-desc': ['Carla Díaz', 'Bruno Soto', 'Álvaro Pérez'],
   'price-asc': ['Álvaro Pérez', 'Bruno Soto', 'Carla Díaz'],
   'price-desc': ['Bruno Soto', 'Álvaro Pérez', 'Carla Díaz'],
-  'duration-asc': ['Álvaro Pérez', 'Bruno Soto', 'Carla Díaz'],
-  'duration-desc': ['Bruno Soto', 'Álvaro Pérez', 'Carla Díaz'],
   'services-asc': ['Carla Díaz', 'Bruno Soto', 'Álvaro Pérez'],
   'services-desc': ['Álvaro Pérez', 'Bruno Soto', 'Carla Díaz'],
 };

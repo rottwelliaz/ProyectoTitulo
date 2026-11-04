@@ -1,16 +1,21 @@
+import { isDataTable } from '../services/dataTables';
+import { appointmentPage } from '../services/paginatedLists';
 import { Response } from 'express';
 import { CitaEstado } from '@prisma/client';
+import { Temporal } from '@js-temporal/polyfill';
 import prisma from '../config/prisma';
 import { AuthRequest } from '../middleware/auth';
-import { ScheduleError, withSchedule, validateInterval, durationOf, scheduleFailure } from '../services/schedule';
+import { ScheduleError, withSchedule, validateInterval, durationOf, scheduleFailure, activeStates, endOf, overlaps, covers } from '../services/schedule';
 import { availabilitySnapshot, configurationValidation } from '../services/availability';
 import { publicAvailability } from '../services/publicAvailability';
-import { parseInstant, businessRange, checkRangeEnd } from '../services/businessTime';
+import { parseInstant, businessRange, checkRangeEnd, businessDate, businessTime } from '../services/businessTime';
 import { bankingSelect } from '../services/professionalPrivacy';
 import { paymentAccess, PaymentAccessLimit } from '../services/paymentAccess';
 import { requireBookableProfessional, assertReservationAccess, validateTransition, historicalAppointment } from '../services/reservationLifecycle';
 import { normalizePaymentProof } from '../services/paymentProof';
 import { getOwnBarberProfile } from '../services/barberProfile';
+import { calendarConfiguration, bookingInterval } from '../services/calendarGrid';
+import type { Prisma } from '@prisma/client';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -19,13 +24,30 @@ const isValidAvailabilityBlock = (date: Date): boolean =>
 
 const isFutureDate = (date: Date): boolean => date.getTime() > Date.now();
 
+async function selectedStart(tx: Prisma.TransactionClient, slot: { barberoId: number; fecha_hora: Date; disponibleHasta: Date | null }, input: unknown, expectedEnd?: unknown) {
+  const start = input === undefined ? slot.fecha_hora : parseInstant(input);
+  if (!slot.disponibleHasta || start < slot.fecha_hora || start >= slot.disponibleHasta || !isFutureDate(start) ||
+      (input !== undefined && (start.getUTCSeconds() !== 0 || start.getUTCMilliseconds() !== 0))) {
+    throw new ScheduleError(409, 'El inicio seleccionado ya no está disponible en este bloque');
+  }
+  const { configuration } = await calendarConfiguration(tx, slot.barberoId, businessDate(start));
+  const interval = bookingInterval(start, configuration);
+  if (!interval) throw new ScheduleError(409, 'El inicio seleccionado no corresponde a un bloque completo de la configuración vigente');
+  // The client describes the interval it selected; it never sets its duration.
+  // Reject stale selections instead of silently turning a 30-minute block into 60.
+  if (expectedEnd !== undefined && +parseInstant(expectedEnd) !== +interval.end) {
+    throw new ScheduleError(409, 'La duración del bloque cambió. Actualiza la agenda y selecciona nuevamente el intervalo.');
+  }
+  return interval;
+}
+
 const validWindow = (start: Date, end: Date) =>
   isValidAvailabilityBlock(start) && isValidAvailabilityBlock(end) && end > start && end.getTime() - start.getTime() <= 86400000;
 
 const appointmentError = (res: Response, error: unknown, fallback: string) => {
   if (error instanceof RangeError) return res.status(400).json({ message: error.message });
   const failure = scheduleFailure(error);
-  if (failure) return res.status(failure.status).json({ message: failure.message });
+  if (failure) return res.status(failure.status).json({ message: failure.message, ...(error instanceof ScheduleError && error.conflictos ? { conflictos: error.conflictos } : {}) });
   console.error(fallback, error);
   return res.status(500).json({ message: fallback });
 };
@@ -41,7 +63,7 @@ export const createCita = async (req: AuthRequest, res: Response) => {
     if (!profile) return res.status(404).json({ message: 'No tienes perfil de barbero creado' });
     const result = await withSchedule(profile.id, async tx => {
       await requireBookableProfessional(tx, profile.id);
-      const existing = await tx.cita.findFirst({ where: { barberoId: profile.id, fecha_hora: start, estado: CitaEstado.disponible } });
+      const existing = await tx.cita.findFirst({ where: { barberoId: profile.id, fecha_hora: { lt: end }, disponibleHasta: { gt: start }, estado: CitaEstado.disponible } });
       if (existing) throw new ScheduleError(409, 'Ya existe disponibilidad en ese horario');
       return tx.cita.create({ data: { barberoId: profile.id, fecha_hora: start, disponibleHasta: end, estado: CitaEstado.disponible } });
     });
@@ -63,7 +85,7 @@ export const updateCita = async (req: AuthRequest, res: Response) => {
       if (cita.estado === CitaEstado.disponible) {
         const end = parseInstant(req.body.fin_hora);
         if (!validWindow(start, end)) throw new ScheduleError(400, 'Indica el fin del bloque disponible');
-        const duplicate = await tx.cita.findFirst({ where: { barberoId: profile.id, fecha_hora: start, estado: CitaEstado.disponible, NOT: { id: cita.id } } });
+        const duplicate = await tx.cita.findFirst({ where: { barberoId: profile.id, fecha_hora: { lt: end }, disponibleHasta: { gt: start }, estado: CitaEstado.disponible, NOT: { id: cita.id } } });
         if (duplicate) throw new ScheduleError(409, 'Ya existe disponibilidad en ese horario');
         return tx.cita.update({ where: { id: cita.id }, data: { fecha_hora: start, disponibleHasta: end } });
       }
@@ -99,6 +121,7 @@ export const saveWeekAvailability = async (req: AuthRequest, res: Response) => {
   try {
     const { fechaInicio, fechaFin, bloques } = req.body;
     const { start: weekStart, end: weekEnd } = businessRange(fechaInicio, 7);
+    if (Temporal.PlainDate.from(businessDate(weekStart)).dayOfWeek !== 1) throw new RangeError('La semana debe comenzar el lunes en America/Santiago');
     checkRangeEnd(fechaFin, weekEnd);
     const hours = (weekEnd.getTime() - weekStart.getTime()) / 3600000;
     if (!Array.isArray(bloques) || bloques.length > 1008 || !Number.isFinite(hours) || hours < 167 || hours > 169) {
@@ -112,12 +135,16 @@ export const saveWeekAvailability = async (req: AuthRequest, res: Response) => {
     }
     const unique = [...new Map(windows.map(window => [window.fecha_hora.getTime(), window])).values()];
     if (unique.length !== windows.length) return res.status(400).json({ message: 'No repitas el inicio de un bloque disponible' });
+    windows.sort((a, b) => +a.fecha_hora - +b.fecha_hora);
+    if (windows.some((window, i) => i > 0 && window.fecha_hora < windows[i - 1].disponibleHasta)) throw new RangeError('Los bloques disponibles no pueden superponerse');
     const blockedInput = req.body.bloqueos;
     if (blockedInput !== undefined && (!Array.isArray(blockedInput) || blockedInput.length > 1008)) throw new RangeError('Indica hasta 1008 bloqueos válidos');
     const blocked = (blockedInput ?? []).map((block: { inicio?: string; fin?: string; tipo?: string } | null) => ({
       inicio: parseInstant(block?.inicio), fin: parseInstant(block?.fin), tipo: block?.tipo ?? '', origen: 'agenda',
     })) as { inicio: Date; fin: Date; tipo: string; origen: string }[];
     if (blocked.some(block => !validWindow(block.inicio, block.fin) || !isFutureDate(block.inicio) || block.inicio < weekStart || block.fin > weekEnd || !['bloqueado', 'descanso'].includes(block.tipo))) throw new RangeError('Los bloqueos deben ser futuros, válidos y estar dentro de la semana');
+    blocked.sort((a, b) => +a.inicio - +b.inicio);
+    if (blocked.some((block, i) => i > 0 && block.inicio < blocked[i - 1].fin)) throw new RangeError('Los bloqueos no pueden duplicarse ni superponerse');
     if (blocked.some(block => windows.some(window => block.inicio < window.disponibleHasta && window.fecha_hora < block.fin))) throw new RangeError('Un intervalo no puede estar disponible y bloqueado a la vez');
     const profile = await getOwnBarberProfile(req.user!.id);
     if (!profile) return res.status(404).json({ message: 'No tienes perfil de barbero creado' });
@@ -128,6 +155,16 @@ export const saveWeekAvailability = async (req: AuthRequest, res: Response) => {
       if (req.body.revision !== snapshot.revision) throw new ScheduleError(409, 'La agenda cambió en otro dispositivo o recibió una reserva. Recarga la semana y revisa los cambios antes de guardar.');
       const { error, value: configuracion } = configurationValidation.validate(req.body.configuracion);
       if (error || !configuracion) throw new ScheduleError(400, 'Indica una configuración de horarios válida');
+      const occupied = await tx.cita.findMany({ where: { barberoId: profile.id, estado: { in: activeStates }, fecha_hora: { lt: weekEnd } }, include: { servicio: true } });
+      const retainedBlocks = await tx.agendaBloqueo.findMany({ where: { barberoId: profile.id, inicio: { lt: weekEnd }, fin: { gt: weekStart }, ...(blockedInput !== undefined ? { origen: { not: 'agenda' } } : {}) } });
+      const adjacentWindows = await tx.cita.findMany({ where: { barberoId: profile.id, estado: 'disponible', OR: [{ fecha_hora: { lt: weekStart } }, { fecha_hora: { gte: weekEnd } }] } });
+      const conflicts = occupied.filter(c => {
+        const duration = durationOf(c);
+        if (!duration) return c.fecha_hora >= weekStart;
+        const end = endOf(c.fecha_hora, duration);
+        return end > weekStart && end > new Date() && (!covers(c.fecha_hora, end, [...windows, ...adjacentWindows]) || [...blocked, ...retainedBlocks].some(b => overlaps(c.fecha_hora, end, b.inicio, b.fin)));
+      }).map(c => `${businessDate(c.fecha_hora)} ${businessTime(c.fecha_hora)} · ${c.nombreServicioReservado ?? c.servicio?.nombre_servicio ?? 'Reserva'}`);
+      if (conflicts.length && req.body.conservarReservas !== true) throw new ScheduleError(409, 'El cambio afecta citas activas. Puedes conservarlas como excepciones; no se cancelarán ni modificarán.', conflicts);
       // Availability is independent of reservations. Existing appointments are never deleted.
       // Reject boundary-crossing windows rather than silently changing an adjacent week.
       const crossing = await tx.cita.findFirst({ where: { barberoId: profile.id, estado: CitaEstado.disponible, OR: [
@@ -168,14 +205,13 @@ export const getDisponibilidad = async (req: AuthRequest, res: Response) => {
       await requireBookableProfessional(tx, barberId);
       const servicios = await tx.service.findMany({ where: { perfilBarberoId: barberId, activo: true } });
       const serviceId = typeof req.query.servicioId === 'string' ? req.query.servicioId : null;
-      if (weekly && !serviceId) throw new ScheduleError(400, 'Selecciona un servicio para consultar la semana');
       const services = serviceId ? servicios.filter(service => service.id === serviceId) : servicios;
       if (serviceId && !services.length) throw new ScheduleError(404, 'Servicio no encontrado para este profesional');
       const { citas, ...calendar } = await publicAvailability(tx, barberId, start, end, services, weekly);
       return {
         ...calendar,
-        citas: citas.map(({ id, fecha_hora, disponibleHasta }) => ({ id, fecha_hora, disponibleHasta })),
-        servicios: servicios.map(({ id, nombre_servicio, descripcion, precio, duracion_minutos }) => ({ id, nombre_servicio, descripcion, precio, duracion_minutos })),
+        citas: citas.map(({ id, fecha_hora, disponibleHasta, ...extra }) => ({ id, fecha_hora, disponibleHasta, ...extra })),
+        servicios: servicios.map(({ id, nombre_servicio, descripcion, precio }) => ({ id, nombre_servicio, descripcion, precio })),
       };
     });
     return res.json(result);
@@ -214,7 +250,6 @@ export const getBarberosParaReserva = async (_req: AuthRequest, res: Response) =
             nombre_servicio: true,
             descripcion: true,
             precio: true,
-            duracion_minutos: true,
           },
           orderBy: { nombre_servicio: 'asc' },
         },
@@ -237,19 +272,20 @@ export const getPaymentDetails = async (req: AuthRequest, res: Response) => {
     if (req.user?.rol !== 'cliente') return res.status(403).json({ message: 'Solo el cliente puede iniciar el pago de una reserva' });
     paymentAccess.attempt(req.user.id);
     const { servicioId } = req.body ?? {};
-    if (typeof servicioId !== 'string' || !servicioId.trim() || Object.keys(req.body).some(key => key !== 'servicioId')) {
+    if (typeof servicioId !== 'string' || !servicioId.trim() || Object.keys(req.body).some(key => !['servicioId', 'fecha_hora', 'fin_hora'].includes(key))) {
       return res.status(400).json({ message: 'Selecciona un único horario y servicio para continuar al pago' });
     }
     const reference = await prisma.cita.findUnique({ where: { id: req.params.id }, select: { barberoId: true } });
     if (!reference) return res.status(404).json({ message: 'Horario no encontrado' });
     const details = await withSchedule(reference.barberoId, async tx => {
       const slot = await tx.cita.findUnique({ where: { id: req.params.id } });
-      if (!slot || slot.estado !== CitaEstado.disponible || !isFutureDate(slot.fecha_hora) || !slot.disponibleHasta) {
+      if (!slot || slot.estado !== CitaEstado.disponible || !slot.disponibleHasta) {
         throw new ScheduleError(409, 'El horario ya no está disponible');
       }
       const service = await tx.service.findUnique({ where: { id: servicioId.trim() } });
       if (!service || !service.activo || service.perfilBarberoId !== slot.barberoId) throw new ScheduleError(404, 'Servicio no disponible para este horario');
-      await validateInterval(tx, slot.barberoId, slot.fecha_hora, service.duracion_minutos);
+      const { start, minutes } = await selectedStart(tx, slot, req.body.fecha_hora, req.body.fin_hora);
+      await validateInterval(tx, slot.barberoId, start, minutes);
       const profile = await tx.barberProfile.findFirst({
         where: { id: slot.barberoId, requiereComprobante: true, usuario: { rol: 'barbero', aprobado: true, activo: true } },
         select: bankingSelect,
@@ -294,7 +330,7 @@ export const getReservationCalendar = async (req: AuthRequest, res: Response) =>
           select: { id: true, nombre: true, telefono: true },
         },
         servicio: {
-          select: { id: true, nombre_servicio: true, duracion_minutos: true },
+          select: { id: true, nombre_servicio: true },
         },
       },
       orderBy: { fecha_hora: 'desc' },
@@ -308,6 +344,7 @@ export const getReservationCalendar = async (req: AuthRequest, res: Response) =>
 
 export const getClientAppointments = async (req: AuthRequest, res: Response) => {
   try {
+    if (isDataTable(req)) return res.json(await appointmentPage(req, { clienteId: req.user!.id }, true));
     const citas = await prisma.cita.findMany({
       where: {
         clienteId: req.user!.id,
@@ -329,7 +366,6 @@ export const getClientAppointments = async (req: AuthRequest, res: Response) => 
           select: {
             id: true,
             nombre_servicio: true,
-            duracion_minutos: true,
             precio: true,
           },
         },
@@ -339,6 +375,8 @@ export const getClientAppointments = async (req: AuthRequest, res: Response) => 
 
     return res.json(citas.map(historicalAppointment));
   } catch (error) {
+    const failure = scheduleFailure(error);
+    if (failure) return res.status(failure.status).json({ message: failure.message });
     console.error('getClientAppointments error', error);
     return res.status(500).json({ message: 'Error al obtener tus citas' });
   }
@@ -356,6 +394,7 @@ export const getMyAppointments = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: 'No tienes perfil de barbero creado' });
     }
 
+    if (isDataTable(req)) return res.json(await appointmentPage(req, { barberoId: barberProfile.id }, false));
     const citas = await prisma.cita.findMany({
       where: {
         barberoId: barberProfile.id,
@@ -373,7 +412,6 @@ export const getMyAppointments = async (req: AuthRequest, res: Response) => {
           select: {
             id: true,
             nombre_servicio: true,
-            duracion_minutos: true,
           },
         },
       },
@@ -382,6 +420,8 @@ export const getMyAppointments = async (req: AuthRequest, res: Response) => {
 
     return res.json(citas.map(historicalAppointment));
   } catch (error) {
+    const failure = scheduleFailure(error);
+    if (failure) return res.status(failure.status).json({ message: failure.message });
     console.error('getMyAppointments error', error);
     return res.status(500).json({ message: 'Error al obtener tus citas' });
   }
@@ -434,6 +474,9 @@ export const getAppointmentHistory = async (req: AuthRequest, res: Response) => 
 export const agendarCita = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
+    if (Object.keys(req.body ?? {}).some(key => !['servicioId', 'fecha_hora', 'fin_hora', 'comprobanteTransferencia', 'comprobanteNombre'].includes(key))) {
+      return res.status(400).json({ message: 'La reserva solo acepta servicio, inicio y comprobante; el intervalo se obtiene de la agenda' });
+    }
     let { servicioId, comprobanteTransferencia, comprobanteNombre } = req.body ?? {};
     if (typeof servicioId !== 'string' || !servicioId.trim()) return res.status(400).json({ message: 'servicioId es requerido' });
     servicioId = servicioId.trim();
@@ -445,7 +488,7 @@ export const agendarCita = async (req: AuthRequest, res: Response) => {
       // Re-read everything after obtaining the database lock, never trust an earlier read.
       const cita = await tx.cita.findUnique({ where: { id }, include: { barbero: { include: { usuario: true } } } });
       if (!cita) throw new ScheduleError(404, 'El horario ya no está publicado');
-      if (cita.estado !== CitaEstado.disponible || !isFutureDate(cita.fecha_hora)) throw new ScheduleError(409, 'Esta cita ya no está disponible');
+      if (cita.estado !== CitaEstado.disponible) throw new ScheduleError(409, 'Esta cita ya no está disponible');
       await requireBookableProfessional(tx, cita.barberoId);
       const hasProof = Boolean(proof);
       if (cita.barbero.requiereComprobante && !hasProof) throw new ScheduleError(400, 'Este profesional requiere un comprobante de transferencia');
@@ -457,16 +500,17 @@ export const agendarCita = async (req: AuthRequest, res: Response) => {
       if (!service || !service.activo) throw new ScheduleError(404, 'Servicio no disponible');
       if (service.perfilBarberoId !== cita.barberoId) throw new ScheduleError(403, 'El servicio seleccionado no pertenece al barbero de esta cita');
       if (!cita.disponibleHasta) throw new ScheduleError(409, 'El profesional debe volver a publicar este horario con su duración disponible');
-      await validateInterval(tx, cita.barberoId, cita.fecha_hora, service.duracion_minutos);
+      const { start, minutes } = await selectedStart(tx, cita, req.body.fecha_hora, req.body.fin_hora);
+      await validateInterval(tx, cita.barberoId, start, minutes);
       // Keep published availability independent: cancelling never invents or reopens a blocked window.
       return tx.cita.create({ data: {
-        barberoId: cita.barberoId, fecha_hora: cita.fecha_hora,
-        clienteId: req.user!.id, servicioId, duracionReservada: service.duracion_minutos,
+        barberoId: cita.barberoId, fecha_hora: start,
+        clienteId: req.user!.id, servicioId, duracionReservada: minutes,
         nombreServicioReservado: service.nombre_servicio, precioReservado: service.precio,
         cambiosEstado: { create: { estadoAnterior: null, estadoNuevo: CitaEstado.confirmada, responsableId: req.user!.id } },
         comprobanteTransferencia, comprobanteNombre, estado: CitaEstado.confirmada,
       } });
     });
-    return res.json(booked);
+    return res.json(historicalAppointment(booked));
   } catch (error) { return appointmentError(res, error, 'Error al agendar cita'); }
 };

@@ -3,7 +3,7 @@ import { API_URL, getSession, type SessionUser } from '../lib/session';
 import { safePhotoUrl } from '../lib/profilePhoto';
 import { businessDate, businessTime } from '../lib/businessTime';
 
-interface Service { id: string; nombre_servicio: string; descripcion: string | null; precio: number; duracion_minutos: number }
+interface Service { id: string; nombre_servicio: string; descripcion: string | null; precio: number }
 interface Profile {
   id: number; biografia: string | null; especialidades: string[]; foto_perfil: string | null;
   usuario: { nombre: string; foto_perfil: string | null };
@@ -91,18 +91,18 @@ export default function PublicBarberProfile() {
     <section className="public-panel"><h2>Servicios activos</h2>
       {profile.servicios.length ? <ul className="public-services">{profile.servicios.map(item => <li key={item.id}>
         <div><h3>{item.nombre_servicio}</h3>{item.descripcion && <p>{item.descripcion}</p>}</div>
-        <strong>{money(item.precio)} <span>· {item.duracion_minutos} min</span></strong>
+        <strong>{money(item.precio)}</strong>
       </li>)}</ul> : <p>No hay servicios activos por el momento.</p>}
     </section>
     <section className="public-panel"><h2>Disponibilidad</h2><p>Horarios en Concepción (America/Santiago). La disponibilidad se confirma al reservar.</p>
       {canBook ? <>
         <div className="public-filters">
-          <label>Servicio<select aria-label="Servicio" value={service} onChange={event => setService(event.target.value)}>{profile.servicios.map(item => <option key={item.id} value={item.id}>{item.nombre_servicio} · {item.duracion_minutos} min</option>)}</select></label>
+          <label>Servicio<select aria-label="Servicio" value={service} onChange={event => setService(event.target.value)}>{profile.servicios.map(item => <option key={item.id} value={item.id}>{item.nombre_servicio}</option>)}</select></label>
           <label>Fecha<input type="date" value={day} min={businessDate()} onChange={event => setDay(event.target.value)} /></label>
           <button onClick={() => setAvailabilityAttempt(value => value + 1)}>Actualizar disponibilidad</button>
         </div>
         <div aria-live="polite">
-          {loadingSlots ? <p>Consultando horarios...</p> : availability ? <p role="alert">{availability}</p> : !day ? <p>Selecciona una fecha.</p> : slots.length ? <ul className="public-tags">{slots.map(slot => <li key={slot.id}>{businessTime(slot.fecha_hora)}</li>)}</ul> : <p>No hay horarios disponibles para este servicio en la fecha seleccionada.</p>}
+          {loadingSlots ? <p>Consultando horarios...</p> : availability ? <p role="alert">{availability}</p> : !day ? <p>Selecciona una fecha.</p> : slots.length ? <ul className="public-tags">{slots.map(slot => <li key={slot.id}>{businessTime(slot.fecha_hora)}–{businessTime(slot.disponibleHasta)}</li>)}</ul> : <p>No hay horarios disponibles para este servicio en la fecha seleccionada.</p>}
         </div>
       </> : <p>La disponibilidad se publicará cuando el profesional habilite sus reservas.</p>}
     </section>

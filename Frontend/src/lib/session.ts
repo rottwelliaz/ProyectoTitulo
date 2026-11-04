@@ -47,7 +47,7 @@ function applyUser(user: SessionUser) {
   });
   document.querySelectorAll<HTMLAnchorElement>('a[href]').forEach((link) => {
     const url = new URL(link.href, location.origin);
-    if (url.origin === location.origin && !canAccess(url.pathname, user.rol)) link.hidden = true;
+    if (url.origin === location.origin && !canAccess(url.pathname, user.rol, user.aprobado !== false)) link.hidden = true;
   });
 }
 
@@ -84,10 +84,10 @@ export async function requireSession(force = false): Promise<SessionUser | null>
     const user = await getSession(force);
     if (navigating) return null;
     if (!user) { redirectToLogin(); return null; }
-    if (!canAccess(location.pathname, user.rol)) {
+    if (!canAccess(location.pathname, user.rol, user.aprobado !== false)) {
       navigating = true;
       document.documentElement.dataset.authState = 'pending';
-      location.replace(roleHome(user.rol));
+      location.replace(roleHome(user.rol, user.aprobado !== false));
       return null;
     }
     document.documentElement.dataset.authState = 'ready';

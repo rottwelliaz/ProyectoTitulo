@@ -214,7 +214,7 @@ import {
 
       <label>
         <span>Nueva contraseña <small>(opcional)</small></span>
-        <input name="password" type="password" minlength="12" maxlength="72" placeholder="Dejar vacío para mantener la actual" />
+        <input name="password" type="password" minlength="8" maxlength="72" placeholder="Dejar vacío para mantener la actual" />
       </label>
 
       <p id="admin-edit-message" class="admin-edit-message" hidden></p>
@@ -228,6 +228,8 @@ import {
 </dialog>
 
 <script>
+  import { mountCardTable, userOrders } from '../lib/dataTables';
+  import { confirmAction, notifyError, notifySuccess } from '../lib/notifications';
   import { escapeHtmlValue as escapeHtml } from '../lib/html';
   import { newPasswordError } from '../lib/registration';
   import { requireSession, authFetch as fetch, API_URL } from '../lib/session';
@@ -262,7 +264,6 @@ import {
         id: string;
         nombre_servicio: string;
         precio: number;
-        duracion_minutos: number;
       }>;
       _count?: {
         citas: number;
@@ -283,10 +284,6 @@ import {
       barberosPendientes: number;
       admins: number;
     };
-    clientes: AdminUser[];
-    barberos: AdminUser[];
-    admins: AdminUser[];
-    barberosPendientes: AdminUser[];
   }
 
   const message = document.querySelector<HTMLParagraphElement>('#admin-dashboard-message');
@@ -326,6 +323,7 @@ import {
   };
 
   const showMessage = (text: string, type: 'success' | 'error') => {
+    if (type === 'success') { void notifySuccess(text); clearMessage(); return; }
     if (!message) return;
     message.textContent = text;
     message.hidden = false;
@@ -345,6 +343,11 @@ import {
     editMessage.className = `admin-edit-message is-${type}`;
   };
 
+  editForm?.querySelector<HTMLInputElement>('[name="password"]')?.addEventListener('invalid', event => {
+    const error = newPasswordError((event.target as HTMLInputElement).value);
+    if (error) { event.preventDefault(); showEditMessage(error, 'error'); }
+  });
+
   const clearEditMessage = () => {
     if (!editMessage) return;
     editMessage.hidden = true;
@@ -354,6 +357,11 @@ import {
   const toggleApprovedField = () => {
     const role = editForm?.elements.namedItem('rol') as HTMLSelectElement | null;
     approvedField?.classList.toggle('is-hidden', role?.value !== 'barbero');
+    const id = (editForm?.elements.namedItem('id') as HTMLInputElement | null)?.value;
+    const original = dashboardUsers.find(user => String(user.id) === id);
+    if (role?.value === 'barbero' && original?.rol === 'cliente' && original.solicitudProfesional?.estado === 'pendiente') {
+      (editForm?.elements.namedItem('aprobado') as HTMLInputElement).checked = false;
+    }
   };
 
   const closeEditModal = () => {
@@ -433,6 +441,7 @@ import {
 
           <div class="admin-user-meta">
             <span>Rol: ${escapeHtml(user.rol)}</span>
+            ${user.rol === 'barbero' ? `<span>Estado de aprobación: ${user.aprobado ? 'Aprobado' : 'No aprobado'}</span>` : ''}
             <span>Teléfono: ${escapeHtml(user.telefono || 'No registrado')}</span>
             <span>Creado: ${escapeHtml(formatDate(user.fecha_creacion))}</span>
             ${user.solicitudProfesional ? `<span>Solicitud: ${escapeHtml(user.solicitudProfesional.estado)} ${escapeHtml(user.solicitudProfesional.motivoRechazo || '')}</span>` : ''}
@@ -448,7 +457,7 @@ import {
             ${services.length > 0 ? `
               <div class="admin-service-chips">
                 ${services.map((service) => `
-                  <span>${escapeHtml(service.nombre_servicio)} · $${escapeHtml(service.precio)} · ${escapeHtml(service.duracion_minutos)} min</span>
+                  <span>${escapeHtml(service.nombre_servicio)} · $${escapeHtml(service.precio)}</span>
                 `).join('')}
               </div>
             ` : ''}
@@ -462,7 +471,7 @@ import {
               <span>Editar</span>
             </button>
           ` : ''}
-          ${options.allowApprove && user.solicitudProfesional?.estado === 'pendiente' && user.activo !== false ? `
+          ${options.allowApprove && user.rol === 'barbero' && !user.aprobado && user.solicitudProfesional?.estado === 'pendiente' && user.activo !== false ? `
             <button class="admin-approve-button" type="button" data-approve-id="${escapeHtml(user.id)}">
               <span>Aprobar</span>
             </button>
@@ -478,25 +487,28 @@ import {
     `;
   };
 
-  const renderList = (container: HTMLElement | null, users: AdminUser[], emptyText: string, options = {}) => {
+  const tables = new Map<string, ReturnType<typeof mountCardTable>>();
+  const tableRows = new Map<string, AdminUser[]>();
+  const ensureTable = (tab: string) => {
+    if (tables.has(tab)) return;
+    const container = ({ clientes: clientesList, barberos: barberosList, pendientes: pendientesList, admins: adminsList } as Record<string, HTMLElement | null>)[tab];
     if (!container) return;
-    if (!users.length) {
-      renderEmpty(container, emptyText);
-      return;
-    }
-    container.innerHTML = users.map((user) => renderUserCard(user, options)).join('');
-    container.querySelectorAll<HTMLElement>('.admin-user-avatar').forEach((avatar, index) => {
-      if (setPhotoBackground(avatar, users[index].perfilBarbero?.foto_perfil)) avatar.textContent = '';
+    const table = mountCardTable(container, {
+      endpoint: '/usuarios/admin/dashboard?table=' + tab, label: 'Usuarios: ' + tab, orders: userOrders,
+      empty: tab === 'pendientes' ? 'No hay solicitudes pendientes.' : 'No hay usuarios registrados.',
+      render: user => renderUserCard(user, { allowEdit: true, allowDelete: tab !== 'admins' && tab !== 'pendientes', allowApprove: tab === 'pendientes' || tab === 'barberos', showBarberInfo: tab === 'pendientes' || tab === 'barberos' }),
+      onRows: rows => { tableRows.set(tab, rows); dashboardUsers = [...new Map([...tableRows.values()].flat().map(user => [user.id, user])).values()]; },
+      onDraw: () => {
+        container.querySelectorAll<HTMLElement>('.admin-user-card').forEach(card => {
+        const user = tableRows.get(tab)?.find(user => String(user.id) === card.dataset.userId);
+        const avatar = card.querySelector<HTMLElement>('.admin-user-avatar');
+        if (avatar && setPhotoBackground(avatar, user?.perfilBarbero?.foto_perfil)) avatar.textContent = '';
+        });
+      },
     });
+    tables.set(tab, table);
   };
-
   const renderDashboard = (data: AdminDashboardResponse) => {
-    dashboardUsers = [
-      ...data.clientes,
-      ...data.barberos,
-      ...data.admins,
-    ];
-
     setText('#stat-total', data.stats.totalUsuarios);
     setText('#stat-clientes', data.stats.clientes);
     setText('#stat-barberos', data.stats.barberos);
@@ -505,20 +517,6 @@ import {
     setText('#summary-pending', `${data.stats.barberosPendientes} solicitudes pendientes`);
     setText('#summary-admins', `${data.stats.admins} administradores`);
 
-    renderList(clientesList, data.clientes, 'No hay clientes registrados.', { allowEdit: true, allowDelete: true });
-    renderList(barberosList, data.barberos, 'No hay barberos registrados.', {
-      showBarberInfo: true,
-      allowEdit: true,
-      allowApprove: true,
-      allowDelete: true,
-    });
-    renderList(pendientesList, data.barberosPendientes, 'No hay solicitudes pendientes.', {
-      showBarberInfo: true,
-      allowEdit: true,
-      allowApprove: true,
-      allowDelete: true,
-    });
-    renderList(adminsList, data.admins, 'No hay administradores registrados.', { allowEdit: true, allowDelete: false });
   };
 
   const loadDashboard = async () => {
@@ -541,9 +539,10 @@ import {
 
     refreshButton?.setAttribute('disabled', 'true');
     if (refreshButton) refreshButton.textContent = 'Actualizando...';
+    tables.forEach(table => table.reload());
 
     try {
-      const response = await fetch(`${API_URL}/usuarios/admin/dashboard`, {
+      const response = await fetch(`${API_URL}/usuarios/admin/dashboard?summary=1`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -581,24 +580,26 @@ import {
       }
 
       await loadDashboard();
-      showMessage('Barbero aprobado correctamente.', 'success');
+      showMessage('El barbero ha sido aprobado correctamente.', 'success');
     } catch (error) {
       const text = error instanceof Error ? error.message : 'Error al aprobar barbero.';
-      showMessage(text, 'error');
+      void notifyError(text);
     }
   };
 
   const rejectBarber = async (id: string) => {
-    const motivoRechazo = window.prompt('Motivo del rechazo (obligatorio, hasta 1000 caracteres):');
-    if (motivoRechazo === null) return;
-    if (!motivoRechazo.trim() || motivoRechazo.trim().length > 1000) { showMessage('Indica un motivo de entre 1 y 1000 caracteres.', 'error'); return; }
+    if (!token || rejectingUsers.has(id)) return;
+    rejectingUsers.add(id);
     try {
-      const response = await fetch(API_URL + '/usuarios/' + id + '/rechazar-barbero', { method: 'PATCH', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ motivoRechazo }) });
+      if (!(await confirmAction('¿Estás seguro de rechazar esta solicitud? La cuenta pendiente será eliminada permanentemente.', 'Sí, rechazar y eliminar'))) return;
+      const response = await fetch(API_URL + '/usuarios/' + id + '/rechazar-barbero', { method: 'PATCH', headers: { Authorization: 'Bearer ' + token } });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'No se pudo rechazar la solicitud.');
-      await loadDashboard(); showMessage('Solicitud rechazada. El motivo y resultado quedaron registrados.', 'success');
-    } catch (error) { showMessage(error instanceof Error ? error.message : 'No se pudo rechazar la solicitud.', 'error'); }
+      await loadDashboard(); showMessage('La solicitud fue rechazada y la cuenta eliminada correctamente.', 'success');
+    } catch (error) { void notifyError(error instanceof Error ? error.message : 'No se pudo rechazar la solicitud.'); }
+    finally { rejectingUsers.delete(id); }
   };
+  const rejectingUsers = new Set<string>();
   const reactivateUser = async (id: string) => {
     try {
       const response = await fetch(API_URL + '/usuarios/' + id, { method: 'PUT', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ activo: true }) });
@@ -608,13 +609,13 @@ import {
     } catch (error) { showMessage(error instanceof Error ? error.message : 'No se pudo reactivar la cuenta.', 'error'); }
   };
 
+  const deactivatingUsers = new Set<string>();
   const deleteUser = async (id: string) => {
-    if (!token) return;
-
-    const ok = window.confirm('¿Desactivar esta cuenta? Se impedirá su acceso y nuevas reservas. Sus citas existentes e historial se conservarán. Puedes reactivarla desde este panel.');
-    if (!ok) return;
+    if (!token || deactivatingUsers.has(id)) return;
+    deactivatingUsers.add(id);
 
     try {
+      if (!await confirmAction('¿Desactivar esta cuenta? Se impedirá su acceso y nuevas reservas. Sus citas existentes e historial se conservarán. Puedes reactivarla desde este panel.', 'Sí, desactivar cuenta')) return;
       const response = await fetch(`${API_URL}/usuarios/${id}`, {
         method: 'DELETE',
         headers: {
@@ -629,10 +630,9 @@ import {
 
       await loadDashboard();
       showMessage('Cuenta desactivada. Se conservaron sus reservas e historial.', 'success');
-    } catch (error) {
-      const text = error instanceof Error ? error.message : 'Error al desactivar usuario.';
-      showMessage(text, 'error');
-    }
+    } catch {
+      void notifyError('No se pudo desactivar la cuenta. Inténtalo nuevamente.');
+    } finally { deactivatingUsers.delete(id); }
   };
 
   const updateUser = async () => {
@@ -727,6 +727,7 @@ import {
   navButtons.forEach((button) => {
     button.addEventListener('click', () => {
       const tab = button.dataset.adminTab;
+      if (tab) ensureTable(tab);
 
       navButtons.forEach((navButton) => navButton.classList.toggle('is-active', navButton === button));
       panels.forEach((panel) => panel.classList.toggle('is-active', panel.dataset.adminPanel === tab));

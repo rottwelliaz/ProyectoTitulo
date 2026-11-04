@@ -124,7 +124,9 @@ model Service {
   nombre_servicio  String
   descripcion      String?
   precio           Int
-  duracion_minutos Int
+  // Archived database value only; excluded from Prisma Client and all service APIs.
+  // Keep the column until historical snapshots have been reviewed; do not drop data.
+  duracionLegadaMinutos Int? @map("duracion_minutos") @ignore
   activo           Boolean @default(true)
   fecha_creacion   DateTime @default(now())
   fecha_actualizacion DateTime @default(now()) @updatedAt
