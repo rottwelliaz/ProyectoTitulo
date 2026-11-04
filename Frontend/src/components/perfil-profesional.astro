@@ -262,7 +262,7 @@ import {
       if (!allowed) { history.replaceState(null, '', location.pathname + location.search + previousHash); return; }
       previousHash = location.hash;
     }
-    const target = decodeURIComponent(location.hash.slice(1));
+    const target = decodeURIComponent(location.hash.slice(1)) || 'organizacion';
     const [view, tab] = titles[target] ? [target, undefined] : aliases[target] || ['mi-perfil'];
     views.forEach(panel => { panel.hidden = panel.dataset.proPanel !== view; });
     navLinks.forEach(link => {

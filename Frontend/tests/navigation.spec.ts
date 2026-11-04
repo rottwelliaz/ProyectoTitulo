@@ -34,6 +34,7 @@ async function mockApi(page: Page, role: Role = 'cliente', status = 200) {
     let body: unknown = [];
     if (path.endsWith('/auth/login')) body = { token: 'test-token', user };
     if (path.endsWith('/auth/me')) body = user;
+    if (path.endsWith('/profesional/calendario')) body = { citas: [], bloqueos: [], configuracion: { startTime: '09:00', endTime: '19:00', blockMinutes: 30 } };
     if (path.endsWith('/admin/dashboard')) body = { stats: { totalUsuarios: 0, clientes: 0, barberos: 0, barberosPendientes: 0, barberosAprobados: 0, admins: 0 }, clientes: [], barberos: [], barberosPendientes: [], admins: [] };
     await fulfillDataTable(route, { status: path.endsWith('/auth/me') ? status : 200, json: body });
   });
@@ -385,6 +386,57 @@ test('Login cliente sin retorno abre Inicio y conserva acceso a Mi perfil', asyn
   await expect(page.getByRole('heading', { name: 'Mi perfil', exact: true })).toBeVisible();
 });
 
+test('Login barbero aprobado abre Organización y vuelve a ella al reingresar al panel', async ({ page }) => {
+  await mockApi(page, 'barbero');
+  await page.goto('/login');
+  await page.locator('[name=email]').fill('barbero@example.com');
+  await page.locator('[name=password]').fill('test-password');
+  await page.locator('#login-button').click();
+
+  const expectOrganization = async () => {
+    await expect(page).toHaveURL(/\/perfil-profesional$/);
+    await expect(page.locator('#pro-view-title')).toHaveText('Organización');
+    await expect(page.locator('.pro-sidebar')).toBeVisible();
+    await expect(page.locator('[data-pro-view="organizacion"].pro-nav-link')).toHaveAttribute('aria-current', 'page');
+    await expect(page.locator('#panel-horarios .calendar-grid')).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Semana laboral' })).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByRole('button', { name: 'Guardar horarios', exact: true })).toBeEnabled();
+  };
+  await expectOrganization();
+  await page.reload();
+  await expectOrganization();
+  await page.locator('.pro-nav-link[href="#mis-citas"]').click();
+  await expect(page.locator('#mis-citas')).toBeVisible();
+  await page.goto('/home');
+  await page.locator('[data-session-trigger]').click();
+  await page.getByRole('link', { name: 'Perfil profesional', exact: true }).click();
+  await expectOrganization();
+});
+
+test('Login admin sin retorno conserva su panel inicial', async ({ page }) => {
+  await mockApi(page, 'admin');
+  await page.goto('/login');
+  await page.locator('[name=email]').fill('admin@example.com');
+  await page.locator('[name=password]').fill('test-password');
+  await page.locator('#login-button').click();
+  await expect(page).toHaveURL(/\/admin$/);
+  await expect(page.locator('.admin-root')).toBeVisible();
+});
+
+test('Login barbero respeta el retorno a Servicios al entrar y recargar', async ({ page }) => {
+  await mockApi(page, 'barbero');
+  await page.goto('/login?redirect=' + encodeURIComponent('/perfil-profesional#servicios-profesional'));
+  await page.locator('[name=email]').fill('barbero@example.com');
+  await page.locator('[name=password]').fill('test-password');
+  await page.locator('#login-button').click();
+  await expect(page).toHaveURL(/\/perfil-profesional#servicios-profesional$/);
+  await expect(page.locator('#panel-servicios')).toBeVisible();
+  await expect(page.locator('#panel-horarios')).toBeHidden();
+  await page.reload();
+  await expect(page.locator('#panel-servicios')).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Servicios' })).toHaveAttribute('aria-selected', 'true');
+});
+
 test('El retorno rechaza URLs externas, rutas inexistentes y bucles de login', () => {
   for (const path of ['https://evil.example', '//evil.example', '/\\evil.example', '/%5cevil.example', '/login', '/registro', '/no-existe', '/admin', '/perfil/../../admin']) {
     expect(loginDestination(path, 'cliente')).toBe('/home');
@@ -428,7 +480,7 @@ const readySelectors: Record<string, string> = {
   '/': 'main',
   '/perfil': '.profile-root',
   '/configuracion': '.settings-card',
-  '/perfil-profesional': '#mi-perfil',
+  '/perfil-profesional': '#organizacion',
   '/admin': '.admin-root',
   '/admin-barberos': '#pending-barbers-list',
   '/booking': '.booking-root',

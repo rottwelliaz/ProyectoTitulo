@@ -23,7 +23,9 @@ async function fixture(page: Page, duration = 0, theme = 'light', initialConfigu
     if (path.endsWith('/disponibilidad/semana')) {
       const body = route.request().postDataJSON(); state.writes.push(body);
       if (state.fail) return fulfillDataTable(route, { status: 500, json: { message: 'No se pudieron guardar los horarios.' } });
-      state.weeks[body.fechaInicio.slice(0, 10)] = { citas: body.bloques.map((b: any, i: number) => ({ id: 'w' + i, fecha_hora: b.inicio, disponibleHasta: b.fin, estado: 'disponible' })), bloqueos: body.bloqueos.map((b: any, i: number) => ({ id: 'b' + i, ...b, origen: 'agenda' })), publicada: true, revision: 'v' + state.writes.length, configuracion: body.configuracion };
+      const week = body.fechaInicio.slice(0, 10);
+      const reservations = (state.weeks[week]?.citas || []).filter((cita: { estado: string }) => ['pendiente', 'confirmada'].includes(cita.estado));
+      state.weeks[week] = { citas: [...reservations, ...body.bloques.map((b: any, i: number) => ({ id: 'w' + i, fecha_hora: b.inicio, disponibleHasta: b.fin, estado: 'disponible' }))], bloqueos: body.bloqueos.map((b: any, i: number) => ({ id: 'b' + i, ...b, origen: 'agenda' })), publicada: true, revision: 'v' + state.writes.length, configuracion: body.configuracion };
       return fulfillDataTable(route, { json: { citas: [], omittedOccupiedBlocks: 0 } });
     }
     if (path.endsWith('/appointment/estado')) { state.cancellations++; reservation.estado = 'cancelada'; return fulfillDataTable(route, { json: reservation }); }
@@ -108,6 +110,42 @@ test('cambiar configuración conserva el borrador y pegar otra semana requiere g
   await calendar.getByRole('button', { name: 'Guardar horarios', exact: true }).click();
   await expect.poll(() => state.writes.length).toBe(2);
   expect(state.writes[1].bloques).toHaveLength(14);
+});
+
+for (const minutes of [30, 45, 60]) test(`copiar agenda de ${minutes} minutos conserva la reserva de destino al guardar y recargar`, async ({ page }) => {
+  const settings = { startTime: '10:30', endTime: '13:30', blockMinutes: minutes };
+  const state = await fixture(page, 0, 'light', settings);
+  const calendar = page.locator('#disponibilidad-profesional'), destination = '2035-01-22';
+  // The copied publication covers the destination booking, as required by the
+  // API's conflict check; that booking must remain occupied after saving.
+  state.weeks[firstWeek] = { citas: [{ id: 'source', estado: 'disponible', fecha_hora: at(630), disponibleHasta: at(630 + minutes * 2) }], bloqueos: [], publicada: true, revision: 'source-v1', configuracion: settings };
+  const reservation = { id: 'kept', estado: 'confirmada', fecha_hora: at(630 + minutes, destination), duracionReservada: minutes,
+    cliente: { nombre: 'Cliente de destino' }, servicio: { nombre_servicio: 'Servicio sin duración' } };
+  state.weeks[destination] = { citas: [reservation], bloqueos: [], publicada: true, revision: 'destination-v1', configuracion: settings };
+  await calendar.getByRole('button', { name: 'Recargar semana', exact: true }).click();
+  await expect(calendar.locator('.barber-slot.is-available')).toHaveCount(2);
+  await calendar.getByRole('button', { name: 'Copiar semana', exact: true }).click();
+  await calendar.getByRole('button', { name: 'Semana siguiente', exact: true }).click();
+  await expect(calendar.locator('.barber-slot.is-reserved')).toContainText('Cliente de destino');
+  await calendar.getByRole('button', { name: 'Pegar aquí', exact: true }).click();
+  await page.locator('.swal2-confirm').click();
+  await expect(calendar.locator('.barber-slot.is-pending')).toHaveCount(2);
+  expect(state.writes).toHaveLength(0);
+  await expect(calendar.locator('.barber-slot.is-reserved')).toBeDisabled();
+  await calendar.getByRole('button', { name: 'Guardar horarios', exact: true }).click();
+  await expect.poll(() => state.writes.length).toBe(1);
+  expect(state.writes[0]).toMatchObject({ configuracion: settings, revision: 'destination-v1', bloques: [
+    { inicio: at(630, destination), fin: at(630 + minutes, destination) },
+    { inicio: at(630 + minutes, destination), fin: at(630 + minutes * 2, destination) },
+  ] });
+  await expect(calendar.locator('.barber-slot.is-pending')).toHaveCount(0);
+  await expect(page.locator('.swal2-toast')).toContainText('Horarios guardados correctamente.');
+  expect(state.weeks[destination].citas).toContainEqual(reservation);
+  await page.reload();
+  await expect(calendar.locator('.barber-slot.is-available')).toHaveCount(2);
+  await calendar.getByRole('button', { name: 'Semana siguiente', exact: true }).click();
+  await expect(calendar.locator('.barber-slot.is-available')).toHaveCount(1);
+  await expect(calendar.locator('.barber-slot.is-reserved')).toContainText('Cliente de destino');
 });
 
 test('cita histórica de 45 minutos conserva su intervalo y marca la segunda fila como continuación', async ({ page }) => {

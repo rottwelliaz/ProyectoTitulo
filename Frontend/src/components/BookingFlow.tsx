@@ -1,5 +1,6 @@
 import { authFetch as fetch, API_URL } from '../lib/session';
 import { notifySuccess } from '../lib/notifications';
+import { formatPrice as money } from '../lib/formatPrice';
 import { type ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { businessDate, formatInstant, startOfWeek } from '../lib/businessTime';
 import { safePhotoUrl, photoBackground } from '../lib/profilePhoto';
@@ -59,13 +60,6 @@ interface AvailabilityResponse {
 
 const initials = (name: string) =>
   name.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'B';
-
-const money = (value: number) =>
-  new Intl.NumberFormat('es-CL', {
-    style: 'currency',
-    currency: 'CLP',
-    maximumFractionDigits: 0,
-  }).format(value);
 
 const isFutureSlot = (slot: AppointmentSlot) => +new Date(slot.fecha_hora) > Date.now() && +new Date(slot.disponibleHasta) > +new Date(slot.fecha_hora);
 

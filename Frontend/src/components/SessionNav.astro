@@ -51,13 +51,13 @@ const { showHome = true, label = 'Navegación de cuenta' } = Astro.props;
 </div>
 
 <script>
-  import { clearSession, getSession } from '../lib/session';
+  import { clearSession, getSession, type SessionUser } from '../lib/session';
   import { safePhotoUrl, setPhotoBackground } from '../lib/profilePhoto';
   import { canAccess } from '../lib/access';
 
   type MenuRoot = HTMLElement & { dataset: DOMStringMap };
 
-  const displayName = (user: any) => {
+  const displayName = (user: SessionUser) => {
     const raw = String(user?.nombre || user?.name || user?.email || 'Usuario').trim();
     return raw.includes('@') ? raw.split('@')[0] : raw;
   };
@@ -92,7 +92,7 @@ const { showHome = true, label = 'Navegación de cuenta' } = Astro.props;
     root.setAttribute('aria-busy', 'false');
   };
 
-  const showUser = (root: MenuRoot, user: any) => {
+  const showUser = (root: MenuRoot, user: SessionUser) => {
     const name = displayName(user);
     const nameElement = root.querySelector<HTMLElement>('[data-session-name]');
     const roleElement = root.querySelector<HTMLElement>('[data-session-role]');

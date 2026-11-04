@@ -2,14 +2,16 @@ import { fulfillDataTable } from './datatable-fixture';
 import { test, expect, type Page } from '@playwright/test';
 import { confirmAction, notifyError, notifySuccess, notifyWarning } from '../src/lib/notifications';
 import { qualityFixture, ready, profile } from './quality-fixture';
+import { installNotificationModule, notificationModuleUrl } from './notification-fixture';
+
+test.beforeEach(async ({ page }) => { await installNotificationModule(page); });
 
 const popup = (page: Page) => page.locator('.cbc-notification');
 async function notify(page: Page, kind: 'notifySuccess' | 'notifyError' | 'notifyWarning', text: string) {
-  await page.evaluate(async ({ kind, text }) => {
-    const path = '/src/lib/notifications.ts';
+  await page.evaluate(async ({ kind, text, path }) => {
     const notifications = await import(/* @vite-ignore */ path);
     void notifications[kind](text);
-  }, { kind, text });
+  }, { kind, text, path: notificationModuleUrl });
   await expect(popup(page)).toBeVisible();
 }
 
@@ -116,12 +118,11 @@ test('textos se muestran sin interpretar HTML y un toast no reemplaza una confir
   await qualityFixture(page);
   await ready(page, '/home');
   const text = '<img src=x onerror="window.notificationAttack=true">';
-  await page.evaluate(async text => {
-    const path = '/src/lib/notifications.ts';
+  await page.evaluate(async ({ text, path }) => {
     const { confirmAction, notifySuccess } = await import(/* @vite-ignore */ path);
     void confirmAction(text);
     void notifySuccess('Operación anterior completada.');
-  }, text);
+  }, { text, path: notificationModuleUrl });
   await expect(popup(page).locator('.swal2-html-container')).toHaveText(text);
   await expect(popup(page).locator('.swal2-html-container img, .swal2-title img')).toHaveCount(0);
   await expect(popup(page).locator('.swal2-cancel')).toBeFocused();
@@ -192,6 +193,11 @@ for (const action of actions) test(`${action}: cancelar/cerrar no escribe; confi
   await expect(popup(page)).toHaveCount(1);
   expect(state.writes()).toBe(0);
   await popup(page).locator('.swal2-confirm').click();
+  if (action === 'agenda copiada') {
+    await expect(page.getByText('Semana copiada. Revisa los bloques antes de guardar.')).toBeVisible();
+    expect(state.writes()).toBe(0);
+    await page.getByRole('button', { name: 'Guardar horarios', exact: true }).click();
+  }
   await expect.poll(state.writes).toBe(1);
 });
 

@@ -132,10 +132,10 @@ test('actualización automática y al volver a la ventana; una selección válid
   await expect(page.getByRole('button', { name: 'Confirmar reserva', exact: true })).toBeDisabled();
 });
 
-for (const theme of ['original', 'light', 'dark']) for (const [width, height] of [[1920,1080],[1600,900],[1366,768],[1280,720],[768,1024],[390,844],[320,568]]) {
+for (const theme of ['original', 'light', 'dark']) for (const [width, height] of [[1920,1080],[1600,900],[1366,768],[1280,720],[768,1024],[390,844],[375,667],[360,800],[320,568]]) {
   test(`calendario ${theme} ${width}x${height}`, async ({ page }, info) => {
     await page.setViewportSize({ width, height });
-    await fixture(page, theme);
+    const state = await fixture(page, theme);
     expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
     const cells = page.locator('.booking-calendar-cell:visible');
     await expect(cells).toHaveCount(width > 760 ? 35 : 5);
@@ -149,7 +149,16 @@ for (const theme of ['original', 'light', 'dark']) for (const [width, height] of
     await page.locator('.booking-month-picker summary').click();
     const popover = await page.locator('.booking-month-popover').boundingBox();
     expect(popover!.x).toBeGreaterThanOrEqual(0); expect(popover!.x + popover!.width).toBeLessThanOrEqual(width);
-    await page.keyboard.press('Escape');
+    for (const box of await page.locator('.booking-month-popover button, .booking-month-header strong').evaluateAll(elements => elements.map(el => el.getBoundingClientRect().toJSON()))) {
+      expect(box.left).toBeGreaterThanOrEqual(0); expect(box.right).toBeLessThanOrEqual(width);
+    }
+    if (width <= 760) {
+      await page.getByRole('button', { name: 'miércoles, 16 de enero de 2030', exact: true }).focus();
+      await page.keyboard.press('Enter');
+      await expect.poll(() => new URLSearchParams(state.requests.at(-1)).get('fecha')).toBe('2030-01-14');
+      await expect(page.locator('.booking-month-picker')).not.toHaveAttribute('open');
+      await expect(page.locator('.booking-month-picker summary')).toBeFocused();
+    } else await page.keyboard.press('Escape');
     if ([1280,390].includes(width)) await page.locator('#horarios').screenshot({ path: info.outputPath('calendar.png') });
     if ([1280,390].includes(width)) {
       const axe = await new AxeBuilder({ page }).include('#horarios').withTags(['wcag2a','wcag2aa','wcag21aa','wcag22aa']).analyze();

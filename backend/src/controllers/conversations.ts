@@ -1,7 +1,7 @@
-import { Response } from 'express';
+import type { Response } from 'express';
 import type { Prisma } from '@prisma/client';
 import prisma from '../config/prisma';
-import { AuthRequest } from '../middleware/auth';
+import type { AuthRequest } from '../middleware/auth';
 
 const userSelect = {
   id: true,

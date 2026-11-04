@@ -44,7 +44,7 @@ export default function BarberAppointments() {
   const updating = useRef(false);
 
   useEffect(() => {
-    const changeView = (event: Event) => { setListView((event as CustomEvent<string>).detail === 'historial' ? 'historial' : 'reservas'); setRevision(n => n + 1); };
+    const changeView = (event: Event) => { setListView((event as CustomEvent<string>).detail === 'historial' ? 'historial' : 'reservas'); };
     const refresh = () => { if (!document.hidden && !updating.current) setRevision(n => n + 1); };
     window.addEventListener('professional-appointments-view', changeView);
     window.addEventListener('professional-calendar-updated', refresh);

@@ -11,7 +11,8 @@ for (const [width, height] of [[1920,1080],[1600,900],[1366,768],[1280,720],[102
       await qualityFixture(page, role); await ready(page, 'http://127.0.0.1:4322' + path);
       const overflow = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('body *')].filter(el => {
         const r = el.getBoundingClientRect(), s = getComputedStyle(el);
-        if (!r.width || !r.height || s.visibility === 'hidden' || s.position === 'fixed') return false;
+        // Closed <details> can retain descendant boxes without painting them.
+        if (!el.checkVisibility({ checkVisibilityCSS: true }) || !r.width || !r.height || s.position === 'fixed') return false;
         for (let parent = el.parentElement; parent; parent = parent.parentElement) {
           if (['auto', 'scroll'].includes(getComputedStyle(parent).overflowX) && parent.scrollWidth > parent.clientWidth) return false;
         }
@@ -49,6 +50,7 @@ for (const theme of ['original', 'light', 'dark']) {
 
 for (const kind of ['service', 'slot', 'admin']) {
   test(`RNF11 teclado modal ${kind}`, async ({ page }) => {
+    if (kind === 'slot') await page.clock.install();
     await qualityFixture(page, kind === 'admin' ? 'admin' : 'barbero');
     await ready(page, kind === 'admin' ? '/admin' : '/perfil-profesional');
     if (kind === 'service' || kind === 'slot') await page.locator('.pro-nav-link[href="#organizacion"]').click();
@@ -58,6 +60,14 @@ for (const kind of ['service', 'slot', 'admin']) {
     await trigger.focus(); await page.keyboard.press('Enter');
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible(); await expect(dialog).toHaveAccessibleName(/Agregar servicio|Editar bloque|Actualizar datos/);
+    if (kind === 'slot') {
+      await page.evaluate(() => {
+        window.dispatchEvent(new Event('focus'));
+        window.dispatchEvent(new Event('professional-calendar-updated'));
+      });
+      await page.clock.fastForward(31000);
+      await expect(dialog).toBeVisible();
+    }
     for (let i = 0; i < 18; i++) {
       await page.keyboard.press(i < 9 ? 'Tab' : 'Shift+Tab');
       expect(await dialog.evaluate(el => el.contains(document.activeElement) || document.activeElement === document.body)).toBe(true);

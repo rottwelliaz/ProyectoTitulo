@@ -78,6 +78,9 @@ export default function BarberCalendar() {
   const dirtyRef = useRef(false);
   const savingRef = useRef(false);
   const draftVersion = useRef(0);
+  const editingSlot = useRef(false);
+  // Keep the guard through the dialog's cleanup and native focus restoration.
+  useEffect(() => { editingSlot.current = selectedSlot !== null; }, [selectedSlot]);
 
   const weekDays = useMemo(
     () => Array.from({ length: 7 }, (_, index) => addDays(weekStart, index)),
@@ -129,7 +132,9 @@ export default function BarberCalendar() {
   useEffect(() => {
     void loadReservations();
     const refresh = () => {
-      if (savingRef.current) return;
+      // Native dialog focus traversal can refocus the window. Refreshing here
+      // would close the editor before the user finishes choosing a status.
+      if (savingRef.current || editingSlot.current) return;
       if (dirtyRef.current) { setCopyFeedback('La agenda puede haber cambiado. Tus cambios pendientes se conservan; recarga para revisar la última versión.'); return; }
       void loadReservations();
     };
@@ -207,6 +212,7 @@ export default function BarberCalendar() {
       return;
     }
 
+    editingSlot.current = true;
     setSelectedSlot({ date, slotTime, key, status: intervalStatus(draftIntervals, +buildSlotDate(date, slotTime), +buildSlotDate(date, slotEndMinute(slotTime, settings))) });
   };
 

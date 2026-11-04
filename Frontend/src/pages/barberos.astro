@@ -95,6 +95,7 @@ import '../styles/barberos.css';
 
 <script>
   import { escapeHtml } from '../lib/html';
+  import { formatPrice } from '../lib/formatPrice';
   import { API_URL, getSession } from '../lib/session';
   import { safePhotoUrl, setPhotoBackground } from '../lib/profilePhoto';
   const PAGE_SIZE = 8;
@@ -174,13 +175,6 @@ import '../styles/barberos.css';
 
     return prices.length > 0 ? Math.min(...prices) : null;
   };
-
-  const formatPrice = (price: number) =>
-    new Intl.NumberFormat('es-CL', {
-      style: 'currency',
-      currency: 'CLP',
-      maximumFractionDigits: 0,
-    }).format(price);
 
   const compareOptionalNumber = (
     a: number | null,

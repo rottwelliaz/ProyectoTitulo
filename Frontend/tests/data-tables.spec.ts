@@ -125,6 +125,7 @@ test('barbero: reservas e historial separados, acciones en página 2 y retorno d
   await page.locator('[data-pro-view="mis-citas"]').first().click(); await page.getByRole('tab', { name: 'Reservas', exact: true }).click();
   const list = page.locator('#citas-profesional');
   await expect(list.locator('.appointment-card')).toHaveCount(10);
+  expect(state.requests.filter(url => url.pathname.endsWith('/citas/mias'))).toHaveLength(1);
   await list.getByRole('link', { name: 'Página 2', exact: true }).click(); await expect(list.locator('.appointment-card')).toHaveCount(1);
   await list.getByRole('button', { name: 'Cancelar', exact: true }).click(); await page.locator('.swal2-confirm').click();
   await expect(list.locator('.dt-info')).toContainText('Mostrando 1 a 10 de 10');

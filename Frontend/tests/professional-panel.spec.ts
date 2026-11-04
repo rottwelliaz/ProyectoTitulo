@@ -17,7 +17,7 @@ async function fixture(page: Page, theme = 'original') {
     const request = route.request(), url = new URL(request.url()), path = url.pathname.replace('/api', '');
     state.requests.push(path + url.search);
     if (state.fail && path === state.fail) return fulfillDataTable(route, { status: 500, json: { message: 'No se pudo guardar: error de prueba.' } });
-    if (path === '/auth/me') return fulfillDataTable(route, { json: { id: 2, rol: 'barbero', nombre: 'Barbero real', email: 'b@test.invalid', fecha_creacion: '2026-01-01T12:00:00Z', foto_perfil: state.profile.foto_perfil, perfilBarbero: state.profile } });
+    if (path === '/auth/me') return fulfillDataTable(route, { json: { id: 2, rol: 'barbero', aprobado: true, nombre: 'Barbero real', email: 'b@test.invalid', fecha_creacion: '2026-01-01T12:00:00Z', foto_perfil: state.profile.foto_perfil, perfilBarbero: state.profile } });
     if (path === '/auth/me/photo') { state.profile.foto_perfil = photo; return fulfillDataTable(route, { json: { foto_perfil: photo } }); }
     if (path === '/profesional/perfil') { Object.assign(state.profile, request.postDataJSON()); return fulfillDataTable(route, { json: state.profile }); }
     if (path === '/profesional/estadisticas') return fulfillDataTable(route, { json: { total: url.searchParams.get('desde') === '2030-02-01' ? 0 : 3, estados: { pendiente: 0, confirmada: url.searchParams.get('desde') === '2030-02-01' ? 0 : 1, cancelada: url.searchParams.get('desde') === '2030-02-01' ? 0 : 1, rechazada: 0, finalizada: url.searchParams.get('desde') === '2030-02-01' ? 0 : 1, inasistencia: 0 } } });
@@ -47,6 +47,66 @@ async function fixture(page: Page, theme = 'original') {
   return state;
 }
 
+test('Organización carga la semana autenticada con su configuración y reservas sin guardar cambios', async ({ page }) => {
+  const calendarRequests: { url: string; authorization?: string }[] = [];
+  const writes: string[] = [];
+  page.on('request', request => {
+    if (!request.url().includes('/api/')) return;
+    if (request.method() !== 'GET') writes.push(request.url());
+    if (request.url().includes('/profesional/calendario')) {
+      calendarRequests.push({ url: request.url(), authorization: request.headers().authorization });
+    }
+  });
+  await page.addInitScript(() => localStorage.setItem('user', JSON.stringify({ id: 999, rol: 'barbero', perfilBarbero: { id: 999 } })));
+  const state = await fixture(page);
+  const expectWeek = async () => {
+    await expect(page.locator('#pro-view-title')).toHaveText('Organización');
+    await expect(page.locator('#panel-horarios .calendar-day')).toHaveCount(7);
+    await expect(page.getByLabel('Hora de entrada', { exact: true })).toHaveValue(state.configuration.startTime);
+    await expect(page.getByLabel('Hora de cierre', { exact: true })).toHaveValue(state.configuration.endTime);
+    await expect(page.getByLabel('Duración de cada bloque', { exact: true })).toHaveValue('60');
+    await expect(page.locator('.barber-slot.is-reserved').first()).toHaveAttribute('title', /Cliente real/);
+    await expect(page.locator('.barber-slot.is-reserved').first()).toBeDisabled();
+    await expect(page.locator('.barber-slot.is-break').first()).toBeVisible();
+    await expect(page.locator('#requires-proof-switch')).not.toBeChecked();
+    await expect(page.locator('.pro-nav-link.is-active')).toHaveAttribute('href', '#organizacion');
+  };
+  await expectWeek();
+  await page.reload();
+  await expectWeek();
+  expect(calendarRequests.length).toBeGreaterThanOrEqual(2);
+  for (const request of calendarRequests) {
+    expect(request.authorization).toBe('Bearer test');
+    expect([...new URL(request.url).searchParams.keys()].sort()).toEqual(['desde', 'hasta']);
+  }
+  expect(writes).toEqual([]);
+});
+
+for (const [hash, panel, tab] of [
+  ['mi-perfil', 'mi-perfil', undefined],
+  ['mi-negocio', 'mi-negocio', undefined],
+  ['organizacion', 'organizacion', 'horarios'],
+  ['mis-citas', 'mis-citas', 'calendario'],
+  ['configuracion-reservas', 'configuracion-reservas', undefined],
+  ['servicios-profesional', 'organizacion', 'servicios'],
+  ['citas-profesional', 'mis-citas', 'reservas'],
+] as const) {
+  test(`enlace específico #${hash} conserva sección y pestaña al recargar`, async ({ page }) => {
+    await fixture(page);
+    await page.goto(`/perfil-profesional#${hash}`);
+    const expectSection = async () => {
+      await expect(page).toHaveURL(new RegExp(`#${hash}$`));
+      await expect(page.locator(`[data-pro-panel="${panel}"]`)).toBeVisible();
+      await expect(page.locator('.pro-view:visible')).toHaveCount(1);
+      await expect(page.locator('.pro-nav-link.is-active')).toHaveAttribute('href', `#${panel}`);
+      if (tab) await expect(page.locator(`[data-pro-tab="${tab}"]`)).toHaveAttribute('aria-selected', 'true');
+    };
+    await expectSection();
+    await page.reload();
+    await expectSection();
+  });
+}
+
 test('servicios completos: crear, editar, desactivar, activar y retirar con persistencia al recargar', async ({ page }) => {
   await fixture(page);
   await page.locator('.pro-nav-link[href="#organizacion"]').click();
@@ -74,6 +134,7 @@ test('servicios completos: crear, editar, desactivar, activar y retirar con pers
 
 test('perfil, fotografía y lugar de trabajo guardan y conservan los valores al recargar', async ({ page }) => {
   const state = await fixture(page);
+  await page.locator('.pro-nav-link[href="#mi-perfil"]').click();
   await page.getByLabel('Biografía', { exact: true }).fill('Biografía actualizada');
   await page.getByLabel('Especialidades', { exact: false }).fill('Barba, Corte clásico');
   await page.getByRole('button', { name: 'Guardar perfil profesional', exact: true }).click();
@@ -97,6 +158,7 @@ test('perfil, fotografía y lugar de trabajo guardan y conservan los valores al 
 
 test('un fallo de guardado no muestra éxito ni cambia valores persistidos', async ({ page }) => {
   const state = await fixture(page); state.fail = '/profesional/perfil';
+  await page.locator('.pro-nav-link[href="#mi-perfil"]').click();
   await page.getByLabel('Biografía', { exact: true }).fill('No se guardará');
   await page.getByRole('button', { name: 'Guardar perfil profesional', exact: true }).click();
   await expect(page.locator('#editar-perfil-profesional [role="alert"]')).toContainText('error de prueba');
@@ -108,9 +170,9 @@ test('navegación muestra un apartado a la vez y conserva enlaces directos', asy
   const state = await fixture(page);
   state.appointments.push({ ...state.appointments[0], id: 'old', estado: 'finalizada', fecha_hora: '2029-12-01T14:00:00Z' });
   await page.reload();
-  await expect(page.locator('#mi-perfil')).toBeVisible();
+  await expect(page.locator('#mi-perfil')).toBeHidden();
   await expect(page.locator('#mi-negocio')).toBeHidden();
-  await expect(page.locator('#organizacion')).toBeHidden();
+  await expect(page.locator('#organizacion')).toBeVisible();
   await expect(page.locator('#mis-citas')).toBeHidden();
   await page.locator('.pro-nav-link[href="#mis-citas"]').click();
   await expect(page.locator('#mi-perfil')).toBeHidden();

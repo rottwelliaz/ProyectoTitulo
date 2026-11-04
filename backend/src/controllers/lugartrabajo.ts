@@ -1,6 +1,6 @@
-import { Response } from 'express';
+import type { Response } from 'express';
 import prisma from '../config/prisma';
-import { AuthRequest } from '../middleware/auth';
+import type { AuthRequest } from '../middleware/auth';
 import { professionalSelect } from '../services/professionalPrivacy';
 import { getOwnBarberProfile } from '../services/barberProfile';
 import { toNumber } from '../utils/number';

@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 import { ScheduleError } from './schedule';
 
 // All API email writers share this lock, including edits. Existing accounts are
