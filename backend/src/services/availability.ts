@@ -2,7 +2,7 @@ import { createHash } from 'crypto';
 import { Prisma } from '@prisma/client';
 import Joi from 'joi';
 
-export const defaultConfiguration = { startTime: '09:00', endTime: '19:00', blockMinutes: 30 };
+export const defaultConfiguration = { startTime: '09:00', endTime: '19:00', blockMinutes: 60 };
 export const configurationValidation = Joi.object({
   startTime: Joi.string().pattern(/^(0[6-9]|1\d|2[01]):(00|30)$/).required(),
   endTime: Joi.string().pattern(/^(0[6-9]|1\d|2[01]):(00|30)$|^22:00$/).required(),

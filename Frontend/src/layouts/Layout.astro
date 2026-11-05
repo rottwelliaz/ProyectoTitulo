@@ -4,6 +4,12 @@ import '../styles/panel-sidebar.css';
 import 'sweetalert2/dist/sweetalert2.min.css';
 import '../styles/notifications.css';
 import { privateRoutes, normalizePath } from '../lib/access';
+import { getImage } from 'astro:assets';
+import logoConce from '../assets/logotesis.png';
+
+const [favicon32, favicon64, touchIcon] = await Promise.all(
+  [32, 64, 180].map(width => getImage({ src: logoConce, width, height: width, format: 'png' })),
+);
 
 interface Props {
   title: string;
@@ -18,6 +24,9 @@ const isPrivate = Boolean(privateRoutes[normalizePath(Astro.url.pathname)]);
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
+    <link rel="icon" type="image/png" sizes="32x32" href={favicon32.src} />
+    <link rel="icon" type="image/png" sizes="64x64" href={favicon64.src} />
+    <link rel="apple-touch-icon" sizes="180x180" href={touchIcon.src} />
     <meta id="theme-color" name="theme-color" content="#020b18" />
     <script is:inline>
       (() => {

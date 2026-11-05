@@ -70,5 +70,5 @@ export async function notifySuccess(text: string): Promise<void> {
 export const notifyError = (text = 'No se pudo completar la operación. Inténtalo nuevamente.') =>
   showModal({ titleText: 'No se pudo completar', text, icon: 'error' });
 
-export const notifyWarning = (text: string) =>
-  showModal({ titleText: 'Revisa esta información', text, icon: 'warning' });
+export const notifyWarning = (text: string, titleText = 'Revisa esta información', skipIfBusy = false) =>
+  showModal({ titleText, text, icon: 'warning' }, skipIfBusy);

@@ -43,7 +43,7 @@ type ReservedSlots = Record<string, AppointmentSlot>;
 const DEFAULT_SETTINGS: CalendarSettings = {
   startTime: '09:00',
   endTime: '19:00',
-  blockMinutes: 30,
+  blockMinutes: 60,
 };
 const TIME_OPTIONS = Array.from({ length: 33 }, (_, index) => {
   const minutes = 6 * 60 + index * 30;
@@ -106,6 +106,7 @@ export default function BarberCalendar() {
       if (requestedDraftVersion !== draftVersion.current) { setCalendarReady(true); return; }
       if (!Array.isArray(data?.citas) || !Array.isArray(data?.bloqueos)) throw new Error('No se pudo cargar la disponibilidad publicada.');
       const configuration = { ...DEFAULT_SETTINGS, ...data.configuracion };
+      if (!BLOCK_OPTIONS.includes(configuration.blockMinutes)) configuration.blockMinutes = DEFAULT_SETTINGS.blockMinutes;
       setSavedAgenda({ ...data, configuracion: configuration }); setSettings(configuration); setChanges([]); setCalendarReady(true);
       const nextReservedSlots: ReservedSlots = {};
 

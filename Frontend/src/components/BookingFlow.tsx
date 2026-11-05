@@ -1,5 +1,5 @@
 import { authFetch as fetch, API_URL } from '../lib/session';
-import { notifySuccess } from '../lib/notifications';
+import { notifySuccess, notifyWarning } from '../lib/notifications';
 import { formatPrice as money } from '../lib/formatPrice';
 import { type ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { businessDate, formatInstant, startOfWeek } from '../lib/businessTime';
@@ -62,6 +62,8 @@ const initials = (name: string) =>
   name.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'B';
 
 const isFutureSlot = (slot: AppointmentSlot) => +new Date(slot.fecha_hora) > Date.now() && +new Date(slot.disponibleHasta) > +new Date(slot.fecha_hora);
+const missingBankingMessage = 'El profesional aún no ha completado sus datos para recibir transferencias';
+const transferWarning = 'Este profesional requiere pago por transferencia, pero todavía no ha configurado sus datos bancarios. Por el momento, no es posible completar una reserva con esta modalidad.';
 
 export default function BookingFlow() {
   const [token, setToken] = useState<string | null>(null);
@@ -87,6 +89,8 @@ export default function BookingFlow() {
   const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null);
   const [loadingPayment, setLoadingPayment] = useState(false);
   const paymentRequest = useRef(0);
+  const [missingBankingBarber, setMissingBankingBarber] = useState<number | null>(null);
+  const warnedBarbers = useRef(new Set<number>());
   const proofRequest = useRef(0);
   const [paymentVersion, setPaymentVersion] = useState(0);
   const [proofData, setProofData] = useState('');
@@ -101,10 +105,11 @@ export default function BookingFlow() {
   const selectedService = selectedBarber?.servicios.find((service) => service.id === selectedServiceId) ?? null;
   const selectedSlot = slots.find((slot) => slot.id === selectedSlotId) ?? null;
   const requiresProof = selectedBarber?.requiereComprobante ?? true;
+  const transfersUnavailable = requiresProof && missingBankingBarber === selectedBarberId && selectedBarberId !== null;
   const hasBankingData = paymentDetails?.citaId === (selectedSlot?.slotId || selectedSlotId) &&
     paymentDetails?.servicioId === selectedServiceId && paymentDetails?.barberoId === selectedBarberId;
   const canConfirm = Boolean(token && selectedBarber && selectedService && selectedSlot && isFutureSlot(selectedSlot) &&
-    !booking && !loadingSlots && !loadingPayment && (!requiresProof || (hasBankingData && proofData)));
+    !booking && !loadingSlots && !loadingPayment && !transfersUnavailable && (!requiresProof || (hasBankingData && proofData)));
 
   useEffect(() => { selectionRef.current = selectedSlotId; }, [selectedSlotId]);
   useEffect(() => { selectedIntervalRef.current = selectedSlot; }, [selectedSlot]);
@@ -320,12 +325,21 @@ export default function BookingFlow() {
         const data = await response.json().catch(() => ({}));
         if (requestId !== paymentRequest.current) return;
         if (!response.ok) {
+          if (response.status === 409 && data.message === missingBankingMessage) {
+            setMissingBankingBarber(selectedBarberId);
+            if (!warnedBarbers.current.has(selectedBarberId!)) {
+              warnedBarbers.current.add(selectedBarberId!);
+              void notifyWarning(transferWarning, 'Transferencias no disponibles', true);
+            }
+            return;
+          }
           if ([404, 409].includes(response.status)) invalidateSelection();
           throw new Error(data.message || 'No se pudieron cargar los datos de pago.');
         }
         if (data.citaId !== (selectedSlot?.slotId || selectedSlotId) || data.servicioId !== selectedServiceId || data.barberoId !== selectedBarberId) {
           throw new Error('Los datos de pago no corresponden a la selección actual.');
         }
+        setMissingBankingBarber(null);
         setPaymentDetails(data);
       } catch (requestError) {
         if (requestId === paymentRequest.current) setError(requestError instanceof Error ? requestError.message : 'No se pudieron cargar los datos de pago.');
@@ -370,6 +384,10 @@ export default function BookingFlow() {
   };
 
   const confirmBooking = async () => {
+    if (transfersUnavailable) {
+      void notifyWarning(transferWarning, 'Transferencias no disponibles', true);
+      return;
+    }
     if (bookingRequest.current || !canConfirm || !token || !selectedBarber || !selectedService || !selectedSlotId || !selectedSlot) return;
     if (selectedSlot && !isFutureSlot(selectedSlot)) {
       setSelectedSlotId(null);
@@ -549,6 +567,7 @@ export default function BookingFlow() {
             <p>{selectedService ? money(selectedService.precio) : 'Precio: selecciona un servicio.'}</p>
             <p>{selectedSlot ? `${formatInstant(selectedSlot.fecha_hora, { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })}–${formatInstant(selectedSlot.disponibleHasta, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })}` : 'Fecha y horario pendientes.'}</p>
             {selectedBarber && !requiresProof && <small className="booking-payment-note">Este profesional permite reservar sin comprobante de pago.</small>}
+            {transfersUnavailable && <p className="booking-alert is-error" role="alert">Transferencias no disponibles: el profesional aún no ha configurado sus datos bancarios. No es posible confirmar la reserva.</p>}
           </div>
         </div>
 
@@ -613,6 +632,7 @@ export default function BookingFlow() {
         <div className="booking-confirmation-actions">
           <p id="booking-confirmation-status">
             {!selectedBarber || !selectedService || !selectedSlot ? 'Selecciona un barbero, un servicio y un horario disponible para confirmar.'
+              : transfersUnavailable ? 'No es posible confirmar: faltan los datos bancarios del profesional.'
               : loadingPayment ? 'Consultando datos de pago...'
               : requiresProof && !hasBankingData ? 'Se necesitan los datos de pago para adjuntar tu comprobante.'
               : requiresProof && !proofData ? 'Adjunta el comprobante para confirmar tu reserva.'
