@@ -477,9 +477,9 @@ import {
             </button>
             <button class="admin-delete-button" type="button" data-reject-id="${escapeHtml(user.id)}">Rechazar</button>
           ` : ''}
-          ${options.allowDelete && user.activo !== false ? `
+          ${options.allowDelete ? `
             <button class="admin-delete-button" type="button" data-delete-id="${escapeHtml(user.id)}">
-              <span>Desactivar</span>
+              <span>Eliminar cuenta</span>
             </button>
           ` : ''}
         </div>
@@ -609,13 +609,13 @@ import {
     } catch (error) { showMessage(error instanceof Error ? error.message : 'No se pudo reactivar la cuenta.', 'error'); }
   };
 
-  const deactivatingUsers = new Set<string>();
+  const deletingUsers = new Set<string>();
   const deleteUser = async (id: string) => {
-    if (!token || deactivatingUsers.has(id)) return;
-    deactivatingUsers.add(id);
+    if (!token || deletingUsers.has(id)) return;
+    deletingUsers.add(id);
 
     try {
-      if (!await confirmAction('¿Desactivar esta cuenta? Se impedirá su acceso y nuevas reservas. Sus citas existentes e historial se conservarán. Puedes reactivarla desde este panel.', 'Sí, desactivar cuenta')) return;
+      if (!await confirmAction('¿Eliminar esta cuenta permanentemente? Se borrarán la cuenta, sus reservas e historial asociado, conversaciones y perfil profesional. Esta acción no se puede deshacer.', 'Sí, eliminar cuenta')) return;
       const response = await fetch(`${API_URL}/usuarios/${id}`, {
         method: 'DELETE',
         headers: {
@@ -625,14 +625,15 @@ import {
 
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        throw new Error(data.message || 'No se pudo desactivar el usuario.');
+        throw new Error(data.message || 'No se pudo eliminar la cuenta.');
       }
 
       await loadDashboard();
-      showMessage('Cuenta desactivada. Se conservaron sus reservas e historial.', 'success');
-    } catch {
-      void notifyError('No se pudo desactivar la cuenta. Inténtalo nuevamente.');
-    } finally { deactivatingUsers.delete(id); }
+      showMessage('Cuenta eliminada permanentemente.', 'success');
+    } catch (error) {
+      const protectedMessage = error instanceof Error && ['No puedes eliminar tu propia cuenta administrativa', 'Debe permanecer al menos un administrador activo'].includes(error.message);
+      void notifyError(protectedMessage ? error.message : 'No se pudo eliminar la cuenta. Inténtalo nuevamente.');
+    } finally { deletingUsers.delete(id); }
   };
 
   const updateUser = async () => {

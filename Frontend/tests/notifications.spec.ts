@@ -171,7 +171,7 @@ async function actionFixture(page: Page, action: Action) {
     : action === 'bloqueo' ? page.getByRole('button', { name: 'Retirar bloqueo', exact: true })
     : action === 'lugar de trabajo' ? page.locator('#delete-workplace')
     : action === 'agenda copiada' ? page.getByRole('button', { name: 'Pegar aquí', exact: true })
-    : page.getByRole('button', { name: 'Desactivar', exact: true });
+    : page.getByRole('button', { name: 'Eliminar cuenta', exact: true });
   return { trigger, writes: () => writes, fail: () => { fail = true; } };
 }
 

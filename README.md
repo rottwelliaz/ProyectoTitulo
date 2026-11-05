@@ -15,6 +15,21 @@ Proyecto fullstack para gestión de barberías, barberos, servicios y reservas.
 - Backend: http://localhost:3001
 - API: http://localhost:3001/api
 
+## Eliminación administrativa de cuentas
+
+El panel de administración permite **Eliminar cuenta** con una confirmación explícita.
+La operación es permanente: borra el usuario, sus reservas e historial asociado,
+conversaciones, solicitud y perfil profesional (servicios y agenda incluidos).
+Los lugares de trabajo compartidos y los datos ajenos se conservan; las referencias
+al administrador eliminado en historiales ajenos quedan sin responsable.
+No se permite eliminar la propia cuenta administrativa ni al último administrador activo.
+Las sesiones existentes dejan de tener acceso y el correo queda disponible para un nuevo registro.
+
+Antes de utilizar esta acción, aplica la migración `20261105000000_admin_account_deletion`
+mediante `npm --prefix backend run db:migrate` (o el servicio de mantenimiento de Docker).
+La migración no elimina datos; habilita una excepción limitada a la cuenta que se elimina,
+dentro de la transacción, manteniendo la protección habitual del historial de reservas.
+
 ## Iniciar con Docker
 
 Desde la raíz del proyecto:

@@ -139,7 +139,7 @@ describe('ciclo e historial de reservas por HTTP y PostgreSQL', { skip: !url }, 
     assert.equal((await state(admin, a.id, 'confirmada')).status, 200);
   });
 
-  test('nombre, precio, duración, participantes y fechas sobreviven a editar/desactivar servicio y usuario', async () => {
+  test('snapshots sobreviven al retiro del servicio; eliminar la cuenta borra sus reservas', async () => {
     const f = await fixture(), booked = await book(f); assert.equal(booked.status, 200);
     const id = booked.body.id, created = booked.body.fecha_creacion;
     assert.equal((await request(f.owner, `/servicios/${f.service.id}`, 'PUT', { nombre_servicio: 'Nuevo corte', precio: 20000 })).status, 200);
@@ -148,15 +148,16 @@ describe('ciclo e historial de reservas por HTTP y PostgreSQL', { skip: !url }, 
     assert.deepEqual(history.servicio, { id: f.service.id, nombre_servicio: 'Corte original', precio: 10000 });
     assert.equal(history.fecha_creacion, created);
     assert.equal((await request(f.owner, `/citas/${id}`, 'DELETE')).status, 409);
-    assert.equal((await request(admin, `/usuarios/${f.owner.id}`, 'DELETE')).status, 204);
-    assert.equal((await request(f.owner, '/citas/mias')).status, 403);
-    assert.equal((await prisma.user.findUnique({ where: { id: f.owner.id } })).activo, false);
-    assert.equal((await prisma.cita.findUnique({ where: { id } })).clienteId, client.id);
     assert.equal((await state(client, id, 'cancelada')).status, 200);
     const row = await prisma.cita.findUnique({ where: { id } });
     assert.equal(row.fecha_creacion.toISOString(), created); assert.ok(row.fecha_actualizacion > row.fecha_creacion);
     const audit = (await request(admin, `/citas/${id}/historial`)).body;
     assert.deepEqual(audit.map(c => [c.estadoAnterior, c.estadoNuevo, c.responsableId]), [[null, 'confirmada', client.id], ['confirmada', 'cancelada', client.id]]);
+    assert.equal((await request(admin, `/usuarios/${f.owner.id}`, 'DELETE')).status, 204);
+    assert.equal((await request(f.owner, '/citas/mias')).status, 401);
+    assert.equal(await independent.user.findUnique({ where: { id: f.owner.id } }), null);
+    assert.equal(await independent.cita.findUnique({ where: { id } }), null);
+    assert.equal(await independent.citaCambioEstado.count({ where: { citaId: id } }), 0);
   });
 
   test('SQL impide borrar reservas o sobrescribir snapshots; sí permite retirar disponibilidad vacía', async () => {

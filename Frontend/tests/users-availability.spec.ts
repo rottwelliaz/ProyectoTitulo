@@ -100,31 +100,40 @@ for (const path of ['/admin', '/admin-barberos']) for (const theme of ['light', 
   await expect(reject).toHaveCount(0); expect(deleted).toBe(true);
 });
 
-test('administración desactiva y reactiva sin ocultar el historial; muestra errores', async ({ page }) => {
-  await session(page); const barber = { ...account('barbero'), id: 2, perfilBarbero: { id: 2, _count: { citas: 4, servicios: 1 } } }; let fail = false;
+for (const active of [true, false]) test(`administración elimina permanentemente cuenta activa=${active}; cancelar y errores conservan la cuenta`, async ({ page }) => {
+  await session(page); const barber = { ...account('barbero'), id: 2, activo: active, perfilBarbero: { id: 2, _count: { citas: 4, servicios: 1 } } };
+  let fail = false, deleted = false, writes = 0;
   await page.route('**/api/**', async route => {
     const endpoint = new URL(route.request().url()).pathname;
     if (endpoint.endsWith('/auth/me')) return fulfillDataTable(route, { json: account('admin') });
-    if (endpoint.endsWith('/admin/dashboard')) return fulfillDataTable(route, { json: { stats: {}, clientes: [], barberos: [barber], admins: [account('admin')], barberosPendientes: [] } });
-    if (endpoint.endsWith('/usuarios/2')) {
-      if (fail) return fulfillDataTable(route, { status: 500, json: { message: 'No se pudo desactivar la cuenta' } });
-      barber.activo = route.request().method() !== 'DELETE'; return fulfillDataTable(route, barber.activo ? { json: barber } : { status: 204 });
+    if (endpoint.endsWith('/admin/dashboard')) return fulfillDataTable(route, { json: { stats: {}, clientes: [], barberos: deleted ? [] : [barber], admins: [account('admin')], barberosPendientes: [] } });
+    if (endpoint.endsWith('/usuarios/2') && route.request().method() === 'DELETE') {
+      writes++;
+      if (fail) return fulfillDataTable(route, { status: 500, json: { message: 'SQL password=secreto' } });
+      deleted = true; return fulfillDataTable(route, { status: 204 });
     }
     return fulfillDataTable(route, { json: [] });
   });
   await page.goto('/admin'); await page.locator('[data-admin-tab="barberos"]').click();
-  await page.getByRole('button', { name: 'Desactivar', exact: true }).click();
-  await page.locator('.swal2-confirm').click();
-  await expect(page.getByText('Desactivado', { exact: true })).toBeVisible();
-  await expect(page.getByText('Citas: 4', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Reactivar', exact: true }).click();
-  await expect(page.getByText('Aprobado', { exact: true })).toBeVisible();
-  fail = true; await page.getByRole('button', { name: 'Desactivar', exact: true }).click();
-  await page.locator('.swal2-confirm').click();
-  await expect(page.locator('.swal2-html-container')).toHaveText('No se pudo desactivar la cuenta. Inténtalo nuevamente.');
-  await page.getByRole('button', { name: 'Entendido', exact: true }).click();
-  await expect(page.getByText('Aprobado', { exact: true })).toBeVisible();
-  await page.screenshot({ path: 'test-results/group4-admin.png', fullPage: true });
+  const remove = page.getByRole('button', { name: 'Eliminar cuenta', exact: true });
+  const popup = page.locator('.cbc-notification');
+  await remove.click();
+  await expect(popup).toContainText('Esta acción no se puede deshacer.');
+  await popup.getByRole('button', { name: 'Cancelar', exact: true }).click();
+  expect(writes).toBe(0); expect(deleted).toBe(false); await expect(remove).toBeVisible();
+  fail = true; await remove.click();
+  await popup.getByRole('button', { name: 'Sí, eliminar cuenta', exact: true }).click();
+  await expect(popup).toContainText('No se pudo eliminar la cuenta. Inténtalo nuevamente.');
+  await expect(popup).not.toContainText('SQL');
+  await popup.getByRole('button', { name: 'Entendido', exact: true }).click();
+  expect(deleted).toBe(false); await expect(remove).toBeVisible();
+  fail = false; await remove.click();
+  await popup.getByRole('button', { name: 'Sí, eliminar cuenta', exact: true }).click();
+  await expect(popup).toContainText('Cuenta eliminada permanentemente.');
+  await expect(remove).toHaveCount(0);
+  expect(writes).toBe(2); expect(deleted).toBe(true);
+  await page.reload(); await page.locator('[data-admin-tab="barberos"]').click();
+  await expect(remove).toHaveCount(0);
 });
 
 test('agenda usa configuración del servidor, conserva copia y rechaza sobrescribir otra revisión', async ({ page }) => {

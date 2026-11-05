@@ -136,20 +136,87 @@ describe('Grupo 4: persistencia y permisos con PostgreSQL y HTTP', { skip: !url 
     const underneath = await prisma.cita.create({ data: { barberoId: f.profile.id, fecha_hora: new Date('2035-01-15T15:30:00Z'), disponibleHasta: new Date(window.fin) } });
     assert.equal((await request(secondClient, `/citas/${underneath.id}/agendar`, 'PATCH', { servicioId: f.service.id })).status, 409);
   });
-  test('desactivación/reactivación preservan dependencias y revocan acceso; roles y propio acceso protegidos', async () => {
+  test('eliminación definitiva borra dependencias y revoca acceso; roles y propio acceso protegidos', async () => {
     const f = await fixture(), client = await user();
+    const place = await prisma.lugarTrabajo.create({ data: { nombre_barberia: 'Compartida' } });
+    const other = await fixture();
+    await prisma.barberProfile.updateMany({ where: { id: { in: [f.profile.id, other.profile.id] } }, data: { lugarTrabajoId: place.id } });
+    await prisma.agendaSemana.create({ data: { barberoId: f.profile.id, inicio: new Date('2035-01-15T00:00:00Z'), configuracion: configuration } });
+    await prisma.agendaBloqueo.create({ data: { barberoId: f.profile.id, inicio: new Date(window.inicio), fin: new Date(window.fin) } });
+    await prisma.solicitudProfesional.create({ data: { usuarioId: f.owner.id, estado: 'aprobada', fechaResolucion: new Date(), revisorId: admin.id } });
+    const conversation = await prisma.conversation.create({ data: { clientId: client.id, barberId: f.owner.id,
+      messages: { create: [{ senderId: client.id, content: 'Consulta' }, { senderId: f.owner.id, content: 'Respuesta' }] } } });
     const cita = await prisma.cita.create({ data: { barberoId: f.profile.id, clienteId: client.id, servicioId: f.service.id, estado: 'finalizada', fecha_hora: new Date('2025-01-01T15:00:00Z'), duracionReservada: 30 } });
+    await prisma.citaCambioEstado.create({ data: { citaId: cita.id, estadoNuevo: 'finalizada', responsableId: f.owner.id } });
     assert.equal((await request(admin, `/usuarios/${f.owner.id}`, 'DELETE')).status, 204);
-    assert.deepEqual(await independent.cita.findUnique({ where: { id: cita.id } }), cita);
-    assert.ok(await independent.barberProfile.findUnique({ where: { id: f.profile.id } }));
-    assert.equal((await request(f.owner, '/auth/me')).status, 403);
+    assert.equal(await independent.cita.findUnique({ where: { id: cita.id } }), null);
+    assert.equal(await independent.barberProfile.findUnique({ where: { id: f.profile.id } }), null);
+    assert.equal(await independent.user.findUnique({ where: { id: f.owner.id } }), null);
+    assert.equal(await independent.service.findUnique({ where: { id: f.service.id } }), null);
+    assert.equal(await independent.citaCambioEstado.count({ where: { citaId: cita.id } }), 0);
+    assert.equal(await independent.agendaSemana.count({ where: { barberoId: f.profile.id } }), 0);
+    assert.equal(await independent.agendaBloqueo.count({ where: { barberoId: f.profile.id } }), 0);
+    assert.equal(await independent.solicitudProfesional.findUnique({ where: { usuarioId: f.owner.id } }), null);
+    assert.equal(await independent.conversation.findUnique({ where: { id: conversation.id } }), null);
+    assert.equal(await independent.message.count({ where: { conversationId: conversation.id } }), 0);
+    assert.ok(await independent.user.findUnique({ where: { id: client.id } }));
+    assert.ok(await independent.lugarTrabajo.findUnique({ where: { id: place.id } }));
+    assert.ok(await independent.barberProfile.findUnique({ where: { id: other.profile.id } }));
+    assert.equal((await request(f.owner, '/auth/me')).status, 401);
     assert.ok(!(await request(null, '/usuarios?rol=barbero')).body.some(u => u.id === f.owner.id));
-    assert.equal((await request(admin, `/usuarios/${f.owner.id}`, 'PUT', { activo: true })).status, 200);
-    assert.equal((await request(f.owner, '/auth/me')).status, 200);
+    assert.equal((await request(admin, `/usuarios/${f.owner.id}`, 'PUT', { activo: true })).status, 404);
+    assert.equal((await request(admin, `/usuarios/${f.owner.id}`, 'DELETE')).status, 404);
     assert.equal((await request(admin, `/usuarios/${admin.id}`, 'DELETE')).status, 409);
     assert.equal((await request(admin, `/usuarios/${admin.id}`, 'PUT', { rol: 'cliente' })).status, 409);
     assert.equal((await request(admin, `/usuarios/${client.id}`, 'PUT', { rol: 'admin' })).status, 200);
     assert.equal((await request(client, '/usuarios/admin/dashboard')).status, 200);
+  });
+  test('eliminar cliente inactivo borra sus reservas, libera el correo y conserva datos de terceros', async () => {
+    const f = await fixture(), client = await user(), other = await user();
+    await prisma.user.update({ where: { id: client.id }, data: { activo: false } });
+    const data = { barberoId: f.profile.id, servicioId: f.service.id, estado: 'confirmada', fecha_hora: new Date('2035-01-15T15:00:00Z'), duracionReservada: 30 };
+    const own = await prisma.cita.create({ data: { ...data, clienteId: client.id } });
+    const unrelated = await prisma.cita.create({ data: { ...data, clienteId: other.id } });
+    const results = await Promise.all([request(admin, `/usuarios/${client.id}`, 'DELETE'), request(admin, `/usuarios/${client.id}`, 'DELETE')]);
+    assert.deepEqual(results.map(r => r.status).sort(), [204, 404]);
+    assert.equal(await independent.user.findUnique({ where: { id: client.id } }), null);
+    assert.equal(await independent.cita.findUnique({ where: { id: own.id } }), null);
+    assert.deepEqual(await independent.cita.findUnique({ where: { id: unrelated.id } }), unrelated);
+    assert.ok(await independent.service.findUnique({ where: { id: f.service.id } }));
+    assert.equal((await request(client, '/auth/me')).status, 401);
+    const registered = await request(null, '/usuarios', 'POST', { nombre: 'Nueva cuenta', email: client.email, password: 'test-password', telefono: '912345678', rol: 'cliente' });
+    assert.equal(registered.status, 201); assert.notEqual(registered.body.id, client.id);
+    assert.equal((await request(client, '/auth/me')).status, 401);
+    // The transaction-local exception must not leak through pooled connections.
+    await assert.rejects(independent.cita.delete({ where: { id: unrelated.id } }));
+  });
+  test('eliminar otro administrador conserva solicitudes e historial ajenos sin referencias inválidas', async () => {
+    const reviewer = await user('admin'), applicant = await user('barbero'), f = await fixture();
+    const application = await prisma.solicitudProfesional.create({ data: { usuarioId: applicant.id, estado: 'aprobada', fechaResolucion: new Date(), revisorId: reviewer.id } });
+    const cita = await prisma.cita.create({ data: { barberoId: f.profile.id, estado: 'confirmada', fecha_hora: new Date('2035-01-15T15:00:00Z') } });
+    const change = await prisma.citaCambioEstado.create({ data: { citaId: cita.id, estadoNuevo: 'confirmada', responsableId: reviewer.id } });
+    assert.equal((await request(admin, `/usuarios/${reviewer.id}`, 'DELETE')).status, 204);
+    assert.equal((await independent.solicitudProfesional.findUnique({ where: { id: application.id } })).revisorId, null);
+    assert.equal((await independent.citaCambioEstado.findUnique({ where: { id: change.id } })).responsableId, null);
+    assert.deepEqual(await independent.cita.findUnique({ where: { id: cita.id } }), cita);
+    assert.equal((await request(reviewer, '/auth/me')).status, 401);
+  });
+  test('fallo revierte el borrado completo y la excepción SQL solo permite reservas de la cuenta indicada', async () => {
+    const { removeAccount } = require('../src/services/removeAccount');
+    const f = await fixture(), client = await user(), other = await user();
+    const data = { barberoId: f.profile.id, estado: 'confirmada', fecha_hora: new Date('2035-01-15T15:00:00Z') };
+    const cita = await prisma.cita.create({ data: { ...data, clienteId: client.id } });
+    const unrelated = await prisma.cita.create({ data: { ...data, clienteId: other.id } });
+    await assert.rejects(prisma.$transaction(async tx => {
+      await tx.$queryRaw`SELECT set_config('app.account_deletion_user_id', ${String(client.id)}, true)`;
+      await tx.cita.delete({ where: { id: unrelated.id } });
+    }));
+    await assert.rejects(prisma.$transaction(async tx => {
+      await removeAccount(tx, client.id);
+      throw Error('Simulated failure before commit');
+    }), /Simulated failure/);
+    assert.ok(await independent.user.findUnique({ where: { id: client.id } }));
+    assert.deepEqual(await independent.cita.findUnique({ where: { id: cita.id } }), cita);
   });
   test('todas las operaciones administrativas rechazan invitados/clientes/barberos; solicitudes no filtran datos de terceros', async () => {
     const client = await user(), f = await fixture();

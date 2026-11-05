@@ -11,6 +11,7 @@ import { resolveApplication } from './solicitudes';
 import { professionalSelect } from '../services/professionalPrivacy';
 import { reserveEmail } from '../services/accountEmail';
 import { publicUserSelect } from '../services/publicProfile';
+import { removeAccount } from '../services/removeAccount';
 
 // Crear usuario
 export const createUser = async (req: Request, res: Response) => {
@@ -211,7 +212,7 @@ export const getAdminDashboard = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// Compatibility route: DELETE is a reversible deactivation, never a physical deletion.
+// Administrative deletion removes the account and its owned data atomically.
 export const deleteUser = async (req: AuthRequest, res: Response) => {
   try {
     const id = Number(req.params.id);
@@ -220,24 +221,23 @@ export const deleteUser = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: 'ID inválido' });
     }
 
-    const user = await prisma.user.findUnique({ where: { id } });
-    if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
-
-    // Deactivation preserves client/professional history and audit responsibility.
     await prisma.$transaction(async tx => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(410022)`;
+      // Booking locks the profile before the user; keep the same lock order.
+      await tx.$queryRaw`SELECT "id" FROM "BarberProfile" WHERE "usuarioId" = ${id} FOR UPDATE`;
       await tx.$queryRaw`SELECT "id" FROM "User" WHERE "id" = ${id} FOR UPDATE`;
       const current = await tx.user.findUnique({ where: { id } });
-      if (id === req.user!.id) throw new ScheduleError(409, 'No puedes desactivar tu propia cuenta administrativa');
-      if (current?.rol === 'admin' && current.activo && await tx.user.count({ where: { rol: 'admin', activo: true } }) <= 1) throw new ScheduleError(409, 'Debe permanecer al menos un administrador activo');
-      await tx.user.update({ where: { id }, data: { activo: false } });
-    });
+      if (!current) throw new ScheduleError(404, 'Usuario no encontrado');
+      if (id === req.user!.id) throw new ScheduleError(409, 'No puedes eliminar tu propia cuenta administrativa');
+      if (current.rol === 'admin' && current.activo && await tx.user.count({ where: { rol: 'admin', activo: true } }) <= 1) throw new ScheduleError(409, 'Debe permanecer al menos un administrador activo');
+      await removeAccount(tx, id);
+    }, { maxWait: 10_000, timeout: 20_000 });
     return res.status(204).send();
   } catch (error) {
     const known = scheduleFailure(error);
     if (known) return res.status(known.status).json({ message: known.message });
     console.error('deleteUser error', error);
-    return res.status(500).json({ message: 'No se pudo desactivar el usuario; sus reservas se conservan' });
+    return res.status(500).json({ message: 'No se pudo eliminar la cuenta. No se realizó ningún cambio.' });
   }
 };
 export const updateUser = async (req: AuthRequest, res: Response) => {
