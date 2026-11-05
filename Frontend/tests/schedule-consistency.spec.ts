@@ -33,6 +33,10 @@ async function fixture(page: Page, duration = 0, theme = 'light', initialConfigu
     return fulfillDataTable(route, { json: [] });
   });
   await page.goto('/perfil-profesional#organizacion');
+  // A reserved first cell is disabled even before hydration. Wait for the
+  // actual configuration before clicking rows that can move during loading.
+  await expect(page.locator('#disponibilidad-profesional').getByRole('button', { name: 'Habilitar semana', exact: true })).toBeEnabled();
+  await expect(page.getByLabel('Duración de cada bloque', { exact: true })).toHaveValue(String(initialConfiguration.blockMinutes));
   await expect(page.locator('#disponibilidad-profesional .barber-slot').first()).toBeEnabled({ enabled: !duration });
   return state;
 }
@@ -268,21 +272,21 @@ for (const minutes of [30, 45, 60]) for (const theme of ['light', 'dark']) test(
   const calendar = page.locator('#disponibilidad-profesional'), monday = calendar.locator('.calendar-day').first();
   await calendar.getByRole('button', { name: 'Habilitar semana', exact: true }).click();
   const cells = monday.locator('.barber-slot');
-  for (const [index, label] of [[1, 'Bloqueado'], [2, 'Descanso'], [3, 'Sin configurar']] as const) {
+  for (const [index, label] of [[1, 'Bloqueado'], [2, 'Descanso']] as const) {
     await cells.nth(index).click(); await page.getByRole('button', { name: label, exact: true }).click();
   }
   await expect(cells.nth(0)).toHaveClass(/is-available.*is-pending/);
   await expect(cells.nth(1)).toHaveClass(/is-booking.*is-pending/);
   await expect(cells.nth(2)).toHaveClass(/is-break.*is-pending/);
-  // Clearing an initially unconfigured row reverts its actual edit. A setting
-  // change marks even an unconfigured row, without giving it another color.
-  await calendar.getByLabel('Hora de cierre', { exact: true }).selectOption('13:30');
-  await expect(cells.nth(3)).toHaveClass(/is-unconfigured.*is-pending/);
+  // Extending the hours keeps existing edits and marks the new, empty row.
+  await calendar.getByLabel('Hora de cierre', { exact: true }).selectOption('14:00');
+  const emptyRow = cells.last();
+  await expect(emptyRow).toHaveClass(/is-unconfigured.*is-pending/);
   await expect(calendar.locator('.calendar-pending-message')).toHaveText('Cambios pendientes de guardar');
   await expect(cells.nth(0)).toHaveCSS('background-image', /rgb\(22, 128, 58\)/);
   await expect(cells.nth(1)).toHaveCSS('background-image', /rgb\(18, 97, 216\)/);
   await expect(cells.nth(2)).toHaveCSS('background-image', /rgb\(242, 194, 48\)/);
-  await expect(cells.nth(3)).toHaveCSS('background-color', 'rgb(88, 100, 116)');
+  await expect(emptyRow).toHaveCSS('background-color', 'rgb(88, 100, 116)');
   const border = await cells.nth(0).evaluate(el => {
     const style = getComputedStyle(el, '::after');
     return { border: style.borderTopStyle, background: style.backgroundColor, pointerEvents: style.pointerEvents };
@@ -318,6 +322,7 @@ test('fila de 60 minutos combina reserva y edición pendiente sin ocultar sus co
   await fixture(page, 30);
   const calendar = page.locator('#disponibilidad-profesional'), monday = calendar.locator('.calendar-day').first();
   await monday.locator('.barber-slot').nth(1).click(); await page.getByRole('button', { name: 'Bloqueado', exact: true }).click();
+  await expect(monday.locator('.barber-slot').nth(1)).toHaveClass(/is-booking.*is-pending/);
   await calendar.getByLabel('Duración de cada bloque', { exact: true }).selectOption('60');
   const reserved = monday.locator('.barber-slot').first();
   await expect(reserved).toHaveClass(/is-reserved.*is-pending/);
@@ -342,11 +347,14 @@ test('fila de 60 minutos combina reserva y edición pendiente sin ocultar sus co
 });
 
 test('deshacer una edición elimina la marca y el aviso global sin guardar', async ({ page }) => {
-  await fixture(page);
+  const state = await fixture(page);
   const calendar = page.locator('#disponibilidad-profesional'), first = calendar.locator('.barber-slot').first();
+  state.weeks[firstWeek] = { publicada: true, revision: 'saved-break', configuracion: configuration, bloqueos: [{ inicio: at(540), fin: at(570), tipo: 'descanso', origen: 'agenda' }], citas: [] };
+  await calendar.getByRole('button', { name: 'Recargar semana', exact: true }).click();
+  await expect(first).toHaveClass(/is-break/);
   await first.click(); await page.getByRole('button', { name: 'Disponible', exact: true }).click();
   await expect(first).toHaveClass(/is-pending/);
-  await first.click(); await page.getByRole('button', { name: 'Sin configurar', exact: true }).click();
+  await first.click(); await page.getByRole('button', { name: 'Descanso', exact: true }).click();
   await expect(calendar.locator('.barber-slot.is-pending')).toHaveCount(0);
   await expect(calendar.locator('.calendar-pending-message')).toHaveCount(0);
   await expect(calendar).not.toContainText('Hay cambios pendientes');
@@ -373,6 +381,70 @@ for (const pendingMinutes of [30, 45, 60]) test(`una recarga iniciada antes de e
   await expect(calendar.getByRole('button', { name: 'Habilitar semana', exact: true })).toBeEnabled();
   await expect(duration).toHaveValue(String(pendingMinutes));
   await expect(calendar.locator('.barber-slot.is-pending')).toHaveCount(Math.floor(120 / pendingMinutes) * 7);
+});
+
+for (const minutes of [30, 45, 60]) for (const theme of ['light', 'dark']) test(`solo tres estados editables al habilitar: ${minutes} minutos, tema ${theme}`, async ({ page }, info) => {
+  const settings = { startTime: '09:00', endTime: '13:00', blockMinutes: minutes };
+  const state = await fixture(page, 0, theme, settings);
+  const calendar = page.locator('#disponibilidad-profesional');
+  const cells = calendar.locator('.calendar-day').first().locator('.barber-slot');
+  await expect(calendar.locator('.barber-slot.is-unconfigured')).toHaveCount(Math.floor(240 / minutes) * 7);
+  expect(state.writes).toHaveLength(0);
+  await calendar.getByRole('button', { name: 'Habilitar semana', exact: true }).click();
+  await expect(calendar.locator('.barber-slot.is-unconfigured')).toHaveCount(0);
+  for (const [index, label] of ['Disponible', 'Bloqueado', 'Descanso'].entries()) {
+    await cells.nth(index).click();
+    const dialog = page.getByRole('dialog', { name: 'Editar bloque' });
+    expect(await dialog.locator('.slot-status-option').allTextContents()).toEqual(['Disponible', 'Bloqueado', 'Descanso']);
+    await expect(dialog.getByRole('button', { name: 'Sin configurar', exact: true })).toHaveCount(0);
+    if (index === 0) {
+      const geometry = await dialog.locator('.slot-status-option').evaluateAll(buttons => buttons.map(button => ({ top: button.getBoundingClientRect().top, width: button.getBoundingClientRect().width })));
+      expect(new Set(geometry.map(button => button.top)).size).toBe(1);
+      expect(Math.max(...geometry.map(button => button.width)) - Math.min(...geometry.map(button => button.width))).toBeLessThan(1);
+      await dialog.screenshot({ path: info.outputPath(`tres-estados-${minutes}-${theme}.png`) });
+      await page.setViewportSize({ width: 390, height: 844 });
+      const mobile = await dialog.locator('.slot-status-option').evaluateAll(buttons => buttons.map(button => button.getBoundingClientRect().top));
+      expect(new Set(mobile).size).toBe(3);
+      await page.setViewportSize({ width: 1280, height: 720 });
+    }
+    await dialog.getByRole('button', { name: label, exact: true }).click();
+  }
+  await expect(cells.nth(1)).toHaveClass(/is-booking.*is-pending/);
+  await expect(cells.nth(2)).toHaveClass(/is-break.*is-pending/);
+  await calendar.getByRole('button', { name: 'Habilitar semana', exact: true }).click();
+  await expect(cells.nth(1)).toHaveClass(/is-booking/);
+  await expect(cells.nth(2)).toHaveClass(/is-break/);
+  await calendar.getByRole('button', { name: 'Guardar horarios', exact: true }).click();
+  await expect(calendar.locator('.barber-slot.is-pending')).toHaveCount(0);
+  expect(state.writes[0].bloqueos.map((block: any) => block.tipo)).toEqual(['bloqueado', 'descanso']);
+  await page.reload();
+  await expect(cells.nth(0)).toHaveClass(/is-available/);
+  await expect(cells.nth(1)).toHaveClass(/is-booking/);
+  await expect(cells.nth(2)).toHaveClass(/is-break/);
+  await cells.nth(1).click();
+  await expect(page.getByRole('dialog', { name: 'Editar bloque' }).locator('.slot-status-option')).toHaveCount(3);
+});
+
+test('una semana antigua conserva sus huecos y citas hasta habilitarla explícitamente', async ({ page }) => {
+  const state = await fixture(page, 30), calendar = page.locator('#disponibilidad-profesional');
+  state.weeks[firstWeek].bloqueos = [{ inicio: at(600), fin: at(630), tipo: 'descanso', origen: 'agenda' }];
+  const before = structuredClone(state.weeks[firstWeek].citas.find((c: any) => c.estado === 'confirmada'));
+  await calendar.getByRole('button', { name: 'Recargar semana', exact: true }).click();
+  await expect(calendar.locator('.barber-slot.is-unconfigured')).toHaveCount(24);
+  await expect(calendar.locator('.barber-slot.is-break')).toHaveCount(1);
+  expect(state.writes).toHaveLength(0);
+  await calendar.locator('.calendar-day').nth(1).locator('.barber-slot').first().click();
+  await expect(page.getByRole('dialog', { name: 'Editar bloque' }).getByRole('button', { name: 'Sin configurar', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Cerrar', exact: true }).click();
+  await calendar.getByRole('button', { name: 'Habilitar semana', exact: true }).click();
+  await expect(calendar.locator('.barber-slot.is-unconfigured')).toHaveCount(0);
+  await expect(calendar.locator('.barber-slot.is-break')).toHaveCount(1);
+  await expect(calendar.locator('.barber-slot.is-reserved')).toHaveCount(1);
+  await calendar.getByRole('button', { name: 'Guardar horarios', exact: true }).click();
+  await expect(calendar.locator('.barber-slot.is-pending')).toHaveCount(0);
+  await page.reload();
+  await expect(calendar.locator('.barber-slot.is-reserved')).toHaveCount(1);
+  expect(state.weeks[firstWeek].citas.find((c: any) => c.estado === 'confirmada')).toEqual(before);
 });
 
 for (const savedMinutes of [30, 45, 60]) for (const theme of ['light', 'dark']) test(`pendientes al cambiar y volver a la duración guardada ${savedMinutes}, tema ${theme}`, async ({ page }) => {

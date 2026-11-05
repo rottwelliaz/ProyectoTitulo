@@ -6,7 +6,7 @@ import { Temporal } from '@js-temporal/polyfill';
 import prisma from '../config/prisma';
 import { AuthRequest } from '../middleware/auth';
 import { ScheduleError, withSchedule, validateInterval, durationOf, scheduleFailure, activeStates, endOf, overlaps, covers } from '../services/schedule';
-import { availabilitySnapshot, configurationValidation } from '../services/availability';
+import { availabilitySnapshot, configurationValidation, weekAvailabilityValidation } from '../services/availability';
 import { publicAvailability } from '../services/publicAvailability';
 import { parseInstant, businessRange, checkRangeEnd, businessDate, businessTime } from '../services/businessTime';
 import { bankingSelect } from '../services/professionalPrivacy';
@@ -119,6 +119,9 @@ export const deleteCita = async (req: AuthRequest, res: Response) => {
 
 export const saveWeekAvailability = async (req: AuthRequest, res: Response) => {
   try {
+    if (weekAvailabilityValidation.validate(req.body).error) {
+      throw new RangeError('Indica bloques disponibles o bloqueos de tipo bloqueado/descanso, sin estados ni campos adicionales');
+    }
     const { fechaInicio, fechaFin, bloques } = req.body;
     const { start: weekStart, end: weekEnd } = businessRange(fechaInicio, 7);
     if (Temporal.PlainDate.from(businessDate(weekStart)).dayOfWeek !== 1) throw new RangeError('La semana debe comenzar el lunes en America/Santiago');

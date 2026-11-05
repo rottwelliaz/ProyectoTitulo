@@ -9,6 +9,24 @@ export const configurationValidation = Joi.object({
   blockMinutes: Joi.number().strict().valid(30, 45, 60).required(),
 }).unknown(false).custom((value, helpers) => value.startTime < value.endTime ? value : helpers.error('any.invalid'));
 
+// A block's state is determined by its collection, never by a client-supplied
+// status/estado. Reject extra fields rather than silently publishing an invalid
+// state as availability. Missing legacy intervals remain untouched on reads.
+export const weekAvailabilityValidation = Joi.object({
+  fechaInicio: Joi.any(),
+  fechaFin: Joi.any(),
+  revision: Joi.any(),
+  configuracion: Joi.any(),
+  conservarReservas: Joi.any(),
+  bloques: Joi.array().max(1008).items(Joi.object({
+    inicio: Joi.string().required(), fin: Joi.string().required(),
+  }).unknown(false)).required(),
+  bloqueos: Joi.array().max(1008).items(Joi.object({
+    inicio: Joi.string().required(), fin: Joi.string().required(),
+    tipo: Joi.string().valid('bloqueado', 'descanso').required(),
+  }).unknown(false)),
+}).unknown(false);
+
 // Called under the same profile row lock as reservations/publication. The digest
 // detects edits from any endpoint/device, including new reservations and blocks.
 export async function availabilitySnapshot(tx: Prisma.TransactionClient, barberoId: number, start: Date, end: Date) {

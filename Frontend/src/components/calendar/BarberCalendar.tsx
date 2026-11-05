@@ -291,7 +291,7 @@ export default function BarberCalendar() {
 
   const updateSlot = (status: SlotStatus) => {
     if (!selectedSlot) return;
-    if (status === 'reserved') return;
+    if (status !== 'available' && status !== 'booking' && status !== 'break') return;
     draftVersion.current++;
     setChanges(previous => [...previous, { start: +buildSlotDate(selectedSlot.date, selectedSlot.slotTime), end: +buildSlotDate(selectedSlot.date, slotEndMinute(selectedSlot.slotTime, settings)), status }]);
     closeModal();
@@ -443,7 +443,15 @@ export default function BarberCalendar() {
         const next: AgendaInterval[] = [];
         weekDays.forEach(day => slotTimes.forEach(time => {
           const start = +buildSlotDate(day, time), end = +buildSlotDate(day, slotEndMinute(time, settings));
-          if (!isPastSlot(day, time) && !reservationAt(day, time) && !savedAgenda?.bloqueos.some(b => b.origen !== 'agenda' && +new Date(b.inicio) < end && +new Date(b.fin) > start)) next.push({ start, end, status: 'available' });
+          if (isPastSlot(day, time) || reservationAt(day, time) || savedAgenda?.bloqueos.some(b => b.origen !== 'agenda' && +new Date(b.inicio) < end && +new Date(b.fin) > start)) return;
+          // Enabling fills only missing intervals, including legacy gaps. Keep
+          // existing availability, breaks and blocks (even within a resized row).
+          let cursor = start;
+          clipIntervals(draftIntervals, start, end).forEach(part => {
+            if (cursor < part.start) next.push({ start: cursor, end: part.start, status: 'available' });
+            cursor = part.end;
+          });
+          if (cursor < end) next.push({ start: cursor, end, status: 'available' });
         }));
         setChanges(previous => [...previous, ...next]);
         setCopyFeedback('');
