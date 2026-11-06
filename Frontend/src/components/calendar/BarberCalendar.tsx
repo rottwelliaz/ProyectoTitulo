@@ -2,7 +2,7 @@ import { authFetch as fetch, API_URL } from '../../lib/session';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { addDays, addWeeks, businessDate, businessTime, dayStart, formatDay, slotInstant, startOfWeek, reservationEnd } from '../../lib/businessTime';
 import { professionalApi } from '../../lib/professionalApi';
-import { confirmAction, notifySuccess, notifyError } from '../../lib/notifications';
+import { confirmAction, notifySuccess, notifyError, notifyWarning } from '../../lib/notifications';
 import { BLOCK_OPTIONS, buildSlotTimes, parseTime, formatSlotTime, slotEndMinute, applyInterval, clipIntervals, intervalStatus, sameIntervals, type CalendarSettings, type AgendaInterval, type IntervalStatus } from '../../lib/calendarIntervals';
 import CalendarSlot, { SLOT_LABELS, type SlotStatus } from './CalendarSlot';
 import EditSlotModal from './EditSlotModal';
@@ -57,6 +57,8 @@ const capitalize = (value: string) => value.charAt(0).toUpperCase() + value.slic
 const buildSlotDate = slotInstant;
 
 const isPastSlot = (date: string, slotTime: number) => buildSlotDate(date, slotTime).getTime() <= Date.now();
+const LOCKED_WEEK_MESSAGE = 'La semana seleccionada ya contiene citas, descansos o bloqueos. Para proteger la planificación existente, no se pueden cambiar las horas de entrada, cierre ni la duración de los bloques.';
+const HISTORICAL_WEEK_MESSAGE = 'Esta semana contiene intervalos históricos o ya iniciados. Sus horarios generales están protegidos para no modificar el pasado.';
 
 export default function BarberCalendar() {
   const today = useMemo(() => businessDate(), []);
@@ -71,7 +73,7 @@ export default function BarberCalendar() {
   const [savingWeek, setSavingWeek] = useState(false);
   const [reservedSlots, setReservedSlots] = useState<ReservedSlots>({});
   const [loadingReservations, setLoadingReservations] = useState(false);
-  const [savedAgenda, setSavedAgenda] = useState<{ revision: string; publicada: boolean; configuracion: CalendarSettings; citas: AppointmentSlot[]; bloqueos: { inicio: string; fin: string; tipo: string; origen: string }[] } | null>(null);
+  const [savedAgenda, setSavedAgenda] = useState<{ revision: string; publicada: boolean; configuracion: CalendarSettings; configuracionBloqueada?: boolean; motivoConfiguracion?: string | null; citas: AppointmentSlot[]; bloqueos: { inicio: string; fin: string; tipo: string; origen: string }[] } | null>(null);
   const requestVersion = useRef(0);
   const pastingWeek = useRef(false);
   const [calendarReady, setCalendarReady] = useState(false);
@@ -157,6 +159,16 @@ export default function BarberCalendar() {
   const draftIntervals = useMemo(() => changes.reduce(applyInterval, baseIntervals), [baseIntervals, changes]);
   const visibleIntervals = useMemo(() => (savedAgenda?.bloqueos || []).filter(b => b.origen !== 'agenda').reduce((intervals, block) => applyInterval(intervals, { start: +new Date(block.inicio), end: +new Date(block.fin), status: block.tipo === 'descanso' ? 'break' : 'booking' }), draftIntervals), [draftIntervals, savedAgenda]);
   const settingsDirty = Boolean(savedAgenda && (settings.startTime !== savedAgenda.configuracion?.startTime || settings.endTime !== savedAgenda.configuracion?.endTime || settings.blockMinutes !== savedAgenda.configuracion?.blockMinutes));
+  const configurationProtection = () => {
+    const now = Date.now();
+    if (+dayStart(addDays(weekStart, 7)) <= now || savedAgenda?.motivoConfiguracion === 'historial' || savedAgenda?.citas.some(c => +new Date(c.fecha_hora) <= now) || savedAgenda?.bloqueos.some(b => +new Date(b.inicio) <= now)) return 'historial';
+    if (savedAgenda?.configuracionBloqueada || Object.keys(reservedSlots).length || savedAgenda?.bloqueos.length || draftIntervals.some(part => part.status === 'booking' || part.status === 'break')) return 'programacion';
+    return null;
+  };
+  const settingsProtection = configurationProtection();
+  const overlapsHistory = (start: number, end: number) => Boolean(
+    savedAgenda?.citas.some(c => c.estado === 'disponible' && +new Date(c.fecha_hora) <= Date.now() && +new Date(c.fecha_hora) < end && c.disponibleHasta && +new Date(c.disponibleHasta) > start) ||
+    savedAgenda?.bloqueos.some(b => +new Date(b.inicio) <= Date.now() && +new Date(b.inicio) < end && +new Date(b.fin) > start));
   const dirty = settingsDirty || !sameIntervals(draftIntervals, baseIntervals);
   dirtyRef.current = dirty;
   const discardChanges = async () => !dirtyRef.current || await confirmAction('Hay cambios pendientes de guardar. ¿Deseas descartarlos y continuar?', 'Sí, descartar cambios');
@@ -236,7 +248,7 @@ export default function BarberCalendar() {
     const availableBlocks: { inicio: string; fin: string }[] = [];
     weekDays.forEach(date => slotTimes.forEach(time => {
       const start = +buildSlotDate(date, time), end = +buildSlotDate(date, slotEndMinute(time, settings));
-      if (start <= Date.now()) return;
+      if (start <= Date.now() || overlapsHistory(start, end)) return;
       clipIntervals(draftIntervals, start, end).forEach(part => {
         const interval = { inicio: new Date(part.start).toISOString(), fin: new Date(part.end).toISOString() };
         if (part.status === 'available') availableBlocks.push(interval);
@@ -264,6 +276,16 @@ export default function BarberCalendar() {
       });
       let response = await save();
       let data = await response.json().catch(() => ({}));
+      if (response.status === 409 && settingsDirty) {
+        // A reservation/block may have arrived after the fields were edited.
+        // Recover persisted settings; never keep a partially rejected draft.
+        draftVersion.current++;
+        if (savedAgenda) setSettings(savedAgenda.configuracion);
+        setChanges([]);
+        await loadReservations();
+        void notifyWarning(data.message || LOCKED_WEEK_MESSAGE, 'No se puede modificar esta semana', true);
+        return;
+      }
       if (response.status === 409 && Array.isArray(data.conflictos)) {
         if (!await confirmAction(`${data.message}\n${data.conflictos.join('\n')}`, 'Conservar citas y guardar')) return;
         response = await save(true); data = await response.json().catch(() => ({}));
@@ -292,6 +314,8 @@ export default function BarberCalendar() {
   const updateSlot = (status: SlotStatus) => {
     if (!selectedSlot) return;
     if (status !== 'available' && status !== 'booking' && status !== 'break') return;
+    const start = +buildSlotDate(selectedSlot.date, selectedSlot.slotTime), end = +buildSlotDate(selectedSlot.date, slotEndMinute(selectedSlot.slotTime, settings));
+    if (start <= Date.now() || overlapsHistory(start, end) || reservationAt(selectedSlot.date, selectedSlot.slotTime)) { closeModal(); return; }
     draftVersion.current++;
     setChanges(previous => [...previous, { start: +buildSlotDate(selectedSlot.date, selectedSlot.slotTime), end: +buildSlotDate(selectedSlot.date, slotEndMinute(selectedSlot.slotTime, settings)), status }]);
     closeModal();
@@ -299,6 +323,26 @@ export default function BarberCalendar() {
   };
 
   const updateSettings = (nextSettings: CalendarSettings) => {
+    if (nextSettings.startTime === settings.startTime && nextSettings.endTime === settings.endTime && nextSettings.blockMinutes === settings.blockMinutes) return;
+    const protection = configurationProtection();
+    if (protection) {
+      setSettings({ ...settings });
+      void notifyWarning(protection === 'historial' ? HISTORICAL_WEEK_MESSAGE : LOCKED_WEEK_MESSAGE, 'No se puede modificar esta semana', true);
+      return;
+    }
+    if (!buildSlotTimes(nextSettings).length) {
+      setSettings({ ...settings }); void notifyWarning('La jornada debe permitir al menos un bloque completo.'); return;
+    }
+    // Only an unprotected plan of free intervals can be replaced. There is no
+    // reorganization or exception path for reservations, breaks or blocks.
+    if (savedAgenda?.publicada || draftIntervals.length) {
+      const next: AgendaInterval[] = [{ start: +dayStart(weekStart), end: +dayStart(addDays(weekStart, 7)), status: 'unconfigured' }];
+      weekDays.forEach(day => buildSlotTimes(nextSettings).forEach(time => {
+        const start = +buildSlotDate(day, time), end = +buildSlotDate(day, time + nextSettings.blockMinutes);
+        if (start > Date.now()) next.push({ start, end, status: 'available' });
+      }));
+      setChanges(next);
+    }
     draftVersion.current++;
     setSettings(nextSettings);
     setCopiedWeek(null);
@@ -322,6 +366,10 @@ export default function BarberCalendar() {
 
   const pasteCopiedWeek = async () => {
     if (!copiedWeek || savingWeek || pastingWeek.current) return;
+    const changesSettings = copiedWeek.settings.startTime !== settings.startTime || copiedWeek.settings.endTime !== settings.endTime || copiedWeek.settings.blockMinutes !== settings.blockMinutes;
+    if (changesSettings && configurationProtection()) {
+      void notifyWarning(configurationProtection() === 'historial' ? HISTORICAL_WEEK_MESSAGE : LOCKED_WEEK_MESSAGE, 'No se puede modificar esta semana', true); return;
+    }
     pastingWeek.current = true;
 
     try {
@@ -333,8 +381,17 @@ export default function BarberCalendar() {
       if (!confirmed) return;
 
       draftVersion.current++;
-      const next: AgendaInterval[] = weekDays.map(date => ({ start: +dayStart(date), end: +dayStart(addDays(date, 1)), status: 'unconfigured' }));
-      copiedWeek.intervals.forEach(part => next.push({ start: +buildSlotDate(weekDays[part.dayIndex], part.start), end: +buildSlotDate(weekDays[part.dayIndex], part.end), status: part.status }));
+      const next: AgendaInterval[] = weekDays.map(date => {
+        const end = +dayStart(addDays(date, 1));
+        const startedEnds = (savedAgenda?.citas || []).filter(c => c.estado === 'disponible' && c.disponibleHasta && +new Date(c.fecha_hora) <= Date.now() && +new Date(c.fecha_hora) < end).map(c => +new Date(c.disponibleHasta!));
+        const blockEnds = (savedAgenda?.bloqueos || []).filter(b => +new Date(b.inicio) <= Date.now() && +new Date(b.inicio) < end).map(b => +new Date(b.fin));
+        return { start: Math.max(Date.now() + 1, +dayStart(date), ...startedEnds, ...blockEnds), end, status: 'unconfigured' as const };
+      }).filter(part => part.start < part.end);
+      copiedWeek.intervals.forEach(part => {
+        const start = +buildSlotDate(weekDays[part.dayIndex], part.start), end = +buildSlotDate(weekDays[part.dayIndex], part.end);
+        if (part.status !== 'available' && Object.values(reservedSlots).some(c => +new Date(c.fecha_hora) < end && +(reservationEnd(c) ?? new Date(8640000000000000)) > start)) return;
+        if (start > Date.now() && !overlapsHistory(start, end)) next.push({ start, end, status: part.status });
+      });
       setSettings(copiedWeek.settings);
       setChanges(next);
       setCopyFeedback('Semana copiada. Revisa los bloques antes de guardar.');
@@ -408,7 +465,7 @@ export default function BarberCalendar() {
         <label>
           Hora de entrada
           <select
-            aria-label="Hora de entrada" disabled={savingWeek || !calendarReady}
+            aria-label="Hora de entrada" disabled={savingWeek || !calendarReady || Boolean(settingsProtection)}
             value={settings.startTime}
             onChange={(event) => updateSettings({ ...settings, startTime: event.target.value })}
           >
@@ -418,7 +475,7 @@ export default function BarberCalendar() {
         <label>
           Hora de cierre
           <select
-            aria-label="Hora de cierre" disabled={savingWeek || !calendarReady}
+            aria-label="Hora de cierre" disabled={savingWeek || !calendarReady || Boolean(settingsProtection)}
             value={settings.endTime}
             onChange={(event) => updateSettings({ ...settings, endTime: event.target.value })}
           >
@@ -428,7 +485,7 @@ export default function BarberCalendar() {
         <label>
           Duración de cada bloque
           <select
-            aria-label="Duración de cada bloque" disabled={savingWeek || !calendarReady}
+            aria-label="Duración de cada bloque" disabled={savingWeek || !calendarReady || Boolean(settingsProtection)}
             value={settings.blockMinutes}
             onChange={(event) => updateSettings({ ...settings, blockMinutes: Number(event.target.value) })}
           >
@@ -436,6 +493,7 @@ export default function BarberCalendar() {
           </select>
         </label>
       </section>
+      {settingsProtection && <p className="calendar-copy-feedback" role="status">{settingsProtection === 'historial' ? HISTORICAL_WEEK_MESSAGE : 'Esta semana contiene citas, descansos o bloqueos programados. No puedes modificar sus horarios generales mientras exista esta planificación.'}</p>}
 
       <div className="calendar-actions calendar-secondary-actions">
       <button type="button" disabled={savingWeek || !calendarReady} onClick={() => {
@@ -443,7 +501,7 @@ export default function BarberCalendar() {
         const next: AgendaInterval[] = [];
         weekDays.forEach(day => slotTimes.forEach(time => {
           const start = +buildSlotDate(day, time), end = +buildSlotDate(day, slotEndMinute(time, settings));
-          if (isPastSlot(day, time) || reservationAt(day, time) || savedAgenda?.bloqueos.some(b => b.origen !== 'agenda' && +new Date(b.inicio) < end && +new Date(b.fin) > start)) return;
+          if (isPastSlot(day, time) || overlapsHistory(start, end) || reservationAt(day, time) || savedAgenda?.bloqueos.some(b => b.origen !== 'agenda' && +new Date(b.inicio) < end && +new Date(b.fin) > start)) return;
           // Enabling fills only missing intervals, including legacy gaps. Keep
           // existing availability, breaks and blocks (even within a resized row).
           let cursor = start;
@@ -508,7 +566,7 @@ export default function BarberCalendar() {
                       pending={settingsDirty || !sameIntervals(clipIntervals(draftIntervals, intervalStart, intervalEnd), clipIntervals(baseIntervals, intervalStart, intervalEnd))}
                       summaryTime={summaryParts.length === 1 ? `${businessTime(new Date(summaryParts[0].start))}–${businessTime(new Date(summaryParts[0].end))}` : undefined}
                       reservationSummary={reservedSlot ? { client: reservedSlot.cliente?.nombre || 'Cliente', service: reservedSlot.servicio?.nombre_servicio || 'Servicio', time: `${businessTime(reservedSlot.fecha_hora)}–${reservationEnd(reservedSlot) ? businessTime(reservationEnd(reservedSlot)!) : 'Por verificar'}`, continuation: +new Date(reservedSlot.fecha_hora) < intervalStart && slotTime !== slotTimes[0] } : undefined}
-                      disabled={Boolean(reservedSlot || manualBlock) || pastSlot || savingWeek || !calendarReady}
+                      disabled={Boolean(reservedSlot || manualBlock) || pastSlot || overlapsHistory(intervalStart, intervalEnd) || savingWeek || !calendarReady}
                       detail={detail}
                       onClick={() => openSlot(date, slotTime)}
                     />

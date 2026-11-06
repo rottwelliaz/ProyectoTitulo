@@ -1,6 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import SessionNav from '../components/SessionNav.astro';
+import ClientExperience from '../layouts/ClientExperience.astro';
 import logoConce from '../assets/logotesis.png';
 import barberPhoto from '../assets/homefoto.png';
 import {
@@ -13,30 +13,24 @@ import '../styles/barberos.css';
 ---
 
 <Layout title="Barberos - Conce Barber Club">
-  <div class="barbers-page">
-    <header class="barbers-header">
-      <a class="barbers-brand" href="/home" aria-label="Conce Barber Club">
+  <ClientExperience active="barberos" heading="Ver barberos" publicClass="barbers-page" publicHeaderClass="barbers-header" showHome={false}>
+      <a slot="public-navigation" data-public-navigation class="barbers-brand" href="/home" aria-label="Conce Barber Club">
         <img src={logoConce.src} alt="Conce Barber Club" />
       </a>
 
-      <label class="barbers-top-search">
+      <label slot="public-navigation" data-public-navigation class="barbers-top-search">
         <Search size={21} aria-hidden="true" />
         <input id="top-search" type="search" placeholder="Buscar barberos o barberías..." />
       </label>
 
-      <nav class="barbers-nav" aria-label="Navegación principal">
+      <nav slot="public-navigation" data-public-navigation class="barbers-nav" aria-label="Navegación principal">
         <a href="/home">Inicio</a>
         <a href="/home#como-funciona">Cómo funciona</a>
         <a class="active" href="/barberos">Barberos</a>
         <a href="/home#contacto">Sobre nosotros</a>
       </nav>
 
-      <div class="barbers-user-actions">
-        <SessionNav showHome={false} label="Cuenta de usuario" />
-      </div>
-    </header>
-
-    <main class="barbers-main">
+    <main class="barbers-main" aria-label="Catálogo de barberos">
       <section class="barbers-hero">
         <div>
           <h1>Barberos</h1>
@@ -90,7 +84,7 @@ import '../styles/barberos.css';
 
       <nav id="barbers-pagination" class="barbers-pagination" aria-label="Paginacion de barberos"></nav>
     </main>
-  </div>
+  </ClientExperience>
 </Layout>
 
 <script>
@@ -120,6 +114,7 @@ import '../styles/barberos.css';
   interface BarberUser {
     id: number;
     nombre: string;
+    foto_perfil?: string | null;
     email?: string;
     telefono?: string | null;
     rol: string;
@@ -165,7 +160,7 @@ import '../styles/barberos.css';
   const getServices = (barber: BarberUser) => barber.perfilBarbero?.servicios || [];
 
   const getDisplayedPhoto = (barber: BarberUser) => {
-    return safePhotoUrl(barber.perfilBarbero?.foto_perfil) || barberPhotoSrc;
+    return safePhotoUrl(barber.perfilBarbero?.foto_perfil) || safePhotoUrl(barber.foto_perfil) || barberPhotoSrc;
   };
 
   const getLowestPrice = (barber: BarberUser) => {
@@ -194,8 +189,7 @@ import '../styles/barberos.css';
 
   const getLocation = (barber: BarberUser) =>
     barber.perfilBarbero?.lugarTrabajo?.direccion ||
-    barber.perfilBarbero?.lugarTrabajo?.nombre_barberia ||
-    'Ubicación no informada';
+    'Dirección no informada';
 
   const getFavorites = () => {
     try {
@@ -305,6 +299,7 @@ import '../styles/barberos.css';
       const isFavorite = favorites.has(barber.id);
       const lowestPrice = getLowestPrice(barber);
       const canMessage = isAuthenticated && getStoredUser()?.rol === 'cliente';
+      const canBook = canMessage && profileId && hasServices && barber.perfilBarbero?.lugarTrabajo;
       const profileAction = `<a class="profile-button" href="/barbero?barbero=${profileId}" data-profile-id="${profileId}">Ver perfil</a>`;
       return `
         <article class="barber-profile-card" data-barber-id="${barber.id}">
@@ -319,6 +314,7 @@ import '../styles/barberos.css';
                 ${icon.heart}
               </button>
             </div>
+            <p class="barber-meta barber-workplace">${escapeHtml(barber.perfilBarbero?.lugarTrabajo?.nombre_barberia || 'Barbería no informada')}</p>
             <p class="barber-meta">
               ${icon.scissors}
               ${escapeHtml(getSpecialty(barber))}
@@ -335,6 +331,7 @@ import '../styles/barberos.css';
             <div class="barber-card-actions ${canMessage ? '' : 'is-single'}">
               ${profileAction}
               ${canMessage ? `<a class="message-button" href="/mensajes?barbero=${barber.id}">Enviar mensaje</a>` : ''}
+              ${canBook ? `<a class="profile-button barber-book-button" href="/booking?barbero=${profileId}#servicios">Reservar hora</a>` : ''}
             </div>
           </div>
         </article>

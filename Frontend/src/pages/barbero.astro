@@ -1,12 +1,12 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import SessionNav from '../components/SessionNav.astro';
+import ClientExperience from '../layouts/ClientExperience.astro';
 import PublicBarberProfile from '../components/PublicBarberProfile';
 import '../styles/public-profile.css';
 ---
 <Layout title="Perfil del barbero - Conce Barber Club">
-  <main class="public-profile">
-    <header class="public-header"><a href="/barberos">← Volver a barberos</a><SessionNav /></header>
-    <PublicBarberProfile client:only="react" />
-  </main>
+  <ClientExperience active="barberos" heading="Perfil del barbero" publicClass="public-profile" publicHeaderClass="public-header">
+    <a slot="public-navigation" data-public-navigation href="/barberos">← Volver a barberos</a>
+    <main><PublicBarberProfile client:only="react" /></main>
+  </ClientExperience>
 </Layout>

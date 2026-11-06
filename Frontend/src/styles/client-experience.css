@@ -1,0 +1,69 @@
+/* The public content is rendered once and shares the existing client sidebar. */
+.client-experience:not([data-client-panel]) > .panel-sidebar,
+.client-experience .client-panel-heading {
+  display: none;
+}
+
+.client-experience-main { min-width: 0; }
+
+.client-experience[data-client-panel] {
+  margin: 0;
+  max-width: none;
+  padding: 0;
+  width: 100%;
+}
+
+.client-experience[data-client-panel] .client-panel-heading { display: block; }
+.client-experience[data-client-panel] .client-experience-header > [data-public-navigation] { display: none; }
+
+.client-experience[data-client-panel] .client-experience-header {
+  display: flex;
+  width: 100%;
+}
+
+.client-experience[data-client-panel] :is(.barbers-main, .booking-root) {
+  background: transparent;
+  min-height: 0;
+  padding: 0;
+  width: 100%;
+}
+
+/* The panel heading replaces the existing page title, without duplicating content. */
+.client-experience[data-client-panel] :is(.barbers-hero h1, .booking-header h1) { display: none; }
+
+.client-experience[data-client-panel] .barbers-card-grid:not(.is-list) {
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+}
+
+/* Exploring professionals keeps larger cards than the booking selector. */
+.client-experience[data-client-panel] .barbers-card-grid:not(.is-list) .barber-profile-photo { height: 180px; }
+.client-experience[data-client-panel] .barber-profile-body { padding: 1.2rem; }
+.client-experience[data-client-panel] .barber-name-row { grid-template-columns: minmax(0, 1fr) auto auto; }
+.client-experience[data-client-panel] .barber-name-row h2 { font-size: 1.25rem; line-height: 1.3; }
+.client-experience[data-client-panel] .barber-card-actions > a { min-height: 44px; }
+.client-experience[data-client-panel] .barber-workplace { font-weight: 750; }
+
+.client-experience[data-client-panel] .barbers-filters {
+  grid-template-columns: minmax(0, 1fr) minmax(190px, 260px);
+}
+
+.client-experience .barber-card-actions .barber-book-button {
+  background: #ffc928;
+  color: #061b33;
+  grid-column: 1 / -1;
+}
+.client-experience .barber-card-actions .barber-book-button:hover { background: #ffd94d; }
+
+.client-experience[data-client-panel] .public-panel { min-width: 0; }
+.client-experience[data-client-panel] .public-services li > div { min-width: 0; }
+
+.booking-page-nav {
+  background: #020b18;
+  padding: 0.75rem max(1rem, calc((100vw - 1240px) / 2));
+}
+html[data-theme='light'] .booking-page-nav { background: #f4f7fb; }
+html[data-theme='dark'] .booking-page-nav { background: #08090c; }
+
+@media (max-width: 720px) {
+  .client-experience[data-client-panel] .barbers-filters { grid-template-columns: minmax(0, 1fr); }
+}

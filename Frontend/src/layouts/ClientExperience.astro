@@ -1,0 +1,50 @@
+---
+import ProfileSidebar from '../components/ProfileSidebar.astro';
+import SessionNav from '../components/SessionNav.astro';
+import '../styles/profile.css';
+import '../styles/client-experience.css';
+
+interface Props {
+  active: 'barberos' | 'booking';
+  heading: string;
+  publicClass?: string;
+  publicHeaderClass: string;
+  showHome?: boolean;
+}
+const { active, heading, publicClass, publicHeaderClass, showHome = true } = Astro.props;
+---
+
+<div class:list={['client-experience', publicClass]} data-client-experience>
+  <ProfileSidebar active={active} />
+  <section class="client-experience-main">
+    <header class:list={['client-experience-header', publicHeaderClass]}>
+      <slot name="public-navigation" />
+      <div class="client-panel-heading profile-page-heading">
+        <p>Conce Barber Club</p>
+        <h1>{heading}</h1>
+      </div>
+      <SessionNav showHome={showHome} />
+    </header>
+    <slot />
+  </section>
+</div>
+
+<script>
+  import { getSession } from '../lib/session';
+
+  // Reuse public URLs and content; only a verified client receives the panel shell.
+  const experience = document.querySelector<HTMLElement>('[data-client-experience]');
+  void getSession().then(user => {
+    if (!experience || user?.rol !== 'cliente') return;
+    experience.dataset.clientPanel = 'true';
+    experience.classList.add('panel-layout', 'profile-root', 'profile-dashboard');
+    experience.querySelector('.client-experience-main')?.classList.add('profile-main');
+    experience.querySelector('.client-experience-header')?.classList.add('profile-topbar');
+
+    const barber = new URLSearchParams(location.search).get('barbero');
+    const booking = experience.querySelector<HTMLAnchorElement>('.profile-nav a[href="/booking"]');
+    if (booking && barber && /^[1-9]\d*$/.test(barber)) {
+      booking.href = `/booking?${new URLSearchParams({ barbero: barber })}`;
+    }
+  }).catch(() => undefined);
+</script>

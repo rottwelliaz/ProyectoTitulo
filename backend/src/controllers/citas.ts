@@ -6,7 +6,7 @@ import { Temporal } from '@js-temporal/polyfill';
 import prisma from '../config/prisma';
 import { AuthRequest } from '../middleware/auth';
 import { ScheduleError, withSchedule, validateInterval, durationOf, scheduleFailure, activeStates, endOf, overlaps, covers } from '../services/schedule';
-import { availabilitySnapshot, configurationValidation, weekAvailabilityValidation } from '../services/availability';
+import { availabilitySnapshot, configurationValidation, weekAvailabilityValidation, lockedWeekMessage, historicalWeekMessage } from '../services/availability';
 import { publicAvailability } from '../services/publicAvailability';
 import { parseInstant, businessRange, checkRangeEnd, businessDate, businessTime } from '../services/businessTime';
 import { bankingSelect } from '../services/professionalPrivacy';
@@ -63,6 +63,7 @@ export const createCita = async (req: AuthRequest, res: Response) => {
     if (!profile) return res.status(404).json({ message: 'No tienes perfil de barbero creado' });
     const result = await withSchedule(profile.id, async tx => {
       await requireBookableProfessional(tx, profile.id);
+      if (!isFutureDate(start)) throw new ScheduleError(409, 'El intervalo ya comenzó; actualiza la agenda');
       const existing = await tx.cita.findFirst({ where: { barberoId: profile.id, fecha_hora: { lt: end }, disponibleHasta: { gt: start }, estado: CitaEstado.disponible } });
       if (existing) throw new ScheduleError(409, 'Ya existe disponibilidad en ese horario');
       return tx.cita.create({ data: { barberoId: profile.id, fecha_hora: start, disponibleHasta: end, estado: CitaEstado.disponible } });
@@ -79,10 +80,12 @@ export const updateCita = async (req: AuthRequest, res: Response) => {
     if (!profile) return res.status(404).json({ message: 'No tienes perfil de barbero creado' });
     const result = await withSchedule(profile.id, async tx => {
       await requireBookableProfessional(tx, profile.id);
+      if (!isFutureDate(start)) throw new ScheduleError(409, 'El intervalo ya comenzó; actualiza la agenda');
       const cita = await tx.cita.findUnique({ where: { id: req.params.id }, include: { servicio: true } });
       if (!cita) throw new ScheduleError(404, 'Cita no encontrada');
       if (cita.barberoId !== profile.id) throw new ScheduleError(403, 'No autorizado para editar esta cita');
       if (cita.estado === CitaEstado.disponible) {
+        if (!isFutureDate(cita.fecha_hora)) throw new ScheduleError(409, 'No puedes modificar disponibilidad pasada o iniciada');
         const end = parseInstant(req.body.fin_hora);
         if (!validWindow(start, end)) throw new ScheduleError(400, 'Indica el fin del bloque disponible');
         const duplicate = await tx.cita.findFirst({ where: { barberoId: profile.id, fecha_hora: { lt: end }, disponibleHasta: { gt: start }, estado: CitaEstado.disponible, NOT: { id: cita.id } } });
@@ -109,6 +112,7 @@ export const deleteCita = async (req: AuthRequest, res: Response) => {
       if (!cita) throw new ScheduleError(404, 'Cita no encontrada');
       if (cita.barberoId !== profile.id) throw new ScheduleError(403, 'No autorizado para eliminar esta cita');
       if (cita.estado !== CitaEstado.disponible) throw new ScheduleError(409, 'Las reservas se conservan en el historial; utiliza la cancelación');
+      if (!isFutureDate(cita.fecha_hora)) throw new ScheduleError(409, 'No puedes eliminar disponibilidad pasada o iniciada');
       await tx.cita.delete({ where: { id: cita.id } });
     });
     return res.status(204).send();
@@ -155,12 +159,28 @@ export const saveWeekAvailability = async (req: AuthRequest, res: Response) => {
       await requireBookableProfessional(tx, profile.id);
       if (typeof req.body.revision !== 'string') throw new ScheduleError(428, 'Carga la semana antes de guardarla');
       const snapshot = await availabilitySnapshot(tx, profile.id, weekStart, weekEnd);
-      if (req.body.revision !== snapshot.revision) throw new ScheduleError(409, 'La agenda cambió en otro dispositivo o recibió una reserva. Recarga la semana y revisa los cambios antes de guardar.');
       const { error, value: configuracion } = configurationValidation.validate(req.body.configuracion);
       if (error || !configuracion) throw new ScheduleError(400, 'Indica una configuración de horarios válida');
+      const current = snapshot.configuracion as { startTime: string; endTime: string; blockMinutes: number };
+      const changed = current.startTime !== configuracion.startTime || current.endTime !== configuracion.endTime || current.blockMinutes !== configuracion.blockMinutes;
+      // This snapshot and the final writes share the reservation/profile lock.
+      // A bypass flag or an emptied request cannot unlock persisted planning.
+      if (changed && snapshot.configuracionBloqueada) throw new ScheduleError(409, snapshot.motivoConfiguracion === 'historial' ? historicalWeekMessage : lockedWeekMessage);
+      if (req.body.revision !== snapshot.revision) throw new ScheduleError(409, 'La agenda cambió en otro dispositivo o recibió una reserva. Recarga la semana y revisa los cambios antes de guardar.');
+      const now = new Date(Date.now());
+      if (weekEnd <= now) throw new ScheduleError(409, historicalWeekMessage);
+      if (windows.some(w => w.fecha_hora <= now) || blocked.some(b => b.inicio <= now)) throw new ScheduleError(409, 'Hay intervalos que ya comenzaron. Recarga la semana antes de guardar.');
+      if (changed && snapshot.publicada && [...windows, ...blocked.map(b => ({ fecha_hora: b.inicio, disponibleHasta: b.fin }))].some(w => {
+        const interval = bookingInterval(w.fecha_hora, configuracion);
+        return !interval || +interval.end !== +w.disponibleHasta;
+      })) throw new ScheduleError(409, 'Los intervalos disponibles deben coincidir con los bloques completos de los nuevos horarios.');
       const occupied = await tx.cita.findMany({ where: { barberoId: profile.id, estado: { in: activeStates }, fecha_hora: { lt: weekEnd } }, include: { servicio: true } });
-      const retainedBlocks = await tx.agendaBloqueo.findMany({ where: { barberoId: profile.id, inicio: { lt: weekEnd }, fin: { gt: weekStart }, ...(blockedInput !== undefined ? { origen: { not: 'agenda' } } : {}) } });
-      const adjacentWindows = await tx.cita.findMany({ where: { barberoId: profile.id, estado: 'disponible', OR: [{ fecha_hora: { lt: weekStart } }, { fecha_hora: { gte: weekEnd } }] } });
+      const retainedBlocks = await tx.agendaBloqueo.findMany({ where: { barberoId: profile.id, inicio: { lt: weekEnd }, fin: { gt: weekStart }, ...(blockedInput !== undefined ? { OR: [{ origen: { not: 'agenda' } }, { inicio: { lte: now } }] } : {}) } });
+      const adjacentWindows = await tx.cita.findMany({ where: { barberoId: profile.id, estado: 'disponible', OR: [{ fecha_hora: { lte: now } }, { fecha_hora: { lt: weekStart } }, { fecha_hora: { gte: weekEnd } }] } });
+      const history = [...adjacentWindows.filter(w => w.fecha_hora <= now && w.disponibleHasta).map(w => ({ inicio: w.fecha_hora, fin: w.disponibleHasta! })), ...retainedBlocks.filter(b => b.inicio <= now)];
+      if (changed && history.some(h => h.inicio < weekEnd && h.fin > weekStart)) throw new ScheduleError(409, historicalWeekMessage);
+      if ([...windows.map(w => ({ inicio: w.fecha_hora, fin: w.disponibleHasta })), ...blocked].some(w => history.some(h => overlaps(w.inicio, w.fin, h.inicio, h.fin)))) throw new ScheduleError(409, 'No puedes editar intervalos que se superponen con registros ya iniciados');
+      if (blocked.some(b => occupied.some(c => !durationOf(c) ? c.fecha_hora < b.fin : overlaps(b.inicio, b.fin, c.fecha_hora, endOf(c.fecha_hora, durationOf(c)!))))) throw new ScheduleError(409, 'No puedes bloquear ni marcar como descanso un intervalo ocupado por una cita');
       const conflicts = occupied.filter(c => {
         const duration = durationOf(c);
         if (!duration) return c.fecha_hora >= weekStart;
@@ -170,19 +190,19 @@ export const saveWeekAvailability = async (req: AuthRequest, res: Response) => {
       if (conflicts.length && req.body.conservarReservas !== true) throw new ScheduleError(409, 'El cambio afecta citas activas. Puedes conservarlas como excepciones; no se cancelarán ni modificarán.', conflicts);
       // Availability is independent of reservations. Existing appointments are never deleted.
       // Reject boundary-crossing windows rather than silently changing an adjacent week.
-      const crossing = await tx.cita.findFirst({ where: { barberoId: profile.id, estado: CitaEstado.disponible, OR: [
+      const crossing = await tx.cita.findFirst({ where: { barberoId: profile.id, estado: CitaEstado.disponible, fecha_hora: { gt: now }, OR: [
         { fecha_hora: { lt: weekStart }, disponibleHasta: { gt: weekStart } },
         { fecha_hora: { lt: weekEnd }, disponibleHasta: { gt: weekEnd } },
       ] } });
       if (crossing) throw new ScheduleError(409, 'Hay un bloque que cruza el límite de la semana; ajústalo antes de publicar');
-      await tx.cita.deleteMany({ where: { barberoId: profile.id, estado: CitaEstado.disponible, fecha_hora: { gte: weekStart, lt: weekEnd } } });
+      await tx.cita.deleteMany({ where: { barberoId: profile.id, estado: CitaEstado.disponible, fecha_hora: { gte: weekStart, gt: now, lt: weekEnd } } });
       if (windows.length) await tx.cita.createMany({ data: windows.map(window => ({ ...window, barberoId: profile.id, estado: CitaEstado.disponible })) });
       if (blockedInput !== undefined) {
-        const crossingBlock = await tx.agendaBloqueo.findFirst({ where: { barberoId: profile.id, origen: 'agenda', OR: [
+        const crossingBlock = await tx.agendaBloqueo.findFirst({ where: { barberoId: profile.id, origen: 'agenda', inicio: { gt: now }, OR: [
           { inicio: { lt: weekStart }, fin: { gt: weekStart } }, { inicio: { lt: weekEnd }, fin: { gt: weekEnd } },
         ] } });
         if (crossingBlock) throw new ScheduleError(409, 'Hay un bloqueo que cruza el límite de la semana; ajústalo antes de publicar');
-        await tx.agendaBloqueo.deleteMany({ where: { barberoId: profile.id, origen: 'agenda', inicio: { gte: weekStart, lt: weekEnd } } });
+        await tx.agendaBloqueo.deleteMany({ where: { barberoId: profile.id, origen: 'agenda', inicio: { gte: weekStart, gt: now, lt: weekEnd } } });
         if (blocked.length) await tx.agendaBloqueo.createMany({ data: blocked.map(block => ({ ...block, barberoId: profile.id })) });
       }
       await tx.agendaSemana.upsert({ where: { barberoId_inicio: { barberoId: profile.id, inicio: weekStart } },

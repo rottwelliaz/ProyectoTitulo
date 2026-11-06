@@ -64,11 +64,15 @@ const initials = (name: string) =>
 const isFutureSlot = (slot: AppointmentSlot) => +new Date(slot.fecha_hora) > Date.now() && +new Date(slot.disponibleHasta) > +new Date(slot.fecha_hora);
 const missingBankingMessage = 'El profesional aún no ha completado sus datos para recibir transferencias';
 const transferWarning = 'Este profesional requiere pago por transferencia, pero todavía no ha configurado sus datos bancarios. Por el momento, no es posible completar una reserva con esta modalidad.';
+const BARBERS_PER_PAGE = 6;
 
 export default function BookingFlow() {
   const [token, setToken] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [barbers, setBarbers] = useState<Barber[]>([]);
+  const [barberSearch, setBarberSearch] = useState('');
+  const [barberPage, setBarberPage] = useState(1);
+  const [changingBarber, setChangingBarber] = useState(false);
   const [selectedBarberId, setSelectedBarberId] = useState<number | null>(null);
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
@@ -102,6 +106,18 @@ export default function BookingFlow() {
   }, []);
 
   const selectedBarber = barbers.find((barber) => barber.id === selectedBarberId) ?? null;
+  const visibleBarbers = useMemo(() => {
+    const normalize = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const query = normalize(barberSearch.trim());
+    return barbers.filter(barber => normalize([
+      barber.usuario.nombre, barber.lugarTrabajo?.nombre_barberia, barber.lugarTrabajo?.direccion,
+    ].filter(Boolean).join(' ')).includes(query));
+  }, [barbers, barberSearch]);
+  const showBarberPicker = !selectedBarber || changingBarber;
+  const barberPageCount = Math.max(1, Math.ceil(visibleBarbers.length / BARBERS_PER_PAGE));
+  const currentBarberPage = Math.min(barberPage, barberPageCount);
+  const displayedBarbers = selectedBarber && !showBarberPicker ? [selectedBarber]
+    : visibleBarbers.slice((currentBarberPage - 1) * BARBERS_PER_PAGE, currentBarberPage * BARBERS_PER_PAGE);
   const selectedService = selectedBarber?.servicios.find((service) => service.id === selectedServiceId) ?? null;
   const selectedSlot = slots.find((slot) => slot.id === selectedSlotId) ?? null;
   const requiresProof = selectedBarber?.requiereComprobante ?? true;
@@ -179,11 +195,10 @@ export default function BookingFlow() {
           ? availableBarbers.find((barber) => barber.id === requestedBarberId)
           : null;
 
+        setBarbers(availableBarbers);
         if (requestedBarberId && requestedBarber) {
-          setBarbers([requestedBarber]);
           setSelectedBarberId(requestedBarberId);
         } else {
-          setBarbers(availableBarbers);
           if (requestedBarberId) {
             setError('El barbero seleccionado no está disponible para reservar.');
           }
@@ -260,6 +275,11 @@ export default function BookingFlow() {
     setSlots([]);
     setCalendar(null);
     setSelectedBarberId(barber.id);
+    const destination = new URL(window.location.href);
+    destination.searchParams.set('barbero', String(barber.id));
+    window.history.replaceState(null, '', `${destination.pathname}${destination.search}${destination.hash}`);
+    const bookingLink = document.querySelector<HTMLAnchorElement>('.profile-nav a[aria-current="page"]');
+    if (bookingLink) bookingLink.href = `${destination.pathname}${destination.search}`;
     setSelectedServiceId(null);
     setSelectedSlotId(null);
     setProofData('');
@@ -456,22 +476,32 @@ export default function BookingFlow() {
   }
 
   return (
-    <main className="booking-root">
+    <main className="booking-root booking-compact">
       <header className="booking-header">
         <div>
           <h1>Reservar hora</h1>
           <p>Elige servicio y horario en cualquier orden y confirma tu reserva.</p>
         </div>
+        <a className="booking-catalog-link" href="/barberos">Ver catálogo de barberos</a>
       </header>
 
-      <div className="booking-options">
+      <div className={`booking-options${showBarberPicker ? ' is-picking-barber' : ' is-barber-summary'}`}>
         <section className="booking-panel">
           <div className="booking-section-title">
             <span>01</span>
             <div>
-              <h2>{requestedBarberId ? 'Barbero seleccionado' : 'Selecciona un barbero'}</h2>
-              <p>{requestedBarberId ? 'Perfil elegido desde la página de barberos.' : 'Profesionales con lugar de trabajo registrado.'}</p>
+              <h2>{showBarberPicker ? 'Selecciona un barbero' : 'Barbero seleccionado'}</h2>
+              {showBarberPicker && <p>Busca por nombre, barbería o dirección.</p>}
             </div>
+            {selectedBarber && <button type="button" className="booking-change-barber" disabled={booking}
+              aria-expanded={changingBarber} aria-controls="booking-barber-picker"
+              onClick={() => {
+                setChangingBarber(value => !value);
+                setBarberSearch('');
+                setBarberPage(Math.floor(Math.max(0, barbers.findIndex(barber => barber.id === selectedBarberId)) / BARBERS_PER_PAGE) + 1);
+              }}>
+              {changingBarber ? 'Cerrar selección' : 'Cambiar barbero'}
+            </button>}
           </div>
 
           {loadingBarbers ? (
@@ -479,15 +509,21 @@ export default function BookingFlow() {
           ) : barbers.length === 0 ? (
             <p className="booking-empty">No hay barberos disponibles para reservar.</p>
           ) : (
-            <div className={`booking-barbers${requestedBarberId && selectedBarber ? ' booking-barbers-compact' : ''}`}>
-              {barbers.map((barber) => (
+            <>
+            {showBarberPicker && <label className="booking-barber-search">
+              Buscar barbero o barbería
+              <input type="search" value={barberSearch} placeholder="Nombre, barbería o dirección" onChange={event => { setBarberSearch(event.target.value); setBarberPage(1); }} />
+            </label>}
+            {visibleBarbers.length === 0 && <p className="booking-empty" role="status">No hay barberos que coincidan con tu búsqueda.</p>}
+            <div id="booking-barber-picker" className="booking-barbers booking-barbers-compact">
+              {displayedBarbers.map((barber) => (
                 <button
                   key={barber.id}
                   type="button"
                   className={`booking-barber-card${selectedBarberId === barber.id ? ' is-selected' : ''}`}
                   aria-pressed={selectedBarberId === barber.id}
                   disabled={booking}
-                  onClick={() => chooseBarber(barber)}
+                  onClick={() => { chooseBarber(barber); setChangingBarber(false); }}
                 >
                   <span
                     className={`booking-avatar${safePhotoUrl(barber.foto_perfil) ? ' has-photo' : ''}`}
@@ -501,13 +537,22 @@ export default function BookingFlow() {
                 </button>
               ))}
             </div>
+            {showBarberPicker && barberPageCount > 1 && <nav className="booking-barber-pagination" aria-label="Páginas de barberos">
+              <button type="button" aria-label="Página anterior de barberos" disabled={currentBarberPage === 1 || booking}
+                onClick={() => setBarberPage(currentBarberPage - 1)}>← Anterior</button>
+              <span aria-live="polite">Página {currentBarberPage} de {barberPageCount}</span>
+              <button type="button" aria-label="Página siguiente de barberos" disabled={currentBarberPage === barberPageCount || booking}
+                onClick={() => setBarberPage(currentBarberPage + 1)}>Siguiente →</button>
+            </nav>}
+            </>
           )}
+          {!selectedBarber && <p className="booking-selection-hint">Al elegir un profesional verás sus servicios y calendario de disponibilidad.</p>}
         </section>
 
-        <section className="booking-panel" id="servicios">
+        <section className="booking-panel" id="servicios" hidden={!selectedBarber}>
           <div className="booking-section-title">
             <span>02</span>
-            <div><h2>Selecciona un servicio</h2><p>{selectedBarber ? `Servicios ofrecidos por ${selectedBarber.usuario.nombre}.` : 'Elige un profesional para consultar sus servicios.'}</p></div>
+            <div><h2>Selecciona un servicio</h2>{selectedBarber && <p>Servicios ofrecidos por {selectedBarber.usuario.nombre}.</p>}</div>
           </div>
 
           {!selectedBarber ? (
@@ -540,22 +585,22 @@ export default function BookingFlow() {
         </section>
       </div>
 
-      <section className="booking-panel" id="horarios">
+      <section className="booking-panel" id="horarios" hidden={!selectedBarber}>
         <div className="booking-section-title">
           <span>03</span>
-          <div><h2>Selecciona fecha y hora</h2><p>{selectedBarber ? `Agenda de ${selectedBarber.usuario.nombre}. Puedes elegir tu horario antes del servicio.` : 'Selecciona un barbero para consultar su agenda semanal.'}</p></div>
+          <div><h2>Selecciona fecha y hora</h2>{selectedBarber && <p>Agenda de {selectedBarber.usuario.nombre}. Puedes elegir tu horario antes del servicio.</p>}</div>
         </div>
 
-        <BookingCalendar
+        {selectedBarber ? <BookingCalendar
           now={now}
           weekStart={weekStart} selectedDate={selectedDate} selectedSlotId={selectedSlotId}
           data={calendar} loading={loadingSlots} error={calendarError} disabled={booking || !selectedBarber}
           onDateChange={changeDate} onWeekChange={changeWeek} onSelect={selectCalendarSlot}
           onRefresh={() => setAvailabilityVersion(version => version + 1)}
-        />
+        /> : <p className="booking-empty">Selecciona un barbero para ver su disponibilidad.</p>}
       </section>
 
-      <section className="booking-panel" id="confirmacion">
+      <section className="booking-panel" id="confirmacion" hidden={!selectedBarber}>
         <div className="booking-section-title">
           <span>04</span>
           <div><h2>Confirma tu reserva</h2><p>Revisa el servicio y el bloque seleccionado.</p></div>
@@ -568,6 +613,22 @@ export default function BookingFlow() {
             <p>{selectedSlot ? `${formatInstant(selectedSlot.fecha_hora, { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })}–${formatInstant(selectedSlot.disponibleHasta, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })}` : 'Fecha y horario pendientes.'}</p>
             {selectedBarber && !requiresProof && <small className="booking-payment-note">Este profesional permite reservar sin comprobante de pago.</small>}
             {transfersUnavailable && <p className="booking-alert is-error" role="alert">Transferencias no disponibles: el profesional aún no ha configurado sus datos bancarios. No es posible confirmar la reserva.</p>}
+          </div>
+          <div className="booking-confirmation-actions">
+            <p id="booking-confirmation-status">
+              {!selectedBarber || !selectedService || !selectedSlot ? 'Selecciona un barbero, un servicio y un horario disponible para confirmar.'
+                : transfersUnavailable ? 'No es posible confirmar: faltan los datos bancarios del profesional.'
+                : loadingPayment ? 'Consultando datos de pago...'
+                : requiresProof && !hasBankingData ? 'Se necesitan los datos de pago para adjuntar tu comprobante.'
+                : requiresProof && !proofData ? 'Adjunta el comprobante para confirmar tu reserva.'
+                : 'Todo listo para confirmar tu reserva.'}
+            </p>
+            {requiresProof && selectedService && selectedSlot && !hasBankingData && !loadingPayment && (
+              <button type="button" disabled={booking} onClick={() => setPaymentVersion(version => version + 1)}>Reintentar datos de pago</button>
+            )}
+            <button type="button" disabled={!canConfirm} aria-describedby="booking-confirmation-status" onClick={() => void confirmBooking()}>
+              {booking ? 'Reservando...' : 'Confirmar reserva'}
+            </button>
           </div>
         </div>
 
@@ -629,22 +690,6 @@ export default function BookingFlow() {
           </div>
         )}
 
-        <div className="booking-confirmation-actions">
-          <p id="booking-confirmation-status">
-            {!selectedBarber || !selectedService || !selectedSlot ? 'Selecciona un barbero, un servicio y un horario disponible para confirmar.'
-              : transfersUnavailable ? 'No es posible confirmar: faltan los datos bancarios del profesional.'
-              : loadingPayment ? 'Consultando datos de pago...'
-              : requiresProof && !hasBankingData ? 'Se necesitan los datos de pago para adjuntar tu comprobante.'
-              : requiresProof && !proofData ? 'Adjunta el comprobante para confirmar tu reserva.'
-              : 'Todo listo para confirmar tu reserva.'}
-          </p>
-          {requiresProof && selectedService && selectedSlot && !hasBankingData && !loadingPayment && (
-            <button type="button" disabled={booking} onClick={() => setPaymentVersion(version => version + 1)}>Reintentar datos de pago</button>
-          )}
-          <button type="button" disabled={!canConfirm} aria-describedby="booking-confirmation-status" onClick={() => void confirmBooking()}>
-            {booking ? 'Reservando...' : 'Confirmar reserva'}
-          </button>
-        </div>
       </section>
 
       {error && (

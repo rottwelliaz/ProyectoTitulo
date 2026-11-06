@@ -9,6 +9,21 @@ export const configurationValidation = Joi.object({
   blockMinutes: Joi.number().strict().valid(30, 45, 60).required(),
 }).unknown(false).custom((value, helpers) => value.startTime < value.endTime ? value : helpers.error('any.invalid'));
 
+export const lockedWeekMessage = 'La semana seleccionada ya contiene citas, descansos o bloqueos. Para proteger la planificación existente, no se pueden cambiar las horas de entrada, cierre ni la duración de los bloques.';
+export const historicalWeekMessage = 'Esta semana contiene intervalos históricos o ya iniciados. Sus horarios generales están protegidos para no modificar el pasado.';
+
+export function weekConfigurationProtection(start: Date, end: Date, citas: {
+  fecha_hora: Date; estado: string; disponibleHasta?: Date | null; duracionReservada?: number | null;
+}[], bloqueos: { inicio: Date; fin: Date }[], now = Date.now()): 'historial' | 'programacion' | null {
+  const inWeek = citas.filter(c => +c.fecha_hora < +end && (+c.fecha_hora >= +start ||
+    (c.estado === 'disponible' && c.disponibleHasta && +c.disponibleHasta > +start) ||
+    (['pendiente', 'confirmada'].includes(c.estado) && (!c.duracionReservada || +c.fecha_hora + c.duracionReservada * 60_000 > +start))));
+  const blocks = bloqueos.filter(b => b.inicio < end && b.fin > start);
+  if (+end <= now || inWeek.some(c => +c.fecha_hora <= now) || blocks.some(b => +b.inicio <= now)) return 'historial';
+  if (blocks.length || inWeek.some(c => ['pendiente', 'confirmada'].includes(c.estado))) return 'programacion';
+  return null;
+}
+
 // A block's state is determined by its collection, never by a client-supplied
 // status/estado. Reject extra fields rather than silently publishing an invalid
 // state as availability. Missing legacy intervals remain untouched on reads.
@@ -35,9 +50,12 @@ export async function availabilitySnapshot(tx: Prisma.TransactionClient, barbero
     { fecha_hora: { gte: start } }, { disponibleHasta: { gt: start } }, { estado: { in: ['pendiente', 'confirmada'] } },
   ] }, select: { id: true, fecha_actualizacion: true, estado: true, fecha_hora: true, disponibleHasta: true, duracionReservada: true }, orderBy: { id: 'asc' } });
   const bloqueos = await tx.agendaBloqueo.findMany({ where: { barberoId, inicio: { lt: end }, fin: { gt: start } }, orderBy: { id: 'asc' } });
+  const protection = weekConfigurationProtection(start, end, citas, bloqueos);
   return {
     revision: createHash('sha256').update(JSON.stringify({ semana, citas, bloqueos })).digest('hex'),
     configuracion: semana?.configuracion ?? defaultConfiguration,
     publicada: Boolean(semana),
+    configuracionBloqueada: protection !== null,
+    motivoConfiguracion: protection,
   };
 }

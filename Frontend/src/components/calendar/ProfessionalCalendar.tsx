@@ -61,7 +61,7 @@ export default function ProfessionalCalendar() {
               <strong>{reservationLabels[entry.estado] || entry.estado}</strong><time>{businessTime(entry.inicio)}–{entry.fin ? businessTime(entry.fin) : 'Duración por verificar'}</time>
               {entry.cliente && <span>{entry.cliente.nombre}</span>}{entry.servicio && <span>{entry.servicio.nombre_servicio}</span>}
               {!entry.block && entry.estado !== 'disponible' && <button type="button" onClick={() => setSelected(entry)}>Ver cita</button>}
-              {entry.block && <button disabled={busy} onClick={async () => {
+              {entry.block && <button disabled={busy || +new Date(entry.inicio) <= Date.now()} onClick={async () => {
                 if (removing.current || busy) return;
                 removing.current = true; setBusy(true);
                 try {

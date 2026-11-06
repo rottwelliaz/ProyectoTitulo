@@ -3,10 +3,11 @@ import Joi from 'joi';
 import { Temporal } from '@js-temporal/polyfill';
 import prisma from '../config/prisma';
 import { AuthRequest } from '../middleware/auth';
-import { businessDate, businessRange, parseInstant } from '../services/businessTime';
+import { businessDate, businessRange, parseInstant, slotInstant } from '../services/businessTime';
 import { ScheduleError, scheduleFailure, withSchedule, durationOf, endOf, freeIntervals, activeStates, overlaps } from '../services/schedule';
 import { historicalAppointment } from '../services/reservationLifecycle';
 import { availabilitySnapshot } from '../services/availability';
+import { calendarConfiguration } from '../services/calendarGrid';
 
 const failure = (res: Response, error: unknown) => {
   if (error instanceof RangeError) return res.status(400).json({ message: error.message });
@@ -95,13 +96,14 @@ export const createProfessionalBlock = async (req: AuthRequest, res: Response) =
     const start = parseInstant(inicio), end = parseInstant(fin);
     if (+start <= Date.now() || end <= start || +end - +start > 86400000) throw new RangeError('El bloqueo debe ser futuro y durar como máximo 24 horas');
     const result = await withSchedule(profile.id, async tx => {
+      if (+start <= Date.now()) throw new ScheduleError(409, 'El intervalo ya comenzó; actualiza la agenda');
       // Published availability is retained underneath the block; the single
       // reservation interval validator enforces it for every booking endpoint.
       const existing = await tx.agendaBloqueo.findFirst({ where: { barberoId: profile.id, inicio: { lt: end }, fin: { gt: start } } });
       if (existing) throw new ScheduleError(409, 'Ya existe un bloqueo en ese intervalo');
       const appointments = await tx.cita.findMany({ where: { barberoId: profile.id, estado: { in: activeStates }, fecha_hora: { lt: end } }, include: { servicio: true } });
       const conflicts = appointments.filter(c => !durationOf(c) || overlaps(start, end, c.fecha_hora, endOf(c.fecha_hora, durationOf(c)!))).map(c => c.id);
-      if (conflicts.length && req.body.conservarReservas !== true) throw new ScheduleError(409, 'El bloqueo afecta citas activas. Se conservarán como excepciones, sin cancelarlas ni modificarlas.', conflicts);
+      if (conflicts.length) throw new ScheduleError(409, 'No puedes bloquear ni marcar como descanso un intervalo ocupado por una cita');
       return tx.agendaBloqueo.create({ data: { barberoId: profile.id, inicio: start, fin: end, tipo } });
     });
     return res.status(201).json(result);
@@ -115,6 +117,18 @@ export const deleteProfessionalBlock = async (req: AuthRequest, res: Response) =
       const block = await tx.agendaBloqueo.findUnique({ where: { id: req.params.id } });
       if (!block) throw new ScheduleError(404, 'Bloqueo no encontrado');
       if (block.barberoId !== profile.id) throw new ScheduleError(403, 'No puedes modificar bloqueos de otro profesional');
+      if (+block.inicio <= Date.now()) throw new ScheduleError(409, 'No puedes retirar un descanso o bloqueo pasado o iniciado');
+      const day = businessDate(block.inicio);
+      const { published, configuration } = await calendarConfiguration(tx, profile.id, day);
+      if (published && block.inicio >= slotInstant(day, configuration.startTime) && block.fin <= slotInstant(day, configuration.endTime)) {
+        const windows = await tx.cita.findMany({ where: { barberoId: profile.id, estado: 'disponible', fecha_hora: { lt: block.fin }, disponibleHasta: { gt: block.inicio } } });
+        const appointments = await tx.cita.findMany({ where: { barberoId: profile.id, estado: { in: activeStates }, fecha_hora: { lt: block.fin } } });
+        const otherBlocks = await tx.agendaBloqueo.findMany({ where: { barberoId: profile.id, id: { not: block.id }, inicio: { lt: block.fin }, fin: { gt: block.inicio } } });
+        const missing = freeIntervals([{ fecha_hora: block.inicio, disponibleHasta: block.fin }], appointments, [
+          ...otherBlocks, ...windows.filter(w => w.disponibleHasta).map(w => ({ inicio: w.fecha_hora, fin: w.disponibleHasta! })),
+        ]);
+        if (missing.length) await tx.cita.createMany({ data: missing.map(part => ({ barberoId: profile.id, estado: 'disponible', fecha_hora: part.inicio, disponibleHasta: part.fin })) });
+      }
       await tx.agendaBloqueo.delete({ where: { id: block.id } });
     });
     return res.status(204).send();

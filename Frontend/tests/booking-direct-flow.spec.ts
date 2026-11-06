@@ -81,6 +81,7 @@ test('cambiar de barbero descarta la agenda anterior y sus respuestas tardías',
   state.delay = 500;
   await page.locator('.booking-barber-card').first().click();
   await expect.poll(() => state.requests.includes(10)).toBe(true);
+  await page.getByRole('button', { name: 'Cambiar barbero', exact: true }).click();
   await page.locator('.booking-barber-card').last().click();
   await page.locator('.booking-calendar-cell.is-available').first().click();
   await page.locator('.booking-service-card').last().click();
@@ -92,9 +93,12 @@ test('cambiar de barbero descarta la agenda anterior y sus respuestas tardías',
   expect(state.bookings[0]).toMatchObject({ path: '/api/citas/20-first/agendar', servicioId: 'beard-20' });
 });
 
-test('un perfil inexistente mantiene las secciones visibles y la confirmación deshabilitada', async ({ page }) => {
+test('un perfil inexistente ofrece el selector y solo muestra el flujo tras elegir otro profesional', async ({ page }) => {
   await fixture(page, '/booking?barbero=999');
   await expect(page.getByRole('alert')).toContainText('El barbero seleccionado no está disponible');
+  for (const id of ['servicios', 'horarios', 'confirmacion']) await expect(page.locator(`#${id}`)).toBeHidden();
+  await expect(page.locator('.booking-barber-card.is-selected')).toHaveCount(0);
+  await page.locator('.booking-barber-card').first().click();
   for (const id of ['servicios', 'horarios', 'confirmacion']) await expect(page.locator(`#${id}`)).toBeVisible();
   await expect(page.getByRole('button', { name: 'Confirmar reserva', exact: true })).toBeDisabled();
 });

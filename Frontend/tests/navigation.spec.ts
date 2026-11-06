@@ -364,21 +364,22 @@ for (const role of roles) {
     await page.locator('[name=password]').fill('test-password');
     await page.locator('#login-button').click();
     await expect(page).toHaveURL(new RegExp(`${roleHome(role)}\\?origen=login#resumen$`));
-    expect(loginDestination('/admin', 'cliente')).toBe('/home');
+    expect(loginDestination('/admin', 'cliente')).toBe('/perfil');
   });
 }
 
-test('Login cliente sin retorno abre Inicio y conserva acceso a Mi perfil', async ({ page }) => {
+test('Login cliente sin retorno abre Mi perfil con su navegación seleccionada', async ({ page }) => {
   await mockApi(page, 'cliente');
   await page.goto('/login');
   await page.locator('[name=email]').fill('cliente@example.com');
   await page.locator('[name=password]').fill('test-password');
   await page.locator('#login-button').click();
 
-  await expect(page).toHaveURL(/\/home$/);
+  await expect(page).toHaveURL(/\/perfil$/);
   await expect(page.locator('[data-session-user]')).toBeVisible();
   await expect(page.locator('[data-session-name]')).toHaveText('Usuario de prueba');
-  await expect(page.locator('[data-user-avatar]')).toBeVisible();
+  await expect(page.locator('[data-session-nav] [data-user-avatar]')).toBeVisible();
+  await expect(page.locator('.profile-nav [aria-current="page"]')).toHaveText('Perfil');
 
   await page.locator('[data-session-trigger]').click();
   await page.getByRole('link', { name: 'Mi perfil' }).click();
@@ -439,9 +440,24 @@ test('Login barbero respeta el retorno a Servicios al entrar y recargar', async 
 
 test('El retorno rechaza URLs externas, rutas inexistentes y bucles de login', () => {
   for (const path of ['https://evil.example', '//evil.example', '/\\evil.example', '/%5cevil.example', '/login', '/registro', '/no-existe', '/admin', '/perfil/../../admin']) {
-    expect(loginDestination(path, 'cliente')).toBe('/home');
+    expect(loginDestination(path, 'cliente')).toBe('/perfil');
   }
   expect(loginDestination('/booking/?barbero=7#servicios', 'cliente')).toBe('/booking?barbero=7#servicios');
+  expect(loginDestination('/home', 'cliente')).toBe('/perfil');
+  expect(loginDestination('/', 'cliente')).toBe('/perfil');
+  expect(loginDestination('/home', 'barbero')).toBe('/home');
+  expect(loginDestination('/home', 'admin')).toBe('/home');
+});
+
+test('Login cliente desde Inicio abre Mi perfil', async ({ page }) => {
+  await mockApi(page, 'cliente');
+  await page.goto('/home');
+  await page.locator('[data-session-guest]').click();
+  await page.locator('[name=email]').fill('cliente@example.com');
+  await page.locator('[name=password]').fill('test-password');
+  await page.locator('#login-button').click();
+  await expect(page).toHaveURL(/\/perfil$/);
+  await expect(page.locator('.profile-nav [aria-current="page"]')).toHaveText('Perfil');
 });
 
 test('404 personalizada en URL directa y navegación mediante enlace', async ({ page }) => {

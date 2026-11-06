@@ -172,7 +172,7 @@ test('login conserva contraseñas antiguas de 7 caracteres', async ({ page }) =>
   await page.locator('[name=email]').fill(user.email);
   await page.locator('[name=password]').fill('1234567');
   await page.getByRole('button', { name: 'Entrar', exact: true }).click();
-  await expect(page).toHaveURL(/\/home$/);
+  await expect(page).toHaveURL(/\/perfil$/);
 });
 test('login informa límite de intentos sin guardar sesión', async ({ page }) => {
   await page.route('**/auth/login', route => route.fulfill({ status: 429, headers: { 'Retry-After': '60' }, json: { message: 'Demasiados intentos. Espera unos minutos e inténtalo nuevamente.' } }));

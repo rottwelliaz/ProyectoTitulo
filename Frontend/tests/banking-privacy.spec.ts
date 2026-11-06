@@ -55,6 +55,7 @@ test('sin comprobante no se consultan datos bancarios', async ({ page }) => {
 test('cambiar de profesional descarta respuestas bancarias tardías', async ({ page }) => {
   const state = await prepare(page, true, 200, 350);
   await expect.poll(() => state.payments.length).toBe(1);
+  await page.getByRole('button', { name: 'Cambiar barbero', exact: true }).click();
   await page.locator('.booking-barber-card').nth(1).click();
   await page.waitForTimeout(450);
   await expect(page.locator('.booking-payment')).toHaveCount(0);
