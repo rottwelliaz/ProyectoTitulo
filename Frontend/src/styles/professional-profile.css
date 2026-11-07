@@ -614,10 +614,13 @@
   opacity: 0.92;
 }
 
-.barber-slot .slot-reservation-heading { display: flex; align-items: center; gap: .25rem; width: 100%; font-size: .62rem; line-height: 1.1; }
+.barber-slot .slot-reservation-heading { display: flex; align-items: center; justify-content: center; gap: .25rem; width: 100%; font-size: .62rem; line-height: 1.1; }
 .slot-reservation-heading > span:first-child { flex-shrink: 0; }
-.barber-slot .slot-reservation-client { min-width: 0; flex: 1; text-align: left; }
-.barber-slot.is-reserved { padding: 2px 4px; }
+.slot-reservation-heading > span:only-child { min-width: 0; flex-shrink: 1; }
+.barber-slot .slot-reservation-client { min-width: 0; flex: 0 1 auto; text-align: center; }
+.barber-slot.is-reserved { align-items: center; justify-content: center; padding: 2px 4px; text-align: center; }
+.barber-slot.is-reserved > span,
+.barber-slot.is-reserved > small { flex-shrink: 0; }
 .barber-slot.is-reserved small { margin-top: 0; line-height: 1.05; }
 .barber-slot .slot-time { font-variant-numeric: tabular-nums; }
 

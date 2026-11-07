@@ -14,7 +14,7 @@ export const privateRoutes: Record<string, readonly Role[]> = {
 
 export const normalizePath = (path: string) => path.replace(/\/index\.html$/, '').replace(/\/+$/, '') || '/';
 export const isRole = (role: unknown): role is Role => roles.includes(role as Role);
-export const roleHome = (role: Role, aprobado = true) => role === 'admin' ? '/admin' : role === 'barbero' ? (aprobado ? '/perfil-profesional' : '/perfil') : '/perfil';
+export const roleHome = (role: Role, aprobado = true) => role === 'admin' ? '/admin' : role === 'barbero' ? (aprobado ? '/perfil-profesional' : '/perfil') : '/barberos';
 export const canAccess = (path: string, role: Role, aprobado = true) => {
   if (role === 'barbero' && !aprobado && ['/perfil-profesional', '/mensajes'].includes(normalizePath(path))) return false;
   const allowedRoles = privateRoutes[normalizePath(path)];
@@ -30,7 +30,7 @@ export function loginDestination(requested: string | null, role: Role, aprobado 
     const path = normalizePath(decodeURIComponent(url.pathname));
     const known = Object.hasOwn(privateRoutes, path) || ['/', '/home', '/barberos', '/barbero'].includes(path);
     if (url.origin !== 'https://local.invalid' || !known || !canAccess(path, role, aprobado)) return fallback;
-    // The general sign-in link on Inicio must also open the client's panel.
+    // The general sign-in link on Inicio must also open the client's barber catalog.
     if (role === 'cliente' && ['/', '/home'].includes(path)) return fallback;
     return `${path}${url.search}${url.hash}`;
   } catch {
